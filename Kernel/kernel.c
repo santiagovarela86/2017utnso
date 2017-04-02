@@ -249,13 +249,17 @@ void* hilo_conexiones_cpu(void *args){
 
 	listen(socket_desc_cpu, 3);
 
-	while((client_sock_cpu = accept(socket_desc_cpu, (struct sockaddr *)&client_cpu, (socklen_t*)&c_cpu))){
-		pthread_t thread_proceso_cpu;
+	int creado_correctamente = 0;
 
-		if(client_sock_cpu == -1)
-		{
-			printf("Error. No se pudo crear el socket de conexion CPU\n");
+	while (creado_correctamente == 0){
+		client_sock_cpu = accept(socket_desc_cpu, (struct sockaddr *)&client_cpu, (socklen_t*)&c_cpu);
+		if(client_sock_cpu != -1){
+			creado_correctamente = 1;
 		}
+	}
+
+	while(client_sock_cpu){
+		pthread_t thread_proceso_cpu;
 
 		estructura_socket est_sc;
 		est_sc.socket_id = client_sock_cpu;
