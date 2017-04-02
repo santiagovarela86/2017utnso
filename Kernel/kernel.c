@@ -23,77 +23,143 @@
 int conexionesCPU;
 int conexionesConsola;
 Kernel_Config* configuracion;
-//int socketKernel;
 
-typedef struct{
-	int socket_id;
-} estructura_socket;
+void creoThread(pthread_t * threadID, void* threadHandler(void *args));
 
-int main(int argc, char **argv)
-{
-    if (argc != 2)
-    {
-    	printf("Error. Parametros incorrectos \n");
-    	return EXIT_FAILURE;
-    }
+int main(int argc, char **argv) {
+	if (argc != 2) {
+		printf("Error. Parametros incorrectos \n");
+		return EXIT_FAILURE;
+	}
 
-    char* pathConfiguracion;
-
-    pathConfiguracion = argv[1];
-    configuracion = cargar_config(pathConfiguracion);
-    imprimir_config(configuracion);
-
+	char* pathConfiguracion;
 	pthread_t thread_id_filesystem;
+	pthread_t thread_id_memoria;
+	pthread_t thread_proceso_consola;
+	pthread_t thread_proceso_cpu;
+
+	pathConfiguracion = argv[1];
+	configuracion = cargar_config(pathConfiguracion);
+	imprimir_config(configuracion);
+
+	/*
+
+	creoThread(&thread_id_filesystem, &manejo_filesystem);
+	creoThread(&thread_id_memoria, &manejo_memoria);
+	creoThread(&thread_proceso_consola, &hilo_conexiones_consola);
+	creoThread(&thread_proceso_cpu, &hilo_conexiones_cpu);
+
+	*/
+
 	if(pthread_create(&thread_id_filesystem, NULL, manejo_filesystem, NULL) < 0)
 	{
 		perror("Error al crear el Hilo de FS");
 		return EXIT_FAILURE;
 	}
 
-	pthread_t thread_id_memoria;
-	if(pthread_create(&thread_id_memoria, NULL, manejo_memoria, NULL) < 0)
-	{
+	if (pthread_create(&thread_id_memoria, NULL, manejo_memoria, NULL) < 0) {
 		perror("Error al crear el Hilo de Memoria");
 		return EXIT_FAILURE;
 	}
 
-	pthread_t thread_proceso_consola;
-	if(pthread_create(&thread_proceso_consola, NULL, hilo_conexiones_consola, NULL) < 0)
-	{
+	if (pthread_create(&thread_proceso_consola, NULL, hilo_conexiones_consola,
+			NULL) < 0) {
 		perror("Error al crear el Hilo de Consola");
 		return EXIT_FAILURE;
 	}
 
-	pthread_t thread_proceso_cpu;
-	if(pthread_create(&thread_proceso_cpu, NULL,  hilo_conexiones_cpu, NULL) < 0)
-	{
+	if (pthread_create(&thread_proceso_cpu, NULL, hilo_conexiones_cpu, NULL)
+			< 0) {
 		perror("Error al crear el Hilo de CPU");
 		return EXIT_FAILURE;
 	}
 
-	pthread_join(thread_proceso_cpu, NULL);
-	pthread_join(thread_proceso_consola, NULL);
+
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
+	pthread_join(thread_proceso_consola, NULL);
+	pthread_join(thread_proceso_cpu, NULL);
 
 	free(configuracion);
 
 	return EXIT_SUCCESS;
 }
 
-void* handler_conexion_cpu(void *socket_desc){
+void creoThread(pthread_t * threadID, void * threadHandler(void *args)){
+	int resultado = pthread_create(* threadID, NULL, * threadHandler, NULL);
 
-	estructura_socket* e_sc = malloc(sizeof(estructura_socket));
-	e_sc = (estructura_socket*) socket_desc;
-	char cpu_message[1000] = "";
+	if (resultado < 0) {
+		perror("Error al crear el Hilo");
+		exit(errno);
+	}
+}
+
+void* manejo_filesystem(void *args) {
+	char message[1000] = "";
 	char* codigo;
 
-	while((recv(e_sc->socket_id, cpu_message, sizeof(cpu_message), 0)) > 0)
-	{
+	int socketFS;
+	struct sockaddr_in direccionFS;
+
+	creoSocket(&socketFS, &direccionFS, inet_addr(configuracion->ip_fs),
+			configuracion->puerto_fs);
+
+	puts("Socket de conexion a FileSystem creado correctamente\n");
+
+	//Conexion al Servidor
+	if (connect(socketFS, (struct sockaddr *) &direccionFS, sizeof(direccionFS))
+			< 0) {
+		perror("Fallo el intento de conexion al servidor\n");
+		return 0;
+	}
+
+	puts("Conectado al servidor\n");
+
+	message[0] = '1';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+	if (send(socketFS, message, strlen(message), 0) < 0) {
+		puts("Fallo el envio al servidor");
+		return EXIT_FAILURE;
+	}
+
+	while ((recv(socketFS, message, sizeof(message), 0)) > 0) {
+
+		codigo = strtok(message, ";");
+
+		if (atoi(codigo) == 401) {
+			printf("El File System acepto la conexion \n");
+			printf("\n");
+		} else {
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
+
+	//Loop para seguir comunicado con el servidor
+	while (1) {
+	}
+
+	close(socketFS);
+	return EXIT_SUCCESS;
+}
+
+void* handler_conexion_cpu(void *socket_desc) {
+
+	//estructura_socket* e_sc = malloc(sizeof(estructura_socket));
+	//e_sc = (estructura_socket*) socket_desc;
+	char cpu_message[1000] = "";
+	char* codigo;
+	int socketHandler = 0;
+
+	while ((recv(socketHandler, cpu_message, sizeof(cpu_message), 0)) > 0) {
 		puts("llego msj");
 		codigo = strtok(cpu_message, ";");
 
-		if(atoi(codigo) == 500){
+		if (atoi(codigo) == 500) {
 
 			printf("Se acepto una CPU \n");
 
@@ -105,12 +171,11 @@ void* handler_conexion_cpu(void *socket_desc){
 			cpu_message[2] = '2';
 			cpu_message[3] = ';';
 
-		    if(send(e_sc->socket_id , cpu_message , strlen(cpu_message) , 0) < 0)
-		    {
-		        puts("Fallo el envio al servidor");
-		        return EXIT_FAILURE;
-		    }
-		}else{
+			if (send(socketHandler, cpu_message, strlen(cpu_message), 0) < 0) {
+				puts("Fallo el envio al servidor");
+				return EXIT_FAILURE;
+			}
+		} else {
 			printf("Se rechazo una conexion incorrecta \n");
 
 			cpu_message[0] = '1';
@@ -118,32 +183,33 @@ void* handler_conexion_cpu(void *socket_desc){
 			cpu_message[2] = '9';
 			cpu_message[3] = ';';
 
-		    if(send(e_sc->socket_id , cpu_message , strlen(cpu_message) , 0) < 0)
-		    {
-		        puts("Fallo el envio al servidor");
-		        return EXIT_FAILURE;
-		    }
+			if (send(socketHandler, cpu_message, strlen(cpu_message), 0) < 0) {
+				puts("Fallo el envio al servidor");
+				return EXIT_FAILURE;
+			}
 		}
 
 	}
 
-	while(1){}
+	while (1) {
+	}
 
 	return EXIT_SUCCESS;
 }
 
-void* handler_conexion_consola(void *socket_desc){
+void* handler_conexion_consola(void *socket_desc) {
 
-	estructura_socket* e_sc = malloc(sizeof(estructura_socket));
-	e_sc = (estructura_socket*) socket_desc;
+	//estructura_socket* e_sc = malloc(sizeof(estructura_socket));
+	//e_sc = (estructura_socket*) socket_desc;
 	char consola_message[1000] = "";
 	char* codigo;
+	int socketHandler = 0;
 
-	while((recv(e_sc->socket_id, consola_message, sizeof(consola_message), 0)) > 0)
-	{
+	while ((recv(socketHandler, consola_message, sizeof(consola_message), 0))
+			> 0) {
 		codigo = strtok(consola_message, ";");
 
-		if(atoi(codigo) == 300){
+		if (atoi(codigo) == 300) {
 			printf("Se acepto una consola \n");
 
 			conexionesConsola++;
@@ -154,12 +220,12 @@ void* handler_conexion_consola(void *socket_desc){
 			consola_message[2] = '1';
 			consola_message[3] = ';';
 
-		    if(send(e_sc->socket_id , consola_message , strlen(consola_message) , 0) < 0)
-		    {
-		        puts("Fallo el envio al servidor");
-		        return EXIT_FAILURE;
-		    }
-		}else{
+			if (send(socketHandler, consola_message, strlen(consola_message), 0)
+					< 0) {
+				puts("Fallo el envio al servidor");
+				return EXIT_FAILURE;
+			}
+		} else {
 			printf("Se rechazo una conexion incorrecta \n");
 
 			consola_message[0] = '1';
@@ -167,29 +233,29 @@ void* handler_conexion_consola(void *socket_desc){
 			consola_message[2] = '9';
 			consola_message[3] = ';';
 
-		    if(send(e_sc->socket_id , consola_message , strlen(consola_message) , 0) < 0)
-		    {
-		        puts("Fallo el envio al servidor");
-		        return EXIT_FAILURE;
-		    }
+			if (send(socketHandler, consola_message, strlen(consola_message), 0)
+					< 0) {
+				puts("Fallo el envio al servidor");
+				return EXIT_FAILURE;
+			}
 		}
 
 	}
 
-	while(1) {}
+	while (1) {
+	}
 
 	return EXIT_SUCCESS;
 }
 
-void* hilo_conexiones_consola(void *args){
+void* hilo_conexiones_consola(void *args) {
 
 	int socket_desc_consola, client_sock_consola;
 	int c_consola;
 	struct sockaddr_in server_consola, client_consola;
 
 	socket_desc_consola = socket(AF_INET, SOCK_STREAM, 0);
-	if(socket_desc_consola == -1)
-	{
+	if (socket_desc_consola == -1) {
 		printf("Error. No se pudo crear el socket de conexion Consola");
 	}
 
@@ -197,29 +263,29 @@ void* hilo_conexiones_consola(void *args){
 	server_consola.sin_addr.s_addr = INADDR_ANY;
 	server_consola.sin_port = htons(configuracion->puerto_programa);
 
-	if(bind(socket_desc_consola,(struct sockaddr *)&server_consola, sizeof(server_consola)) < 0)
-	{
+	if (bind(socket_desc_consola, (struct sockaddr *) &server_consola,
+			sizeof(server_consola)) < 0) {
 		perror("Error en el bind Consola");
 		return EXIT_FAILURE;
 	}
 
 	listen(socket_desc_consola, 3);
 
-	while((client_sock_consola = accept(socket_desc_consola, (struct sockaddr *)&client_consola, (socklen_t*)&c_consola))){
+	while ((client_sock_consola = accept(socket_desc_consola,
+			(struct sockaddr *) &client_consola, (socklen_t*) &c_consola))) {
 		pthread_t thread_proceso_consola;
 
-		estructura_socket est_sc;
-		est_sc.socket_id = client_sock_consola;
+		//estructura_socket est_sc;
+		//est_sc.socket_id = client_sock_consola;
 
-		if(pthread_create(&thread_proceso_consola, NULL, handler_conexion_consola, (void*) &est_sc) < 0)
-		{
+		if (pthread_create(&thread_proceso_consola, NULL,
+				handler_conexion_consola, (void*) &client_sock_consola) < 0) {
 			perror("Error al crear el Hilo Consola");
 			return EXIT_FAILURE;
 		}
 	}
 
-	if (client_sock_consola < 0)
-	{
+	if (client_sock_consola < 0) {
 		perror("Fallo en la conexion Consola");
 		return EXIT_FAILURE;
 	}
@@ -227,7 +293,7 @@ void* hilo_conexiones_consola(void *args){
 	return EXIT_SUCCESS;
 }
 
-void* hilo_conexiones_cpu(void *args){
+void* hilo_conexiones_cpu(void *args) {
 
 	int socketKernelCPU;
 	struct sockaddr_in direccionKernel;
@@ -236,7 +302,8 @@ void* hilo_conexiones_cpu(void *args){
 
 	int c_cpu;
 
-	creoSocket(&socketKernelCPU, &direccionKernel, configuracion->puerto_cpu);
+	creoSocket(&socketKernelCPU, &direccionKernel, INADDR_ANY,
+			configuracion->puerto_cpu);
 	bindSocket(&socketKernelCPU, &direccionKernel);
 	listen(socketKernelCPU, 3);
 
@@ -244,28 +311,28 @@ void* hilo_conexiones_cpu(void *args){
 
 	int creado_correctamente = 0;
 
-	while (creado_correctamente == 0){
-		socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *)&direccionCPU, (socklen_t*)&c_cpu);
-		if(socketClienteCPU != -1){
+	while (creado_correctamente == 0) {
+		socketClienteCPU = accept(socketKernelCPU,
+				(struct sockaddr *) &direccionCPU, (socklen_t*) &c_cpu);
+		if (socketClienteCPU != -1) {
 			creado_correctamente = 1;
 		}
 	}
 
-	while(socketClienteCPU){
+	while (socketClienteCPU) {
 		pthread_t thread_proceso_cpu;
 
-		estructura_socket est_sc;
-		est_sc.socket_id = socketClienteCPU;
+		//estructura_socket est_sc;
+		//est_sc.socket_id = socketClienteCPU;
 
-		if(pthread_create(&thread_proceso_cpu, NULL, handler_conexion_cpu, (void*) &est_sc) < 0)
-		{
+		if (pthread_create(&thread_proceso_cpu, NULL, handler_conexion_cpu,
+				(void*) &socketClienteCPU) < 0) {
 			perror("Error al crear el Hilo CPU");
 			return EXIT_FAILURE;
 		}
 	}
 
-	if (socketClienteCPU < 0)
-	{
+	if (socketClienteCPU < 0) {
 		perror("Fallo en la conexion CPU");
 		return EXIT_FAILURE;
 	}
@@ -274,35 +341,25 @@ void* hilo_conexiones_cpu(void *args){
 
 }
 
-void* manejo_memoria(void *args){
+void* manejo_memoria(void *args) {
 
-    char message[1000] = "";
-    char* codigo;
+	char message[1000] = "";
+	char* codigo;
 
-	int sock;
-	struct sockaddr_in server;
+	int socketMemoria;
+	struct sockaddr_in direccionMemoria;
 
-	char* ip_memoria = configuracion->ip_memoria;
-	int port_memoria = configuracion->puerto_memoria;
-
-	//Creacion de Socket
-	sock = socket(AF_INET , SOCK_STREAM , 0);
-
-	if (sock == -1){
-		printf("Error. No se pudo crear el socket de conexion\n");
-	    return 0;
-	}
+	creoSocket(&socketMemoria, &direccionMemoria,
+			inet_addr(configuracion->ip_memoria),
+			configuracion->puerto_memoria);
 
 	puts("Socket de conexion a Memoria creado correctamente\n");
 
-	server.sin_addr.s_addr = inet_addr(ip_memoria);
-	server.sin_family = AF_INET;
-	server.sin_port = htons(port_memoria);
-
 	//Conexion al Servidor
-	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0){
+	if (connect(socketMemoria, (struct sockaddr *) &direccionMemoria,
+			sizeof(direccionMemoria)) < 0) {
 		perror("Fallo el intento de conexion al servidor\n");
-	    return 0;
+		return 0;
 	}
 
 	puts("Conectado al servidor\n");
@@ -312,21 +369,19 @@ void* manejo_memoria(void *args){
 	message[2] = '0';
 	message[3] = ';';
 
-    if(send(sock , message , strlen(message) , 0) < 0)
-    {
-        puts("Fallo el envio al servidor");
-        return EXIT_FAILURE;
-    }
+	if (send(socketMemoria, message, strlen(message), 0) < 0) {
+		puts("Fallo el envio al servidor");
+		return EXIT_FAILURE;
+	}
 
-	while((recv(sock, message, sizeof(message), 0)) > 0)
-	{
+	while ((recv(socketMemoria, message, sizeof(message), 0)) > 0) {
 
 		codigo = strtok(message, ";");
 
-		if(atoi(codigo) == 201){
+		if (atoi(codigo) == 201) {
 			printf("La memoria acepto la conexion \n");
 			printf("\n");
-		}else{
+		} else {
 			printf("Conexion rechazada \n");
 			return EXIT_FAILURE;
 		}
@@ -334,73 +389,10 @@ void* manejo_memoria(void *args){
 	}
 
 	//Loop para seguir comunicado con el servidor
-	while(1){}
+	while (1) {
+	}
 
-	close(sock);
+	close(socketMemoria);
 	return 0;
 }
 
-void* manejo_filesystem(void *args){
-    char message[1000] = "";
-    char* codigo;
-
-	int sock;
-	struct sockaddr_in server;
-
-	char* ip_fs = configuracion->ip_fs;
-	int puerto_fs = configuracion->puerto_fs;
-
-	//Creacion de Socket
-	sock = socket(AF_INET , SOCK_STREAM , 0);
-
-	if (sock == -1){
-		printf("Error. No se pudo crear el socket de conexion\n");
-	    return 0;
-	}
-
-	puts("Socket de conexion a FileSystem creado correctamente\n");
-
-	server.sin_addr.s_addr = inet_addr(ip_fs);
-	server.sin_family = AF_INET;
-	server.sin_port = htons(puerto_fs);
-
-	//Conexion al Servidor
-	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0){
-		perror("Fallo el intento de conexion al servidor\n");
-	    return 0;
-	}
-
-	puts("Conectado al servidor\n");
-
-	message[0] = '1';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
-
-    if(send(sock , message , strlen(message) , 0) < 0)
-    {
-        puts("Fallo el envio al servidor");
-        return EXIT_FAILURE;
-    }
-
-	while((recv(sock, message, sizeof(message), 0)) > 0)
-	{
-
-		codigo = strtok(message, ";");
-
-		if(atoi(codigo) == 401){
-			printf("El File System acepto la conexion \n");
-			printf("\n");
-		}else{
-			printf("Conexion rechazada \n");
-			return EXIT_FAILURE;
-		}
-
-	}
-
-	//Loop para seguir comunicado con el servidor
-	while(1){}
-
-	close(sock);
-	return EXIT_SUCCESS;
-}
