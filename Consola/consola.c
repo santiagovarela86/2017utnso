@@ -86,8 +86,42 @@ int main(int argc , char **argv)
 			return EXIT_FAILURE;
 		}
 
-	}
+		puts("");
+		puts("***********************************************************");
+		puts("Ingrese numero de la acción a realizar");
+		puts("1) Iniciar programa");
+		puts("2) Finalizar programa");
+		puts("3) Desconectar");
+		puts("4) Limpar");
+		puts("***********************************************************");
 
+		int numero = 0;
+
+		scanf("%d",&numero);
+
+		if(numero == 1){
+			puts("Ingrese nombre del programa");
+
+			char directorio[1000];
+
+			scanf("%s", directorio);
+
+			FILE *ptr_fich1 = fopen(directorio, "r");
+
+		    int num;
+		    char buffer[1000 + 1];
+		    while(!feof(ptr_fich1)){
+
+		      num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+		      buffer[num*sizeof(char)] = '\0';
+		      printf("%s.",buffer);
+		    }
+
+		    printf("\n");
+
+		}
+
+	}
 
     //Loop para seguir comunicado con el servidor
     while(1)
