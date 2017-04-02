@@ -37,3 +37,22 @@ void escuchoSocket(int * sock) {
 		exit(errno);
 	}
 }
+
+void conectarSocket(int * sock, struct sockaddr_in * direccion){
+
+	int resultado = connect(* sock, (struct sockaddr *) direccion, sizeof(* direccion));
+
+	if (resultado < 0) {
+		perror("Fallo el intento de conexion al servidor\n");
+		exit(errno);
+	}
+}
+
+void enviarMensaje(int * sock, char * message){
+	int resultado = send(* sock, message, strlen(message), 0);
+
+	if (resultado < 0) {
+		puts("Fallo el enviar mensaje");
+		exit(errno);
+	}
+}
