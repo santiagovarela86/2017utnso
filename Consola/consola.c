@@ -99,7 +99,7 @@ int main(int argc , char **argv)
 		int numero_correcto = 0 ;
 		int intentos_fallidos = 0;
 
-		while(numero_correcto == 0 || intentos_fallidos == 3){
+		while(numero_correcto == 0 && intentos_fallidos == 3){
 
 		scanf("%d",&numero);
 
@@ -119,10 +119,8 @@ int main(int argc , char **argv)
 		    while(!feof(ptr_fich1)){
 		    	num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
 		      	buffer[num*sizeof(char)] = '\0';
-		      	printf("%s.",buffer);
+		      	printf("%s \n",buffer);
 		    }
-
-		    printf("\n");
 
 			}else{
 				intentos_fallidos++;
