@@ -1,7 +1,7 @@
 #include "configuracion.h"
 
 
-void imprimir_config(Kernel* kernel){
+void imprimir_config(Kernel_Config* kernel){
 
 	printf("PUERTO_PROG: %d\n", kernel->puerto_programa);
 	printf("PUERTO_CPU: %d\n", kernel->puerto_cpu);
@@ -34,15 +34,15 @@ void imprimir_config(Kernel* kernel){
 	printf("STACK_SIZE: %d\n", kernel->stack_size);
 }
 
-Kernel* cargar_config(char* path){
-
-	Kernel* kernel = malloc(sizeof(Kernel));
-
-	t_config* metadata = config_create(path);
+Kernel_Config* cargar_config(char* path){
 
 	if(path == NULL){
 		exit(EXIT_FAILURE);
 	}
+
+	Kernel_Config* kernel = malloc(sizeof(Kernel_Config));
+
+	t_config* metadata = config_create(path);
 
 	kernel->puerto_programa = config_get_int_value(metadata, "PUERTO_PROG");
 	kernel->puerto_cpu = config_get_int_value(metadata, "PUERTO_CPU");
@@ -59,7 +59,7 @@ Kernel* cargar_config(char* path){
 	kernel->shared_vars = config_get_array_value(metadata, "SHARED_VARS");
 	kernel->stack_size = config_get_int_value(metadata, "STACK_SIZE");
 
-	imprimir_config(kernel);
+	//imprimir_config(kernel);
 
 	return kernel;
 }

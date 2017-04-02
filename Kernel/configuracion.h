@@ -23,9 +23,9 @@ typedef struct{
 	char** sem_init; /*SEM_INIT*/
 	char** shared_vars; /*SHARED_VARS*/
 	int stack_size; /*STACK_SIZE*/
-} Kernel;
+} Kernel_Config;
 
-void imprimir_config(Kernel* kernel);
-Kernel* cargar_config(char* path);
+void imprimir_config(Kernel_Config* kernel);
+Kernel_Config* cargar_config(char* path);
 
 #endif /* CONFIGURACION_H_ */

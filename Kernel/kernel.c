@@ -14,31 +14,34 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <errno.h>
 #include <pthread.h>
 #include "configuracion.h"
 #include "kernel.h"
+#include "socketHelper.h"
 
-Kernel* config;
-int sumarizador_conexiones_cpu;
-int sumarizador_conexiones_consola;
+int conexionesCPU;
+int conexionesConsola;
+Kernel_Config* configuracion;
+//int socketKernel;
 
 typedef struct{
 	int socket_id;
 } estructura_socket;
 
-
 int main(int argc, char **argv)
 {
-    if (argc == 1)
+    if (argc != 2)
     {
     	printf("Error. Parametros incorrectos \n");
     	return EXIT_FAILURE;
     }
 
-    char* path = argv[1];
+    char* pathConfiguracion;
 
-    config = malloc(sizeof(Kernel));
-    config = cargar_config(path);
+    pathConfiguracion = argv[1];
+    configuracion = cargar_config(pathConfiguracion);
+    imprimir_config(configuracion);
 
 	pthread_t thread_id_filesystem;
 	if(pthread_create(&thread_id_filesystem, NULL, manejo_filesystem, NULL) < 0)
@@ -73,7 +76,7 @@ int main(int argc, char **argv)
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
 
-	free(config);
+	free(configuracion);
 
 	return EXIT_SUCCESS;
 }
@@ -94,8 +97,8 @@ void* handler_conexion_cpu(void *socket_desc){
 
 			printf("Se acepto una CPU \n");
 
-			sumarizador_conexiones_cpu++;
-			printf("Tengo %d CPU conectados \n", sumarizador_conexiones_cpu);
+			conexionesCPU++;
+			printf("Tengo %d CPU conectados \n", conexionesCPU);
 
 			cpu_message[0] = '1';
 			cpu_message[1] = '0';
@@ -143,8 +146,8 @@ void* handler_conexion_consola(void *socket_desc){
 		if(atoi(codigo) == 300){
 			printf("Se acepto una consola \n");
 
-			sumarizador_conexiones_consola++;
-			printf("Tengo %d Programas conectados \n", sumarizador_conexiones_consola);
+			conexionesConsola++;
+			printf("Tengo %d Programas conectados \n", conexionesConsola);
 
 			consola_message[0] = '1';
 			consola_message[1] = '0';
@@ -192,7 +195,7 @@ void* hilo_conexiones_consola(void *args){
 
 	server_consola.sin_family = AF_INET;
 	server_consola.sin_addr.s_addr = INADDR_ANY;
-	server_consola.sin_port = htons(config->puerto_programa);
+	server_consola.sin_port = htons(configuracion->puerto_programa);
 
 	if(bind(socket_desc_consola,(struct sockaddr *)&server_consola, sizeof(server_consola)) < 0)
 	{
@@ -226,43 +229,33 @@ void* hilo_conexiones_consola(void *args){
 
 void* hilo_conexiones_cpu(void *args){
 
-	int socket_desc_cpu, client_sock_cpu;
+	int socketKernelCPU;
+	struct sockaddr_in direccionKernel;
+	int socketClienteCPU;
+	struct sockaddr_in direccionCPU;
+
 	int c_cpu;
-	struct sockaddr_in server_cpu, client_cpu;
 
-	socket_desc_cpu = socket(AF_INET, SOCK_STREAM, 0);
+	creoSocket(&socketKernelCPU, &direccionKernel, configuracion->puerto_cpu);
+	bindSocket(&socketKernelCPU, &direccionKernel);
+	listen(socketKernelCPU, 3);
 
-	if(socket_desc_cpu == -1)
-	{
-		printf("Error. No se pudo crear el socket de conexion CPU\n");
-	}
-
-	server_cpu.sin_family = AF_INET;
-	server_cpu.sin_addr.s_addr = INADDR_ANY;
-	server_cpu.sin_port = htons(config->puerto_cpu);
-
-	if(bind(socket_desc_cpu,(struct sockaddr *)&server_cpu, sizeof(server_cpu)) < 0)
-	{
-		perror("Error en el bind CPU");
-		return EXIT_FAILURE;
-	}
-
-	listen(socket_desc_cpu, 3);
+	//socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &c_cpu);
 
 	int creado_correctamente = 0;
 
 	while (creado_correctamente == 0){
-		client_sock_cpu = accept(socket_desc_cpu, (struct sockaddr *)&client_cpu, (socklen_t*)&c_cpu);
-		if(client_sock_cpu != -1){
+		socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *)&direccionCPU, (socklen_t*)&c_cpu);
+		if(socketClienteCPU != -1){
 			creado_correctamente = 1;
 		}
 	}
 
-	while(client_sock_cpu){
+	while(socketClienteCPU){
 		pthread_t thread_proceso_cpu;
 
 		estructura_socket est_sc;
-		est_sc.socket_id = client_sock_cpu;
+		est_sc.socket_id = socketClienteCPU;
 
 		if(pthread_create(&thread_proceso_cpu, NULL, handler_conexion_cpu, (void*) &est_sc) < 0)
 		{
@@ -271,7 +264,7 @@ void* hilo_conexiones_cpu(void *args){
 		}
 	}
 
-	if (client_sock_cpu < 0)
+	if (socketClienteCPU < 0)
 	{
 		perror("Fallo en la conexion CPU");
 		return EXIT_FAILURE;
@@ -289,8 +282,8 @@ void* manejo_memoria(void *args){
 	int sock;
 	struct sockaddr_in server;
 
-	char* ip_memoria = config->ip_memoria;
-	int port_memoria = config->puerto_memoria;
+	char* ip_memoria = configuracion->ip_memoria;
+	int port_memoria = configuracion->puerto_memoria;
 
 	//Creacion de Socket
 	sock = socket(AF_INET , SOCK_STREAM , 0);
@@ -354,8 +347,8 @@ void* manejo_filesystem(void *args){
 	int sock;
 	struct sockaddr_in server;
 
-	char* ip_fs = config->ip_fs;
-	int puerto_fs = config->puerto_fs;
+	char* ip_fs = configuracion->ip_fs;
+	int puerto_fs = configuracion->puerto_fs;
 
 	//Creacion de Socket
 	sock = socket(AF_INET , SOCK_STREAM , 0);
