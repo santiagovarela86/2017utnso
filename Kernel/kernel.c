@@ -1,4 +1,5 @@
 //CODIGOS
+//100 KER A MEM - HANDSHAKE
 //101 KER A CON - RESPUESTA HANDSHAKE DE CONSOLA
 //300 CON A KER - HANDSHAKE DE LA CONSOLA
 
@@ -114,9 +115,6 @@ void* handler_conexion_consola(void *socket_desc){
 
 	}
 
-
-
-
 	while(1) {}
 
 	return EXIT_SUCCESS;
@@ -214,6 +212,9 @@ void* hilo_conexiones_cpu(void *args){
 
 void* manejo_memoria(void *args){
 
+    char message[1000] = "";
+    char* codigo;
+
 	int sock;
 	struct sockaddr_in server;
 
@@ -242,6 +243,31 @@ void* manejo_memoria(void *args){
 
 	puts("Conectado al servidor\n");
 
+	message[0] = '1';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Fallo el envio al servidor");
+        return EXIT_FAILURE;
+    }
+
+	while((recv(sock, message, sizeof(message), 0)) > 0)
+	{
+
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == 201){
+			printf("La memoria acepto la conexion \n");
+			printf("\n");
+		}else{
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
 	//Loop para seguir comunicado con el servidor
 	while(1){}
 

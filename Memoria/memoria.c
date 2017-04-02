@@ -1,3 +1,7 @@
+//CODIGOS
+//201 MEM A KER - RESPUESTA HANDSHAKE
+//299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
+//100 KER A MEM - HANDSHAKE DE KERNEL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +21,10 @@ typedef struct {
 	char* reemplazo_cache;
 	int retardo_memoria;
 } Configuracion;
+
+typedef struct{
+	int socket_consola;
+} estructura_socket;
 
 Configuracion* leer_configuracion(char* directorio);
 void* handler_conexion(void *socket_desc);
@@ -66,7 +74,9 @@ int main(int argc , char **argv)
 
 	while((client_sock = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c))){
 		pthread_t thread_id;
-		if(pthread_create( &thread_id, NULL,  handler_conexion, (void*) &client_sock) < 0)
+		estructura_socket es;
+		es.socket_consola = client_sock;
+		if(pthread_create( &thread_id, NULL,  handler_conexion, (void*) &es) < 0)
 		{
 			perror("Error al crear el Hilo");
 			return 1;
@@ -85,6 +95,47 @@ int main(int argc , char **argv)
 void* handler_conexion(void *socket_desc){
 	sumarizador_conecciones++;
 	printf("Tengo %d Conectados \n", sumarizador_conecciones);
+
+	estructura_socket* est_socket = malloc(sizeof(estructura_socket));
+	est_socket = (estructura_socket*) socket_desc;
+
+	char consola_message[1000] = "";
+	char* codigo;
+
+	while((recv(est_socket->socket_consola, consola_message, sizeof(consola_message), 0)) > 0)
+	{
+		codigo = strtok(consola_message, ";");
+
+		if(atoi(codigo) == 100){
+			printf("Se acepto la conexion del Kernel \n");
+
+			consola_message[0] = '2';
+			consola_message[1] = '0';
+			consola_message[2] = '1';
+			consola_message[3] = ';';
+
+		    if(send(est_socket->socket_consola, consola_message, strlen(consola_message) , 0) < 0)
+		    {
+		        puts("Fallo el envio al servidor");
+		        return EXIT_FAILURE;
+		    }
+
+		}else{
+			printf("Se rechazo una conexion incorrecta \n");
+
+			consola_message[0] = '2';
+			consola_message[1] = '9';
+			consola_message[2] = '9';
+			consola_message[3] = ';';
+
+		    if(send(est_socket->socket_consola, consola_message, strlen(consola_message) , 0) < 0)
+		    {
+		        puts("Fallo el envio al servidor");
+		        return EXIT_FAILURE;
+		    }
+		}
+
+	}
 
 	while(1){}
 
