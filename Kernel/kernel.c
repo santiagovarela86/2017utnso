@@ -1,7 +1,10 @@
 //CODIGOS
 //100 KER A MEM - HANDSHAKE
+//100 KER A FIL - HANDSHAKE
 //101 KER A CON - RESPUESTA HANDSHAKE DE CONSOLA
+//199 KER A OTR - RESPUESTA A CONEXION INCORRECTA
 //300 CON A KER - HANDSHAKE DE LA CONSOLA
+//401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 
 #include <stdio.h>
 #include <string.h>
@@ -111,6 +114,17 @@ void* handler_conexion_consola(void *socket_desc){
 		    }
 		}else{
 			printf("Se rechazo una conexion incorrecta \n");
+
+			consola_message[0] = '1';
+			consola_message[1] = '9';
+			consola_message[2] = '9';
+			consola_message[3] = ';';
+
+		    if(send(e_sc->socket_consola , consola_message , strlen(consola_message) , 0) < 0)
+		    {
+		        puts("Fallo el envio al servidor");
+		        return EXIT_FAILURE;
+		    }
 		}
 
 	}
@@ -268,6 +282,7 @@ void* manejo_memoria(void *args){
 		}
 
 	}
+
 	//Loop para seguir comunicado con el servidor
 	while(1){}
 
@@ -276,6 +291,9 @@ void* manejo_memoria(void *args){
 }
 
 void* manejo_filesystem(void *args){
+    char message[1000] = "";
+    char* codigo;
+
 	int sock;
 	struct sockaddr_in server;
 
@@ -303,6 +321,32 @@ void* manejo_filesystem(void *args){
 	}
 
 	puts("Conectado al servidor\n");
+
+	message[0] = '1';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Fallo el envio al servidor");
+        return EXIT_FAILURE;
+    }
+
+	while((recv(sock, message, sizeof(message), 0)) > 0)
+	{
+
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == 401){
+			printf("El File System acepto la conexion \n");
+			printf("\n");
+		}else{
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
 
 	//Loop para seguir comunicado con el servidor
 	while(1){}
