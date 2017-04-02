@@ -101,7 +101,7 @@ void aceptoConexiones(int * socketFileSystem, char * buffer) {
 		while((recv(socketCliente, consola_message, sizeof(consola_message), 0)) > 0)
 		{
 			codigo = strtok(consola_message, ";");
-			puts("aqui llego");
+
 			if(atoi(codigo) == 100){
 				printf("Se acepto la conexion del Kernel \n");
 
