@@ -1,3 +1,9 @@
+//CODIGOS
+//500 CPU A KER - HANDSHAKE
+//500 CPU A MEM - HANDSHAKE
+//102 KER A CPU - RESPUESTA HANDSHAKE DE CPU
+//202 MEM A CPU - RESPUESTA HANDSHAKE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,6 +59,7 @@ int main(int argc , char **argv){
 }
 
 void* manejo_kernel(){
+    char* codigo;
 	int sock;
 	struct sockaddr_in server;
 	char message[1000] = "";
@@ -83,6 +90,32 @@ void* manejo_kernel(){
 
 	puts("Conectado al servidor\n");
 
+	message[0] = '5';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Fallo el envio al servidor");
+        return EXIT_FAILURE;
+    }
+
+	while((recv(sock, message, sizeof(message), 0)) > 0)
+	{
+
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == 102){
+			printf("El Kernel acepto la conexion \n");
+			printf("\n");
+		}else{
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
+
 	//Loop para seguir comunicado con el servidor
 	while(1){}
 
@@ -91,6 +124,7 @@ void* manejo_kernel(){
 }
 
 void* manejo_memoria(){
+	char* codigo;
 	int sock;
 	struct sockaddr_in server;
 	char message[1000] = "";
@@ -117,6 +151,32 @@ void* manejo_memoria(){
 	}
 
 	puts("Conectado al servidor\n");
+
+	message[0] = '5';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Fallo el envio al servidor");
+        return EXIT_FAILURE;
+    }
+
+	while((recv(sock, message, sizeof(message), 0)) > 0)
+	{
+
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == 202){
+			printf("La Memoria acepto la conexion \n");
+			printf("\n");
+		}else{
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
 
 	//Loop para seguir comunicado con el servidor
 	while(1){}

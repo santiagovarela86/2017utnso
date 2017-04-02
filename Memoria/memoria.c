@@ -1,5 +1,6 @@
 //CODIGOS
 //201 MEM A KER - RESPUESTA HANDSHAKE
+//202 MEM A CPU - RESPUESTA HANDSHAKE
 //299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
 //100 KER A MEM - HANDSHAKE DE KERNEL
 
@@ -120,6 +121,19 @@ void* handler_conexion(void *socket_desc){
 		        return EXIT_FAILURE;
 		    }
 
+		}else if (atoi(codigo) == 500){
+			printf("Se acepto la conexion de la CPU \n");
+
+			consola_message[0] = '2';
+			consola_message[1] = '0';
+			consola_message[2] = '2';
+			consola_message[3] = ';';
+
+		    if(send(est_socket->socket_consola, consola_message, strlen(consola_message) , 0) < 0)
+		    {
+		        puts("Fallo el envio al servidor");
+		        return EXIT_FAILURE;
+		    }
 		}else{
 			printf("Se rechazo una conexion incorrecta \n");
 
