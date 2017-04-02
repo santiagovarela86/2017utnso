@@ -99,40 +99,39 @@ int main(int argc , char **argv)
 		int numero_correcto = 0 ;
 		int intentos_fallidos = 0;
 
-		while(numero_correcto == 0 && intentos_fallidos == 3){
+		while(numero_correcto == 0 && intentos_fallidos < 3){
+			scanf("%d",&numero);
 
-		scanf("%d",&numero);
+			if(numero == 1){
+				numero_correcto = 1;
+				puts("Ingrese nombre del programa");
 
-		if(numero == 1){
-			numero_correcto = 1;
-			puts("Ingrese nombre del programa");
+				char directorio[1000];
 
-			char directorio[1000];
+				scanf("%s", directorio);
 
-			scanf("%s", directorio);
+				FILE *ptr_fich1 = fopen(directorio, "r");
 
-			FILE *ptr_fich1 = fopen(directorio, "r");
+				int num;
+				char buffer[1000 + 1];
 
-		    int num;
-		    char buffer[1000 + 1];
+				while(!feof(ptr_fich1)){
+					num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+					buffer[num*sizeof(char)] = '\0';
+					printf("%s \n",buffer);
+				}
 
-		    while(!feof(ptr_fich1)){
-		    	num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
-		      	buffer[num*sizeof(char)] = '\0';
-		      	printf("%s \n",buffer);
-		    }
-
-			}else{
-				intentos_fallidos++;
-				puts("Por ahora solo funciona si ingresa 1");
+				}else{
+					intentos_fallidos++;
+					puts("Por ahora solo funciona si ingresa 1");
+				}
 			}
-		}
 
-		if(intentos_fallidos == 3){
-			return EXIT_FAILURE;
-		}
+			if(intentos_fallidos == 3){
+				return EXIT_FAILURE;
+			}
 
-	}
+		}
 
     //Loop para seguir comunicado con el servidor
     while(1)
