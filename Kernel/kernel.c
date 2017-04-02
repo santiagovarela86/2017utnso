@@ -1,3 +1,7 @@
+//CODIGOS
+//101 KER A CON - RESPUESTA HANDSHAKE DE CONSOLA
+//300 CON A KER - HANDSHAKE DE LA CONSOLA
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -93,9 +97,25 @@ void* handler_conexion_consola(void *socket_desc){
 
 		if(atoi(codigo) == 300){
 			printf("Se acepto una consola \n");
+
+			consola_message[0] = '1';
+			consola_message[1] = '0';
+			consola_message[2] = '1';
+			consola_message[3] = ';';
+
+		    if(send(e_sc->socket_consola , consola_message , strlen(consola_message) , 0) < 0)
+		    {
+		        puts("Fallo el envio al servidor");
+		        return EXIT_FAILURE;
+		    }
+		}else{
+			printf("Se rechazo una conexion incorrecta \n");
 		}
 
-}
+	}
+
+
+
 
 	while(1) {}
 

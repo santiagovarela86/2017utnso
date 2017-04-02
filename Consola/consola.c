@@ -1,3 +1,7 @@
+//CODIGOS
+//300 CON A KER - HANDSHAKE
+//101 KER A CON - RESPUESTA HANDSHAKE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,6 +25,7 @@ int main(int argc , char **argv)
     struct sockaddr_in server;
     char message[1000] = "";
     char server_reply[2000] = "";
+    char* codigo;
 
     if (argc <= 1)
     {
@@ -59,19 +64,35 @@ int main(int argc , char **argv)
 
     puts("Conectado al servidor\n");
 
+	message[0] = '3';
+	message[1] = '0';
+	message[2] = '0';
+	message[3] = ';';
+
+    if(send(sock , message , strlen(message) , 0) < 0)
+    {
+        puts("Fallo el envio al servidor");
+        return EXIT_FAILURE;
+    }
+
+	while((recv(sock, message, sizeof(message), 0)) > 0)
+	{
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == 101){
+			printf("El kernel acepto la conexion \n");
+		}else{
+			printf("Conexion rechazada \n");
+			return EXIT_FAILURE;
+		}
+
+	}
+
+
     //Loop para seguir comunicado con el servidor
     while(1)
     {
-    	message[0] = '3';
-    	message[1] = '0';
-    	message[2] = '0';
-    	message[3] = ';';
 
-        if(send(sock , message , strlen(message) , 0) < 0)
-        {
-            puts("Fallo el envio al servidor");
-            return EXIT_FAILURE;
-        }
 
         //Verifico si hubo respuesta del servidor
         if(recv(sock, server_reply , 2000 , 0) < 0)
