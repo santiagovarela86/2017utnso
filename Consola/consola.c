@@ -96,10 +96,14 @@ int main(int argc , char **argv)
 		puts("***********************************************************");
 
 		int numero = 0;
+		int numero_correcto =0 ;
 
-		scanf("%d",&numero);
+		while(numero_correcto == 0){
+
+			scanf("%d",&numero);
 
 		if(numero == 1){
+			numero_correcto = 1;
 			puts("Ingrese nombre del programa");
 
 			char directorio[1000];
@@ -110,15 +114,18 @@ int main(int argc , char **argv)
 
 		    int num;
 		    char buffer[1000 + 1];
-		    while(!feof(ptr_fich1)){
 
-		      num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
-		      buffer[num*sizeof(char)] = '\0';
-		      printf("%s.",buffer);
+		    while(!feof(ptr_fich1)){
+		    	num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+		      	buffer[num*sizeof(char)] = '\0';
+		      	printf("%s.",buffer);
 		    }
 
 		    printf("\n");
 
+			}else{
+				puts("Por ahora solo funciona si ingresa 1");
+			}
 		}
 
 	}
