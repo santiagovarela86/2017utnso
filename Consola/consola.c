@@ -96,11 +96,12 @@ int main(int argc , char **argv)
 		puts("***********************************************************");
 
 		int numero = 0;
-		int numero_correcto =0 ;
+		int numero_correcto = 0 ;
+		int intentos_fallidos = 0;
 
-		while(numero_correcto == 0){
+		while(numero_correcto == 0 || intentos_fallidos == 3){
 
-			scanf("%d",&numero);
+		scanf("%d",&numero);
 
 		if(numero == 1){
 			numero_correcto = 1;
@@ -124,8 +125,13 @@ int main(int argc , char **argv)
 		    printf("\n");
 
 			}else{
+				intentos_fallidos++;
 				puts("Por ahora solo funciona si ingresa 1");
 			}
+		}
+
+		if(intentos_fallidos == 3){
+			return EXIT_FAILURE;
 		}
 
 	}
