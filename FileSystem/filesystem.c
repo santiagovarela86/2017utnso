@@ -8,65 +8,93 @@
 
 #define MAXBUF 1024
 
+void creoSocket(int * socketFileSystem,
+			struct sockaddr_in * direccionSocket,
+				FileSystem_Config * configuracion);
+
+void bindSocket(int * socketFileSystem,
+		struct sockaddr_in * direccionSocket);
+
+void escuchoSocket(int * socketFileSystem);
+
+void aceptoConexiones(int * socketFileSystem, char * buffer);
+
 int main(int argc, char** argv){
 
-    if (argc == 1)
+	if (argc != 2)
     {
     	printf("Error. Parametros incorrectos \n");
     	return EXIT_FAILURE;
     }
 
-	int sockfd;
-	struct sockaddr_in self;
 	char buffer[MAXBUF];
+	int socketFileSystem;
+	struct sockaddr_in direccionSocket;
+	FileSystem_Config * configuracion;
+	char* pathConfiguracion;
 
-    char* path = argv[1];
+    pathConfiguracion = argv[1];
+    configuracion = cargarConfiguracion(pathConfiguracion);
+    creoSocket(&socketFileSystem, &direccionSocket, configuracion);
+    bindSocket(&socketFileSystem, &direccionSocket);
+    escuchoSocket(&socketFileSystem);
+    aceptoConexiones(&socketFileSystem, buffer);
 
-    FileSystem_Config* config = cargar_config(path);
+	close(socketFileSystem);
+	return EXIT_SUCCESS;
+}
 
-    if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0 )
-	{
+void creoSocket(int * socketFileSystem,
+		struct sockaddr_in * direccionSocket,
+			FileSystem_Config * configuracion){
+
+	* socketFileSystem = socket(AF_INET, SOCK_STREAM, 0);
+
+    if ( * socketFileSystem < 0 ){
 		perror("Socket");
 		exit(errno);
 	}
 
-	bzero(&self, sizeof(self));
-	self.sin_family = AF_INET;
-	self.sin_port = htons(config->puerto);
-	self.sin_addr.s_addr = INADDR_ANY;
+    memset(direccionSocket, 0, sizeof(* direccionSocket));
 
-    if (bind(sockfd, (struct sockaddr*)&self, sizeof(self)) != 0 )
-	{
-		perror("error en bind");
-		exit(errno);
+    direccionSocket->sin_family = AF_INET;
+    direccionSocket->sin_addr.s_addr = INADDR_ANY;
+    direccionSocket->sin_port = htons(configuracion->puerto);
+}
+
+void bindSocket(int * socketFileSystem,
+		struct sockaddr_in * direccionSocket){
+
+	int resultado = bind(* socketFileSystem, direccionSocket, sizeof(* direccionSocket));
+
+	if ( resultado != 0 ){
+			perror("error en bind");
+			exit(errno);
 	}
+}
 
-	if ( listen(sockfd, 20) != 0 )
+void escuchoSocket(int * socketFileSystem){
+
+	int resultado = listen(* socketFileSystem, 20);
+
+	if ( resultado != 0 )
 	{
 		perror("error en listen");
 		exit(errno);
 	}
-
-	while (1)
-	{	int clientfd;
-		struct sockaddr_in client_addr;
-		int addrlen=sizeof(client_addr);
-
-		clientfd = accept(sockfd, (struct sockaddr*)&client_addr, &addrlen);
-		printf("%s:%d conectado\n", inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-
-		send(clientfd, buffer, recv(clientfd, buffer, MAXBUF, 0), 0);
-
-		close(clientfd);
-	}
-
-
-
-	close(sockfd);
-	return 0;
-
-
-
-	return EXIT_SUCCESS;
 }
 
+void aceptoConexiones(int * socketFileSystem, char * buffer){
+	while (1)
+	{	int socketCliente;
+		struct sockaddr_in direccionCliente;
+		uint addrlen = sizeof(direccionCliente);
+
+		socketCliente = accept(* socketFileSystem, (struct sockaddr_in *) &direccionCliente, &addrlen);
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+
+		send(socketCliente, buffer, recv(socketCliente, buffer, MAXBUF, 0), 0);
+
+		close(socketCliente);
+	}
+}
