@@ -62,8 +62,10 @@ int main(int argc , char **argv)
     //Loop para seguir comunicado con el servidor
     while(1)
     {
-        printf("Ingrese su mensaje para enviar al servidor : ");
-        scanf("%s" , message);
+    	message[0] = '3';
+    	message[1] = '0';
+    	message[2] = '0';
+    	message[3] = ';';
 
         if(send(sock , message , strlen(message) , 0) < 0)
         {
@@ -78,8 +80,6 @@ int main(int argc , char **argv)
             break;
         }
 
-        puts("Respuesta del servidor :");
-        puts(server_reply);
     }
 
     close(sock);

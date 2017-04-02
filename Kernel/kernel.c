@@ -12,6 +12,11 @@ Kernel* config;
 int sumarizador_conexiones_cpu;
 int sumarizador_conexiones_consola;
 
+typedef struct{
+	int socket_consola;
+} estructura_socket_consola;
+
+
 int main(int argc, char **argv)
 {
     if (argc == 1)
@@ -73,8 +78,24 @@ void* handler_conexion_cpu(void *socket_desc){
 }
 
 void* handler_conexion_consola(void *socket_desc){
+
+	estructura_socket_consola* e_sc = malloc(sizeof(estructura_socket_consola));
+	e_sc = (estructura_socket_consola*) socket_desc;
+	char consola_message[1000] = "";
+	char* codigo;
+
 	sumarizador_conexiones_consola++;
 	printf("Tengo %d Programas conectados \n", sumarizador_conexiones_consola);
+
+	while((recv(e_sc->socket_consola, consola_message, sizeof(consola_message), 0)) > 0)
+	{
+		codigo = strtok(consola_message, ";");
+
+		if(atoi(codigo) == 300){
+			printf("Se acepto una consola \n");
+		}
+
+}
 
 	while(1) {}
 
@@ -107,7 +128,11 @@ void* hilo_conexiones_consola(void *args){
 
 	while((client_sock_consola = accept(socket_desc_consola, (struct sockaddr *)&client_consola, (socklen_t*)&c_consola))){
 		pthread_t thread_proceso_consola;
-		if(pthread_create(&thread_proceso_consola, NULL, handler_conexion_consola, (void*) &client_sock_consola) < 0)
+
+		estructura_socket_consola est_sc;
+		est_sc.socket_consola = client_sock_consola;
+
+		if(pthread_create(&thread_proceso_consola, NULL, handler_conexion_consola, (void*) &est_sc) < 0)
 		{
 			perror("Error al crear el Hilo Consola");
 			return EXIT_FAILURE;
