@@ -14,6 +14,8 @@ void *handler_conexion_consola(void * args);
 void *handler_conexion_cpu(void * args);
 void* manejo_memoria(void* args);
 void* manejo_filesystem(void* args);
+void* inicializar_consola(void* args);
+void log_console_in_disk(char*);
 
 
 #endif /* KERNEL_H_ */

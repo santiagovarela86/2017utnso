@@ -23,6 +23,8 @@
 int conexionesCPU;
 int conexionesConsola;
 Kernel_Config* configuracion;
+int grado_multiprogramacion;
+pthread_mutex_t mutex_grado_multiprog = PTHREAD_MUTEX_INITIALIZER;
 
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
@@ -42,19 +44,153 @@ int main(int argc, char **argv) {
 	configuracion = cargar_config(pathConfiguracion);
 	imprimir_config(configuracion);
 
+	grado_multiprogramacion = configuracion->grado_multiprogramacion;
+
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
 	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
 
+	pthread_t thread_consola_kernel;
+	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
+
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
 	pthread_join(thread_proceso_consola, NULL);
 	pthread_join(thread_proceso_cpu, NULL);
+	pthread_join(thread_consola_kernel, NULL);
 
 	free(configuracion);
 
 	return EXIT_SUCCESS;
+}
+
+void * inicializar_consola(void* args){
+
+	while(1){
+		puts("");
+		puts("***********************************************************");
+		puts("CONSOLA KERNEL - ACCIONES");
+		puts("1)  Listado de procesos del sistema");
+		puts("2)  Cantidad de rafagas ejecutadas");
+		puts("3)  Cantidad de operaciones privilegiadas");
+		puts("4)  Tabla de archivos abiertos");
+		puts("5)  Cantidad de paginas de heap utilizadas");
+		puts("6)  Cantidad de syscalls ejecutadas");
+		puts("7)  Tabla global de archivos");
+		puts("8)  Modificar el grado de multiprogramacion del sistema");
+		puts("9)  Finalizar Proceso");
+		puts("10) Detener la Planificacion");
+		puts("***********************************************************");
+
+		int accion = 0;
+		int accion_correcta = 0;
+		int nuevo_grado_multiprog = 0;
+		int pid_buscado;
+		char* mensaje = string_new();
+
+		while (accion == 0){
+
+			mensaje = string_new();
+			scanf("%d", &accion);
+
+			switch(accion){
+			case 1:
+				accion_correcta = 1;
+				string_append(&mensaje, "Listado de procesos del sistema");
+				log_console_in_disk(mensaje);
+				break;
+			case 2:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Cantidad de rafagas ejecutadas por el proceso ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 3:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Cantidad de operaciones privilegiadas ejecutadas por el proceso ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 4:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Tabla de archivos abiertos por el proceso ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 5:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Cantidad de paginas de heap utilizadas por el proceso ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 6:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Cantidad de syscalls ejecutadas por el proceso ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 7:
+				accion_correcta = 1;
+				string_append(&mensaje, "Tabla global de archivos");
+				log_console_in_disk(mensaje);
+				break;
+			case 8:
+				accion_correcta = 1;
+				printf("Ingrese nuevo grado de multiprogramacion: ");
+				scanf("%d", &nuevo_grado_multiprog);
+				pthread_mutex_lock(&mutex_grado_multiprog);
+				grado_multiprogramacion = nuevo_grado_multiprog;
+				pthread_mutex_unlock(&mutex_grado_multiprog);
+				string_append(&mensaje, "Ahora el grado de multiprogramacion es ");
+				string_append(&mensaje, string_itoa(nuevo_grado_multiprog));
+				log_console_in_disk(mensaje);
+				break;
+			case 9:
+				accion_correcta = 1;
+				printf("Ingrese PID del proceso: ");
+				scanf("%d", &pid_buscado);
+				string_append(&mensaje, "Se finalizo el proceso con PID ");
+				string_append(&mensaje, string_itoa(pid_buscado));
+				log_console_in_disk(mensaje);
+				break;
+			case 10:
+				accion_correcta = 1;
+				string_append(&mensaje, "Se finalizo la planificacion de los procesos");
+				log_console_in_disk(mensaje);
+				break;
+			default:
+				puts("Comando invalido. A continuacion se detallan las acciones:");
+				puts("1)  Listado de procesos del sistema");
+				puts("2)  Cantidad de rafagas ejecutadas");
+				puts("3)  Cantidad de operaciones privilegiadas");
+				puts("4)  Tabla de archivos abiertos");
+				puts("5)  Cantidad de paginas de heap utilizadas");
+				puts("6)  Cantidad de syscalls ejecutadas");
+				puts("7)  Tabla global de archivos");
+				puts("8)  Modificar el grado de multiprogramacion del sistema");
+				puts("9)  Finalizar Proceso");
+				puts("10) Detener la Planificacion");
+				break;
+			}
+		}
+	}
+}
+
+void log_console_in_disk(char* mensaje) {
+	t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+    log_info(logger, mensaje, "INFO");
+    log_destroy(logger);
 }
 
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
