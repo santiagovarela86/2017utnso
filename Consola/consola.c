@@ -10,79 +10,49 @@
 #include <unistd.h>
 #include <commons/config.h>
 #include <commons/string.h>
+#include "configuracion.h"
+#include "socketHelper.h"
 
-typedef struct {
-	char* ip;
-	int puerto;
-} Conector;
-
-Conector* leer_configuracion(char* directorio);
-void imprimir_configuracion(Conector* conector);
+Consola_Config* configuracion;
 
 int main(int argc , char **argv)
 {
-    int sock;
-    struct sockaddr_in server;
+    int socketConsola;
+    struct sockaddr_in direccionConsola;
     char message[1000] = "";
     char server_reply[2000] = "";
     char* codigo;
 
-    if (argc <= 1)
+    if (argc != 2)
     {
-    	printf("Error. Parametros incorrectos \n");
+    	printf("Error. Parametros incorrectos.\n");
     	return EXIT_FAILURE;
     }
 
-    Conector* conect = malloc (sizeof(Conector));
+    configuracion = leer_configuracion(argv[1]);
+    imprimir_configuracion(configuracion);
 
-	conect = leer_configuracion(argv[1]);
+    creoSocket(&socketConsola, &direccionConsola, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+    puts("Socket de Consola creado correctamente\n");
 
-    char* ip = conect->ip;
-    int port = conect->puerto;
-
-    //Creacion de Socket
-    sock = socket(AF_INET , SOCK_STREAM , 0);
-
-    if (sock == -1)
-    {
-        printf("Error. No se pudo crear el socket de conexion");
-        return EXIT_FAILURE;
-    }
-
-    puts("Socket de conexion creado correctamente");
-
-    server.sin_addr.s_addr = inet_addr(ip);
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-
-    //Conexion al Servidor
-    if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0)
-    {
-        perror("Fallo el intento de conexion al servidor");
-        return EXIT_FAILURE;
-    }
-
-    puts("Conectado al servidor\n");
+    conectarSocket(&socketConsola, &direccionConsola);
+    puts("Conectado al Kernel\n");
 
 	message[0] = '3';
 	message[1] = '0';
 	message[2] = '0';
 	message[3] = ';';
 
-    if(send(sock , message , strlen(message) , 0) < 0)
-    {
-        puts("Fallo el envio al servidor");
-        return EXIT_FAILURE;
-    }
+	enviarMensaje(&socketConsola, message);
 
-	while((recv(sock, message, sizeof(message), 0)) > 0)
+	while((recv(socketConsola, message, sizeof(message), 0)) > 0)
 	{
 		codigo = strtok(message, ";");
 
 		if(atoi(codigo) == 101){
-			printf("El kernel acepto la conexion \n");
+			printf("El Kernel acepto la conexion\n");
 		}else{
-			printf("Conexion rechazada \n");
+			printf("El Kernel rechazo la conexion\n");
 			return EXIT_FAILURE;
 		}
 
@@ -139,7 +109,7 @@ int main(int argc , char **argv)
 
 
         //Verifico si hubo respuesta del servidor
-        if(recv(sock, server_reply , 2000 , 0) < 0)
+        if(recv(socketConsola, server_reply , 2000 , 0) < 0)
         {
             puts("Desconexion del cliente");
             break;
@@ -147,29 +117,8 @@ int main(int argc , char **argv)
 
     }
 
-    close(sock);
+    close(socketConsola);
     return EXIT_SUCCESS;
 }
 
-void imprimir_configuracion(Conector* conector){
-	printf("IP_KERNEL: %s\n", conector->ip);
-	printf("PUERTO_KERNEL: %d\n", conector->puerto);
-}
 
-Conector* leer_configuracion(char* directorio){
-	char* path = string_new();
-
-    string_append(&path,directorio);
-
-	t_config* config_consola = config_create(path);
-
-	Conector* conect = malloc(sizeof(Conector));
-
-	conect->ip = config_get_string_value(config_consola, "IP_KERNEL");
-
-	conect->puerto = config_get_int_value(config_consola,"PUERTO_KERNEL");
-
-	imprimir_configuracion(conect);
-
-	return conect;
-}

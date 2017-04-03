@@ -10,15 +10,17 @@
 #include <unistd.h>
 #include "configuracion.h"
 #include "socketHelper.h"
+#include <errno.h>
 
 #define MAXBUF 1024
 
-void aceptoConexiones(int * socketFileSystem, char * buffer);
+void esperoKernel(int * socketFileSystem, char * buffer);
+void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado);
 
 int main(int argc, char** argv) {
 
 	if (argc != 2) {
-		printf("Error. Parametros incorrectos \n");
+		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -31,64 +33,53 @@ int main(int argc, char** argv) {
 	pathConfiguracion = argv[1];
 	configuracion = cargar_config(pathConfiguracion);
 	imprimir_config(configuracion);
+
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
-	aceptoConexiones(&socketFileSystem, buffer);
+	esperoKernel(&socketFileSystem, buffer);
 
+	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
 	return EXIT_SUCCESS;
 }
 
-void aceptoConexiones(int * socketFileSystem, char * buffer) {
-	char consola_message[1000] = "";
-	char* codigo;
-
+void esperoKernel(int * socketFileSystem, char * buffer) {
 	while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
-		uint addrlen = sizeof(direccionCliente);
+		int length = 0;
 
-		socketCliente = accept(*socketFileSystem,
-				(struct sockaddr_in *) &direccionCliente, &addrlen);
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr),
-				ntohs(direccionCliente.sin_port));
+		socketCliente = accept(*socketFileSystem, (struct sockaddr_in *) &direccionCliente, (socklen_t*) &length);
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
-		while((recv(socketCliente, consola_message, sizeof(consola_message), 0)) > 0)
-		{
-			codigo = strtok(consola_message, ";");
+		handShake(&socketFileSystem, &socketCliente, 100, 401, 499);
 
-			if(atoi(codigo) == 100){
-				printf("Se acepto la conexion del Kernel \n");
+		//send(socketCliente, buffer, recv(socketCliente, buffer, MAXBUF, 0), 0);
 
-				consola_message[0] = '4';
-				consola_message[1] = '0';
-				consola_message[2] = '1';
-				consola_message[3] = ';';
-
-			    if(send(socketCliente, consola_message, strlen(consola_message) , 0) < 0)
-			    {
-			        puts("Fallo el envio al servidor");
-			    }
-
-			}else{
-				printf("Se rechazo una conexion incorrecta \n");
-
-				consola_message[0] = '4';
-				consola_message[1] = '9';
-				consola_message[2] = '9';
-				consola_message[3] = ';';
-
-			    if(send(socketCliente, consola_message, strlen(consola_message) , 0) < 0)
-			    {
-			        puts("Fallo el envio al servidor");
-			    }
-			}
-
-		}
-
-		send(socketCliente, buffer, recv(socketCliente, buffer, MAXBUF, 0), 0);
-
+		shutdown(socketCliente, 0);
 		close(socketCliente);
+	}
+}
+
+void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado){
+	char message[MAXBUF];
+	char * codigo;
+
+	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == codigoEsperado){
+			printf("Se acepto la conexion del Kernel \n");
+
+			strcpy(message, strcat(string_itoa(codigoAceptado), ";"));
+			enviarMensaje(socketCliente, message);
+
+		}else{
+			printf("Se rechazo una conexion incorrecta \n");
+
+			strcpy(message, strcat(string_itoa(codigoRechazado), ";"));
+			enviarMensaje(socketCliente, message);
+		}
 	}
 }

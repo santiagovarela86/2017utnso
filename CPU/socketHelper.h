@@ -12,5 +12,6 @@ void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int pu
 void bindSocket(int * sock, struct sockaddr_in * direccion);
 void escuchoSocket(int * sock);
 void conectarSocket(int * sock, struct sockaddr_in * direccion);
+void enviarMensaje(int * sock, char * message);
 
 #endif /* SOCKETHELPER_H_ */

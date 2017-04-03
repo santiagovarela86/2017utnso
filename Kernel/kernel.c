@@ -39,19 +39,17 @@ int main(int argc, char **argv) {
 	pthread_t thread_id_memoria;
 	pthread_t thread_proceso_consola;
 	pthread_t thread_proceso_cpu;
+	pthread_t thread_consola_kernel;
 
 	pathConfiguracion = argv[1];
 	configuracion = cargar_config(pathConfiguracion);
 	imprimir_config(configuracion);
-
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
 	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
-
-	pthread_t thread_consola_kernel;
 	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
 
 	pthread_join(thread_id_filesystem, NULL);

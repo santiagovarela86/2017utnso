@@ -16,6 +16,4 @@ typedef struct{
 void imprimir_config(FileSystem_Config* kernel);
 FileSystem_Config* cargar_config(char* path);
 
-
-
 #endif /* CONFIGURACION_H_ */
