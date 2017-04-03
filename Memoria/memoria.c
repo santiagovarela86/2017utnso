@@ -171,14 +171,14 @@ void * inicializar_consola(void* args){
 		int accion_correcta = 0;
 		int nuevo_tiempo_retardo = 0, pid_buscado = 0, tamanio_proceso_buscado = 0;
 
-		while(accion == 0){
+		while(accion_correcta == 0){
 
 			scanf("%d", &accion);
 
 			switch(accion){
 				case 1:
 					accion_correcta = 1;
-					puts("Ingrese nuevo tiempo de retardo:");
+					printf("Ingrese nuevo tiempo de retardo: ");
 					scanf("%d", &nuevo_tiempo_retardo);
 					pthread_mutex_lock(&mutex_tiempo_retardo);
 					tiempo_retardo = nuevo_tiempo_retardo;

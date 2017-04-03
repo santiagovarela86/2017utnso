@@ -87,7 +87,7 @@ void * inicializar_consola(void* args){
 		int pid_buscado;
 		char* mensaje = string_new();
 
-		while (accion == 0){
+		while (accion_correcta == 0){
 
 			mensaje = string_new();
 			scanf("%d", &accion);
@@ -168,6 +168,7 @@ void * inicializar_consola(void* args){
 				log_console_in_disk(mensaje);
 				break;
 			default:
+				accion_correcta = 0;
 				puts("Comando invalido. A continuacion se detallan las acciones:");
 				puts("1)  Listado de procesos del sistema");
 				puts("2)  Cantidad de rafagas ejecutadas");
