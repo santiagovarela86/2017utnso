@@ -29,21 +29,21 @@ pthread_mutex_t mutex_grado_multiprog = PTHREAD_MUTEX_INITIALIZER;
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc, char **argv) {
+
 	if (argc != 2) {
 		printf("Error. Parametros incorrectos. \n");
 		return EXIT_FAILURE;
 	}
 
-	char* pathConfiguracion;
 	pthread_t thread_id_filesystem;
 	pthread_t thread_id_memoria;
 	pthread_t thread_proceso_consola;
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
 
-	pathConfiguracion = argv[1];
-	configuracion = cargar_config(pathConfiguracion);
-	imprimir_config(configuracion);
+	configuracion = leerConfiguracion(argv[1]);
+	imprimirConfiguracion(configuracion);
+
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
@@ -310,9 +310,9 @@ void* hilo_conexiones_consola(void *args) {
 			perror("Fallo en el manejo del hilo Consola");
 			return EXIT_FAILURE;
 		}
-
-		return EXIT_SUCCESS;
 	}
+
+	return EXIT_SUCCESS;
 }
 
 void * handler_conexion_consola(void * sock) {

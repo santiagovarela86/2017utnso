@@ -13,24 +13,24 @@
 #include "configuracion.h"
 #include "socketHelper.h"
 
-Consola_Config* configuracion;
-
 int main(int argc , char **argv)
 {
-    int socketConsola;
-    struct sockaddr_in direccionConsola;
-    char message[1000] = "";
-    char server_reply[2000] = "";
-    char* codigo;
 
-    if (argc != 2)
+	if (argc != 2)
     {
     	printf("Error. Parametros incorrectos.\n");
     	return EXIT_FAILURE;
     }
 
-    configuracion = leer_configuracion(argv[1]);
-    imprimir_configuracion(configuracion);
+	Consola_Config* configuracion;
+	int socketConsola;
+    struct sockaddr_in direccionConsola;
+    char message[1000] = "";
+    char server_reply[2000] = "";
+    char* codigo;
+
+    configuracion = leerConfiguracion(argv[1]);
+    imprimirConfiguracion(configuracion);
 
     creoSocket(&socketConsola, &direccionConsola, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
     puts("Socket de Consola creado correctamente\n");
@@ -38,10 +38,12 @@ int main(int argc , char **argv)
     conectarSocket(&socketConsola, &direccionConsola);
     puts("Conectado al Kernel\n");
 
-	message[0] = '3';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
+    strcpy(message, "300;");
+
+	//message[0] = '3';
+	//message[1] = '0';
+	//message[2] = '0';
+	//message[3] = ';';
 
 	enviarMensaje(&socketConsola, message);
 

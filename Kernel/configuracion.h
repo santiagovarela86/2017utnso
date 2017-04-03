@@ -7,6 +7,7 @@
 #include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 typedef struct{
 	uint puerto_programa; /*PUERTO_PROG*/
@@ -25,7 +26,7 @@ typedef struct{
 	int stack_size; /*STACK_SIZE*/
 } Kernel_Config;
 
-void imprimir_config(Kernel_Config* kernel);
-Kernel_Config* cargar_config(char* path);
+Kernel_Config* leerConfiguracion(char* path);
+void imprimirConfiguracion(Kernel_Config* kernel);
 
 #endif /* CONFIGURACION_H_ */

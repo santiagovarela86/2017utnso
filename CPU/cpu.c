@@ -25,17 +25,17 @@ int puerto_kernel;
 
 int main(int argc , char **argv){
 
-	pthread_t thread_id_kernel;
-	pthread_t thread_id_memoria;
-
-	if (argc == 1){
+	if (argc != 2){
 		printf("Error. Parametros incorrectos\n");
 		return EXIT_FAILURE;
 	}
 
-	char* path = argv[1];
+	pthread_t thread_id_kernel;
+	pthread_t thread_id_memoria;
 
-	CPU_Config* config = cargar_config(path);
+	CPU_Config* config = leerConfiguracion(argv[1]);
+	imprimirConfiguracion(config);
+
 	ip_memoria = config->ip_memoria;
 	puerto_memoria = config->puerto_memoria;
 	ip_kernel = config->ip_kernel;

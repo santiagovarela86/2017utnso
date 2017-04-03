@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
 	char* pathConfiguracion;
 
 	pathConfiguracion = argv[1];
-	configuracion = cargar_config(pathConfiguracion);
-	imprimir_config(configuracion);
+	configuracion = leerConfiguracion(pathConfiguracion);
+	imprimirConfiguracion(configuracion);
 
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);

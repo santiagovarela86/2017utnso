@@ -20,6 +20,12 @@ t_list* cache;
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc, char **argv) {
+
+	if (argc != 2) {
+		printf("Error. Parametros incorrectos \n");
+		return EXIT_FAILURE;
+	}
+
 	char message[1000] = "";
 	char server_reply[2000] = "";
 
@@ -30,13 +36,8 @@ int main(int argc, char **argv) {
 	int length = 0;
 	pthread_t hilo_consola_memoria;
 
-	if (argc != 2) {
-		printf("Error. Parametros incorrectos \n");
-		return EXIT_FAILURE;
-	}
-
-	configuracion = leer_configuracion(argv[1]);
-	imprimir_configuracion(configuracion);
+	configuracion = leerConfiguracion(argv[1]);
+	imprimirConfiguracion(configuracion);
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
 	tiempo_retardo = configuracion->retardo_memoria;

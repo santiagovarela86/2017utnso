@@ -7,6 +7,7 @@
 #include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 typedef struct {
 	int puerto;
@@ -18,7 +19,7 @@ typedef struct {
 	int retardo_memoria;
 } Memoria_Config;
 
-void imprimir_configuracion(Memoria_Config* config);
-Memoria_Config * leer_configuracion(char* directorio);
+Memoria_Config * leerConfiguracion(char* path);
+void imprimirConfiguracion(Memoria_Config* memoria);
 
 #endif /* CONFIGURACION_H_ */
