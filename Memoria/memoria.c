@@ -4,24 +4,16 @@
 //299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
 //100 KER A MEM - HANDSHAKE DE KERNEL
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <commons/config.h>
-#include <commons/string.h>
-#include <commons/bitarray.h>
-#include "configuracion.h"
-#include "socketHelper.h"
-#include "memoria.h"
 #include <pthread.h>
+#include "configuracion.h"
+#include "memoria.h"
 
 int sumarizador_conecciones;
 int tiempo_retardo;
 Memoria_Config * config;
 pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
+t_list* tabla_paginas;
+t_list* cache;
 
 int main(int argc, char **argv) {
 	char message[1000] = "";
@@ -91,23 +83,18 @@ void * inicializar_consola(void* args){
 		puts("7) Size PID");
 		puts("***********************************************************");
 
-		int numero = 0;
-		int numero_correcto = 0 ;
-		int intentos_fallidos = 0;
-		int nuevo_tiempo_retardo = 0;
+		int accion = 0;
+		int accion_correcta = 0;
+		int nuevo_tiempo_retardo = 0, pid_buscado = 0, tamanio_proceso_buscado = 0;
 
-		while(numero_correcto == 0 && intentos_fallidos < 3){
+		while(accion == 0){
 
-			scanf("%d", &numero);
+			scanf("%d", &accion);
 
-			if(intentos_fallidos == 3){
-				return EXIT_FAILURE;
-			}
-
-			switch(numero){
+			switch(accion){
 				case 1:
-					numero_correcto = 1;
-					puts("Tiempo de retardo:");
+					accion_correcta = 1;
+					puts("Ingrese nuevo tiempo de retardo:");
 					scanf("%d", &nuevo_tiempo_retardo);
 					pthread_mutex_lock(&mutex_tiempo_retardo);
 					tiempo_retardo = nuevo_tiempo_retardo;
@@ -115,10 +102,35 @@ void * inicializar_consola(void* args){
 					pthread_mutex_unlock(&mutex_tiempo_retardo);
 					break;
 				case 2:
-					numero_correcto = 1;
+					accion_correcta = 1;
+					log_cache_in_disk(cache);
+					break;
+				case 3:
+					accion_correcta = 1;
+					log_estructuras_memoria_in_disk(tabla_paginas);
+					break;
+				case 4:
+					accion_correcta = 1;
+					log_contenido_memoria_in_disk(tabla_paginas);
+					break;
+				case 5:
+					accion_correcta = 1;
+					limpiar_memoria_cache();
+					break;
+				case 6:
+					puts("***********************************************************");
+					puts("TAMANIO DE LA MEMORIA");
+					printf("CANTIDAD TOTAL DE MARCOS: %d \n", config->marcos);
+					printf("CANTIDAD DE MARCOS OCUPADOS: %d \n", 0);
+					printf("CANTIDAD DE MARCOS LIBRES: %d \n", 0);
+					puts("***********************************************************");
+					break;
+				case 7:
+					printf("Ingrese PID de proceso: ");
+					scanf("%d", &pid_buscado);
+					printf("El tamanio total del proceso %d es: %d", pid_buscado, tamanio_proceso_buscado);
 					break;
 				default:
-					intentos_fallidos++;
 					puts("Comando invalido. A continuacion se detallan las acciones:");
 					puts("1) Retardo");
 					puts("2) Dump Cache");
@@ -213,5 +225,39 @@ void* handler_conexion(void *socket_desc) {
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void log_cache_in_disk(t_list* cache) {
+	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
+
+    log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");
+
+    log_destroy(logger);
+
+    printf("cache.log generado con exito! \n");
+}
+
+void log_estructuras_memoria_in_disk(t_list* tabla_paginas) {
+
+	t_log* logger = log_create("estructura_memoria.log", "est_memoria", true, LOG_LEVEL_INFO);
+
+	log_info(logger, "LOGUEO DE INFO DE ESTRUCTURAS DE MEMORIA %s", "INFO");
+
+    log_destroy(logger);
+
+    printf("estructura_memoria.log generado con exito! \n");
+}
+
+void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
+
+	t_log* logger = log_create("contenido_memoria.log", "contenido_memoria", true, LOG_LEVEL_INFO);
+	log_info(logger, "LOGUEO DE INFO DE CONTENIDO DE MEMORIA %s", "INFO");
+    log_destroy(logger);
+
+    printf("contenido_memoria.log generado con exito! \n");
+}
+
+void limpiar_memoria_cache(){
+	list_destroy(cache);
 }
 
