@@ -57,7 +57,6 @@ void * handler_kernel(void * args){
 	while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
-		//socklen_t length = sizeof(socklen_t);
 		socklen_t length = sizeof direccionCliente;
 
 		socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);

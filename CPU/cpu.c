@@ -43,8 +43,8 @@ int main(int argc , char **argv){
 
 	*/
 
-	creoThread(&thread_id_kernel, manejo_kernel(), NULL);
-	creoThread(&thread_id_memoria, manejo_memoria(), NULL);
+	creoThread(&thread_id_kernel, manejo_kernel, NULL);
+	creoThread(&thread_id_memoria, manejo_memoria, NULL);
 
 	/*
 	if(pthread_create(&thread_id_kernel, NULL, manejo_kernel, NULL) < 0)
@@ -70,7 +70,7 @@ int main(int argc , char **argv){
     return EXIT_SUCCESS;
 }
 
-void* manejo_kernel(){
+void * manejo_kernel(void * args){
     char* codigo;
 	int sock;
 	struct sockaddr_in server;
@@ -151,7 +151,7 @@ void* manejo_kernel(){
 	return 0;
 }
 
-void* manejo_memoria(){
+void* manejo_memoria(void * args){
 	char* codigo;
 	int sock;
 	struct sockaddr_in server;

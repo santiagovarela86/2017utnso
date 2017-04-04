@@ -12,10 +12,13 @@
 int conexionesKernel = 0;
 int conexionesCPU = 0;
 int tiempo_retardo;
-Memoria_Config * configuracion;
+//Memoria_Config * configuracion;
 pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
+
+void * handler_kernel(void * args);
+void * handler_cpu(void * args);
 
 int main(int argc, char **argv) {
 
@@ -24,48 +27,116 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
-	char message[1000] = "";
-	char server_reply[2000] = "";
+	//char message[1000] = "";
+	//char server_reply[2000] = "";
+
+	Memoria_Config * configuracion;
+	configuracion = leerConfiguracion(argv[1]);
+	imprimirConfiguracion(configuracion);
 
 	int socketMemoria;
 	struct sockaddr_in direccionMemoria;
-	int socketCliente;
-	//struct sockaddr direccionCliente;
-	int length = 0;
-	pthread_t hilo_consola_memoria;
+	creoSocket(&socketMemoria, &direccionMemoria, INADDR_ANY, configuracion->puerto);
+	bindSocket(&socketMemoria, &direccionMemoria);
+	escuchoSocket(&socketMemoria);
 
-	configuracion = leerConfiguracion(argv[1]);
-	imprimirConfiguracion(configuracion);
+	threadSocketInfo * threadSocketInfoMemoria;
+	threadSocketInfoMemoria = malloc(sizeof(struct threadSocketInfo));
+	threadSocketInfoMemoria->sock = socketMemoria;
+	threadSocketInfoMemoria->direccion = direccionMemoria;
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
 	tiempo_retardo = configuracion->retardo_memoria;
 	pthread_mutex_unlock(&mutex_tiempo_retardo);
 
-	creoSocket(&socketMemoria, &direccionMemoria, INADDR_ANY, configuracion->puerto);
-	bindSocket(&socketMemoria, &direccionMemoria);
-	listen(socketMemoria, 3);
+	inicializar_estructuras_administrativas(configuracion);
+
+	pthread_t thread_consola;
+	pthread_t thread_kernel;
+	pthread_t thread_cpu;
+
+	creoThread(&thread_consola, inicializar_consola, configuracion);
+	creoThread(&thread_kernel, handler_kernel, threadSocketInfoMemoria);
+	creoThread(&thread_cpu, handler_cpu, threadSocketInfoMemoria);
+
+	pthread_join(thread_consola, NULL);
+	pthread_join(thread_kernel, NULL);
+	pthread_join(thread_cpu, NULL);
+
+	free(configuracion);
+	free(threadSocketInfoMemoria);
+
+	shutdown(socketMemoria, 0);
+	close(socketMemoria);
+
+	return EXIT_SUCCESS;
+}
+
+void * handler_kernel(void * args){
+	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
+
+	while (1) {
+		int socketCliente;
+		struct sockaddr_in direccionCliente;
+		socklen_t length = sizeof direccionCliente;
+
+		socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+
+		handShake(threadSocketInfoMemoria->sock, &socketCliente, 100, 201, 299, "Kernel");
+
+		shutdown(socketCliente, 0);
+		close(socketCliente);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+void * handler_cpu(void * args){
+	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
+
+	while (1) {
+		int socketCliente;
+		struct sockaddr_in direccionCliente;
+		socklen_t length = sizeof direccionCliente;
+
+		socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+
+		handShake(threadSocketInfoMemoria->sock, &socketCliente, 500, 202, 499, "CPU");
+
+		shutdown(socketCliente, 0);
+		close(socketCliente);
+	}
+
+	return EXIT_SUCCESS;
+}
+
+/*
 
 	inicializar_estructuras_administrativas(configuracion);
 
 	creoThread(&hilo_consola_memoria, inicializar_consola, NULL);
 
-	/*
+
 
 	if (pthread_create(&hilo_consola_memoria, NULL, inicializar_consola, NULL) < 0) {
 		perror("Error al crear el Hilo de Consola Memoria");
 		return EXIT_FAILURE;
-	}*/
+	}
 
 	while ((socketCliente = accept(socketMemoria, (struct sockaddr *) &direccionMemoria, (socklen_t*) &length))) {
 		pthread_t thread_id;
 
 		creoThread(&thread_id, handler_conexion, (void *) socketCliente);
-		/*
+
 		if (pthread_create(&thread_id, NULL, handler_conexion, (void*) &socketCliente)< 0) {
 			perror("Error al crear el Hilo");
 			return 1;
 		}
-		*/
+
 	}
 
 	if (socketCliente < 0) {
@@ -78,6 +149,9 @@ int main(int argc, char **argv) {
 	return EXIT_SUCCESS;
 }
 
+*/
+
+/*
 void* handler_conexion(void * socket_desc) {
 
 	//int socketHandler;
@@ -141,7 +215,11 @@ void* handler_conexion(void * socket_desc) {
 	return EXIT_SUCCESS;
 }
 
+*/
+
 void * inicializar_consola(void* args){
+
+	Memoria_Config * configuracion = (Memoria_Config *) args;
 
 	while (1) {
 		puts("");
