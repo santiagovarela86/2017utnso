@@ -1,6 +1,7 @@
 //CODIGOS
 //300 CON A KER - HANDSHAKE
 //101 KER A CON - RESPUESTA HANDSHAKE
+//103 KER A CON - PID DE PROGRAMA
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,8 +13,19 @@
 #include <commons/string.h>
 #include "configuracion.h"
 #include "socketHelper.h"
+#include <pthread.h>
+
+typedef struct{
+	int pid;
+	int inicio;
+	int fin;
+	int duracion;
+	int mensajes;
+} programa;
 
 void iniciar_programa();
+void gestionar_programa(void* p);
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc , char **argv)
 {
@@ -97,7 +109,6 @@ int main(int argc , char **argv)
     while(1)
     {
 
-
         //Verifico si hubo respuesta del servidor
         if(recv(socketConsola, server_reply , 2000 , 0) < 0)
         {
@@ -111,7 +122,18 @@ int main(int argc , char **argv)
     return EXIT_SUCCESS;
 }
 
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
+	int resultado = pthread_create(threadID, NULL, threadHandler, args);
+
+	if (resultado < 0) {
+		perror("Error al crear el Hilo");
+		exit(errno);
+	}
+}
+
 void iniciar_programa(int socket){
+
+	pthread_t thread_id_programa;
 
 	puts("Ingrese nombre del programa");
 
@@ -127,10 +149,35 @@ void iniciar_programa(int socket){
 	while(!feof(ptr_fich1)){
 		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
 		buffer[num*sizeof(char)] = '\0';
-
 	}
 
 	enviarMensaje(&socket, buffer);
 
+	recv(socket, buffer, sizeof(buffer), 0);
+
+	char* codigo;
+	codigo = strtok(buffer, ";");
+
+	programa* program = malloc(sizeof(program));
+
+	if(atoi(codigo) == 103){
+		program->pid = atoi(strtok(NULL, ";"));
+		program->duracion = 0;
+		program->fin = 0;
+		program->inicio = 0;
+		program->mensajes = 0;
+		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
+	}else{
+		printf("Mensaje Inesperado\n");
+		return;
+	}
+
 	return;
+}
+
+void gestionar_programa(void* p){
+	programa* program = malloc(sizeof(programa));
+	program = (programa*) p;
+
+
 }
