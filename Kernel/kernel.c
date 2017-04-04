@@ -334,6 +334,9 @@ void * handler_conexion_consola(void * sock) {
 				enviarMensaje(&sock, consola_message);
 			}
 		}
+
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
+
 	printf("%s", consola_message);
 
 	//while (1) {}
