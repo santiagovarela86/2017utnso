@@ -14,7 +14,6 @@
 #include "configuracion.h"
 #include "socketHelper.h"
 #include <pthread.h>
-
 typedef struct{
 	int pid;
 	int inicio;
@@ -24,6 +23,9 @@ typedef struct{
 } programa;
 
 void iniciar_programa();
+void terminar_proceso();
+void desconectar_consola();
+void limpiar_mensajes();
 void gestionar_programa(void* p);
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
@@ -85,21 +87,26 @@ int main(int argc , char **argv)
 		int numero_correcto = 0 ;
 		int intentos_fallidos = 0;
 
-		while(numero_correcto == 0 && intentos_fallidos < 3){
+		while(numero_correcto == 0 && intentos_fallidos < 10){
 			scanf("%d",&numero);
 
 			if(numero == 1){
 				numero_correcto = 1;
-
 				iniciar_programa(socketConsola);
 
-				}else{
-					intentos_fallidos++;
-					puts("Por ahora solo funciona si ingresa 1");
-				}
+			}else if(numero == 2){
+				terminar_proceso();
+			}else if(numero == 3){
+				desconectar_consola();
+			}else if(numero == 4){
+				limpiar_mensajes();
+			}else{
+				intentos_fallidos++;
+				puts("Ingrese una opción de 1 a 4");
 			}
+		}
 
-			if(intentos_fallidos == 3){
+			if(intentos_fallidos == 10){
 				return EXIT_FAILURE;
 			}
 
@@ -129,6 +136,18 @@ void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * arg
 		perror("Error al crear el Hilo");
 		exit(errno);
 	}
+}
+
+void terminar_proceso(){
+	return;
+}
+
+void desconectar_consola(){
+	return;
+}
+
+void limpiar_mensajes(){
+	return;
 }
 
 void iniciar_programa(int socket){
