@@ -14,6 +14,7 @@
 #include "configuracion.h"
 #include "socketHelper.h"
 #include <pthread.h>
+
 typedef struct{
 	int pid;
 	int inicio;

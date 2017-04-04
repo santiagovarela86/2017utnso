@@ -14,33 +14,41 @@
 #include <commons/string.h>
 #include <pthread.h>
 #include "configuracion.h"
+#include "socketHelper.h"
 
 void* manejo_memoria();
 void* manejo_kernel();
 
-char* ip_memoria;
-int puerto_memoria;
-char* ip_kernel;
-int puerto_kernel;
+CPU_Config* configuracion;
+
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc , char **argv){
 
 	if (argc != 2){
-		printf("Error. Parametros incorrectos\n");
+		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
 
 	pthread_t thread_id_kernel;
 	pthread_t thread_id_memoria;
 
-	CPU_Config* config = leerConfiguracion(argv[1]);
-	imprimirConfiguracion(config);
+	configuracion = leerConfiguracion(argv[1]);
+	imprimirConfiguracion(configuracion);
 
-	ip_memoria = config->ip_memoria;
-	puerto_memoria = config->puerto_memoria;
-	ip_kernel = config->ip_kernel;
-	puerto_kernel = config->puerto_kernel;
+	/*
 
+	ip_memoria = configuracion->ip_memoria;
+	puerto_memoria = configuracion->puerto_memoria;
+	ip_kernel = configuracion->ip_kernel;
+	puerto_kernel = configuracion->puerto_kernel;
+
+	*/
+
+	creoThread(&thread_id_kernel, manejo_kernel(), NULL);
+	creoThread(&thread_id_memoria, manejo_memoria(), NULL);
+
+	/*
 	if(pthread_create(&thread_id_kernel, NULL, manejo_kernel, NULL) < 0)
 	{
 		perror("Error al crear el Hilo");
@@ -52,10 +60,25 @@ int main(int argc , char **argv){
 		perror("Error al crear el Hilo");
 		return 1;
 	}
+	*/
 
-	while(1){}
+	pthread_join(thread_id_kernel, NULL);
+	pthread_join(thread_id_memoria, NULL);
+
+	//while(1){}
+
+	free(configuracion);
 
     return EXIT_SUCCESS;
+}
+
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
+	int resultado = pthread_create(threadID, NULL, threadHandler, args);
+
+	if (resultado < 0) {
+		perror("Error al crear el Hilo");
+		exit(errno);
+	}
 }
 
 void* manejo_kernel(){
@@ -65,6 +88,10 @@ void* manejo_kernel(){
 	char message[1000] = "";
 	char server_reply[2000] = "";
 
+	creoSocket(&sock, &server, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+	puts("Socket de conexion a Kernel creado correctamente\n");
+
+	/*
 	//Creacion de Socket
 	sock = socket(AF_INET , SOCK_STREAM , 0);
 
@@ -79,17 +106,28 @@ void* manejo_kernel(){
 	server.sin_family = AF_INET;
 	server.sin_port = htons(puerto_kernel);
 
+	*/
+
 	printf("PUERTO KERNEL: %d\n", server.sin_port);
 
+	conectarSocket(&sock, &server);
+
+	/*
 
 	//Conexion al Servidor
 	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0){
 		perror("Fallo el intento de conexion al servidor\n");
 	    return 0;
 	}
+	*/
 
 	puts("Conectado al servidor\n");
 
+	strcpy(message, "500;");
+
+	enviarMensaje(&sock, message);
+
+	/*
 	message[0] = '5';
 	message[1] = '0';
 	message[2] = '0';
@@ -100,6 +138,7 @@ void* manejo_kernel(){
         puts("Fallo el envio al servidor");
         return EXIT_FAILURE;
     }
+    */
 
 	while((recv(sock, message, sizeof(message), 0)) > 0)
 	{
@@ -130,6 +169,11 @@ void* manejo_memoria(){
 	char message[1000] = "";
 	char server_reply[2000] = "";
 
+	creoSocket(&sock, &server, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);
+	puts("Socket de conexion a Memoria creado correctamente\n");
+
+	/*
+
 	//Creacion de Socket
 	sock = socket(AF_INET , SOCK_STREAM , 0);
 
@@ -144,24 +188,41 @@ void* manejo_memoria(){
 	server.sin_family = AF_INET;
 	server.sin_port = htons(puerto_memoria);
 
+	*/
+
+	conectarSocket(&sock, &server);
+
+	/*
+
 	//Conexion al Servidor
 	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0)	    {
 		perror("Fallo el intento de conexion al servidor\n");
 		return 0;
 	}
 
+	*/
+
 	puts("Conectado al servidor\n");
+	strcpy(message, "500;");
+
+	/*
 
 	message[0] = '5';
 	message[1] = '0';
 	message[2] = '0';
 	message[3] = ';';
 
+	*/
+
+	enviarMensaje(&sock, message);
+
+	/*
     if(send(sock , message , strlen(message) , 0) < 0)
     {
         puts("Fallo el envio al servidor");
         return EXIT_FAILURE;
     }
+    */
 
 	while((recv(sock, message, sizeof(message), 0)) > 0)
 	{

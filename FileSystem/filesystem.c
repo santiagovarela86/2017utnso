@@ -29,10 +29,8 @@ int main(int argc, char** argv) {
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
 	FileSystem_Config * configuracion;
-	char* pathConfiguracion;
 
-	pathConfiguracion = argv[1];
-	configuracion = leerConfiguracion(pathConfiguracion);
+	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);

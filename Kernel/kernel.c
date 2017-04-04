@@ -20,6 +20,9 @@
 #include "kernel.h"
 #include "socketHelper.h"
 
+#define MAXCON 10
+#define MAXCPU 10
+
 int conexionesCPU = 0;
 int conexionesConsola = 0;
 Kernel_Config* configuracion;
@@ -61,6 +64,15 @@ int main(int argc, char **argv) {
 	free(configuracion);
 
 	return EXIT_SUCCESS;
+}
+
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
+	int resultado = pthread_create(threadID, NULL, threadHandler, args);
+
+	if (resultado < 0) {
+		perror("Error al crear el Hilo");
+		exit(errno);
+	}
 }
 
 void * inicializar_consola(void* args){
@@ -192,15 +204,6 @@ void log_console_in_disk(char* mensaje) {
     log_destroy(logger);
 }
 
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
-	int resultado = pthread_create(threadID, NULL, threadHandler, args);
-
-	if (resultado < 0) {
-		perror("Error al crear el Hilo");
-		exit(errno);
-	}
-}
-
 void* manejo_filesystem(void *args) {
 	char message[1000] = "";
 	char* codigo;
@@ -290,17 +293,20 @@ void* manejo_memoria(void *args) {
 	return EXIT_SUCCESS;
 }
 
-void* hilo_conexiones_consola(void *args) {
+void * hilo_conexiones_consola(void *args) {
 
 	int socketKernelConsola;
 	struct sockaddr_in direccionKernel;
 	int socketClienteConsola;
 	struct sockaddr_in direccionConsola;
-	int length = 0;
+	socklen_t length;
 
 	creoSocket(&socketKernelConsola, &direccionKernel, INADDR_ANY, configuracion->puerto_programa);
 	bindSocket(&socketKernelConsola, &direccionKernel);
-	listen(socketKernelConsola, 3);
+	listen(socketKernelConsola, MAXCON);
+	//generoHilosPorConexion(&socketKernelConsola, &socketClienteConsola, &direccionConsola, handler_conexion_consola);
+
+
 
 	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
 		pthread_t thread_proceso_consola;
@@ -312,6 +318,8 @@ void* hilo_conexiones_consola(void *args) {
 			return EXIT_FAILURE;
 		}
 	}
+
+
 
 	return EXIT_SUCCESS;
 }
@@ -397,11 +405,14 @@ void* hilo_conexiones_cpu(void *args) {
 	struct sockaddr_in direccionKernel;
 	int socketClienteCPU;
 	struct sockaddr_in direccionCPU;
-	int length = 0;
+	socklen_t length;
 
 	creoSocket(&socketKernelCPU, &direccionKernel, INADDR_ANY, configuracion->puerto_cpu);
 	bindSocket(&socketKernelCPU, &direccionKernel);
-	listen(socketKernelCPU, 3);
+	listen(socketKernelCPU, MAXCPU);
+	//generoHilosPorConexion(&socketKernelCPU, &socketClienteCPU, &direccionCPU, handler_conexion_cpu);
+
+
 
 	while ((socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length))) {
 			pthread_t thread_proceso_cpu;
@@ -436,8 +447,9 @@ void* hilo_conexiones_cpu(void *args) {
 		return EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;
 	*/
+
+	return EXIT_SUCCESS;
 }
 
 void * handler_conexion_cpu(void * sock) {
