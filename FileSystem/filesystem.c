@@ -14,7 +14,8 @@
 
 #define MAXBUF 1024
 
-void esperoKernel(int * socketFileSystem, char * buffer);
+void esperoKernel(int * socketFileSystem, struct sockaddr_in * direccionFileSystem, char * buffer);
+
 void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado);
 
 int main(int argc, char** argv) {
@@ -37,20 +38,25 @@ int main(int argc, char** argv) {
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
-	esperoKernel(&socketFileSystem, buffer);
+	esperoKernel(&socketFileSystem, &direccionSocket, buffer);
 
 	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
 	return EXIT_SUCCESS;
 }
 
-void esperoKernel(int * socketFileSystem, char * buffer) {
+void esperoKernel(int * socketFileSystem, struct sockaddr_in * direccionFileSystem, char * buffer) {
 	while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
-		int length = 0;
+		socklen_t length = sizeof direccionCliente;
 
-		socketCliente = accept(*socketFileSystem, (struct sockaddr_in *) &direccionCliente, (socklen_t*) &length);
+		socketCliente = accept(*socketFileSystem, (struct sockaddr *) &direccionCliente, &length);
+
+		//char* test = inet_ntoa(direccionCliente.sin_addr);
+		//char* test2 = inet_ntoa(direccionFileSystem->sin_addr);
+		//socketCliente = accept(*socketFileSystem, direccionFileSystem, (socklen_t*) &length);
+		//socketCliente = accept(*socketFileSystem, (struct sockaddr_in *) &direccionCliente, (socklen_t*) &length);
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
 		handShake(&socketFileSystem, &socketCliente, 100, 401, 499);
