@@ -321,38 +321,41 @@ void * handler_conexion_consola(void * sock) {
 	char consola_message[1000] = "";
 	char* codigo;
 
-	while ((recv((int) sock, consola_message, sizeof(consola_message), 0)) > 0) {
-		codigo = strtok(consola_message, ";");
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
 
-		if (atoi(codigo) == 300) {
-			printf("Se acepto una consola \n");
-			conexionesConsola++;
-			printf("Tengo %d Consolas conectadas \n", conexionesConsola);
+	codigo = strtok(consola_message, ";");
 
-			consola_message[0] = '1';
-			consola_message[1] = '0';
-			consola_message[2] = '1';
-			consola_message[3] = ';';
+	if (atoi(codigo) == 300) {
+		printf("Se acepto una consola \n");
+		conexionesConsola++;
+		printf("Tengo %d Consolas conectadas \n", conexionesConsola);
 
-			if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-				puts("Fallo el envio al servidor");
-				return EXIT_FAILURE;
-			}
-		} else {
-			printf("Se rechazo una conexion incorrecta \n");
+		consola_message[0] = '1';
+		consola_message[1] = '0';
+		consola_message[2] = '1';
+		consola_message[3] = ';';
 
-			consola_message[0] = '1';
-			consola_message[1] = '9';
-			consola_message[2] = '9';
-			consola_message[3] = ';';
-
-			if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-				puts("Fallo el envio al servidor");
-				return EXIT_FAILURE;
-			}
+		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
+			puts("Fallo el envio al servidor");
+			return EXIT_FAILURE;
 		}
+	} else {
+		printf("Se rechazo una conexion incorrecta \n");
 
+		consola_message[0] = '1';
+		consola_message[1] = '9';
+		consola_message[2] = '9';
+		consola_message[3] = ';';
+
+		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
+			puts("Fallo el envio al servidor");
+			return EXIT_FAILURE;
+		}
 	}
+
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
+
+	printf("%s", consola_message);
 
 	while (1) {}
 
