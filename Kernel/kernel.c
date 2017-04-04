@@ -20,8 +20,8 @@
 #include "kernel.h"
 #include "socketHelper.h"
 
-int conexionesCPU;
-int conexionesConsola;
+int conexionesCPU = 0;
+int conexionesConsola = 0;
 Kernel_Config* configuracion;
 int grado_multiprogramacion;
 pthread_mutex_t mutex_grado_multiprog = PTHREAD_MUTEX_INITIALIZER;
@@ -321,6 +321,34 @@ void * handler_conexion_consola(void * sock) {
 	char consola_message[1000] = "";
 	char* codigo;
 
+	while((recv((int) sock, consola_message, sizeof(consola_message), 0)) > 0){
+			codigo = strtok(consola_message, ";");
+
+			if(atoi(codigo) == 300){
+				printf("Se acepto una consola \n");
+				conexionesConsola++;
+				printf("Tengo %d Consolas conectadas \n", conexionesConsola);
+				strcpy(consola_message, "101;");
+				enviarMensaje(&sock, consola_message);
+			}else{
+				printf("Se rechazo una conexion incorrecta \n");
+				strcpy(consola_message, "199;");
+				enviarMensaje(&sock, consola_message);
+			}
+		}
+	printf("%s", consola_message);
+
+	//while (1) {}
+
+	return EXIT_SUCCESS;
+}
+
+/*
+void * handler_conexion_consola(void * sock) {
+
+	char consola_message[1000] = "";
+	char* codigo;
+
 	recv((int) sock, consola_message, sizeof(consola_message), 0);
 
 	codigo = strtok(consola_message, ";");
@@ -361,6 +389,7 @@ void * handler_conexion_consola(void * sock) {
 
 	return EXIT_SUCCESS;
 }
+*/
 
 void* hilo_conexiones_cpu(void *args) {
 
@@ -374,6 +403,18 @@ void* hilo_conexiones_cpu(void *args) {
 	bindSocket(&socketKernelCPU, &direccionKernel);
 	listen(socketKernelCPU, 3);
 
+	while ((socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length))) {
+			pthread_t thread_proceso_cpu;
+
+			creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
+
+			if (socketClienteCPU < 0) {
+				perror("Fallo en el manejo del hilo CPU");
+				return EXIT_FAILURE;
+			}
+		}
+
+	/*
 	int creado_correctamente = 0;
 
 	while (creado_correctamente == 0) {
@@ -396,8 +437,37 @@ void* hilo_conexiones_cpu(void *args) {
 	}
 
 	return EXIT_SUCCESS;
+	*/
 }
 
+void * handler_conexion_cpu(void * sock) {
+
+	char cpu_message[1000] = "";
+	char* codigo;
+
+	while((recv((int) sock, cpu_message, sizeof(cpu_message), 0)) > 0){
+			codigo = strtok(cpu_message, ";");
+
+			if(atoi(codigo) == 500){
+				printf("Se acepto una CPU \n");
+				conexionesCPU++;
+				printf("Tengo %d CPUs conectados \n", conexionesCPU);
+				strcpy(cpu_message, "102;");
+				enviarMensaje(&sock, cpu_message);
+			}else{
+				printf("Se rechazo una conexion incorrecta \n");
+				strcpy(cpu_message, "199;");
+				enviarMensaje(&sock, cpu_message);
+			}
+		}
+	printf("%s", cpu_message);
+
+	//while (1) {}
+
+	return EXIT_SUCCESS;
+}
+
+/*
 void* handler_conexion_cpu(void * sock) {
 
 	char cpu_message[1000] = "";
@@ -443,3 +513,4 @@ void* handler_conexion_cpu(void * sock) {
 
 	return EXIT_SUCCESS;
 }
+*/
