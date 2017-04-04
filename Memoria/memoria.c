@@ -15,7 +15,7 @@ int tiempo_retardo;
 Memoria_Config * configuracion;
 pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
 t_list* tabla_paginas;
-t_list* cache;
+t_queue* memoria_cache;
 
 int main(int argc, char **argv) {
 
@@ -176,7 +176,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 2:
 					accion_correcta = 1;
-					log_cache_in_disk(cache);
+					log_cache_in_disk(memoria_cache);
 					break;
 				case 3:
 					accion_correcta = 1;
@@ -188,7 +188,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 5:
 					accion_correcta = 1;
-					limpiar_memoria_cache();
+					flush_cola_cache(memoria_cache);
 					break;
 				case 6:
 					puts("***********************************************************");
@@ -231,13 +231,11 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
 
-	t_list* tabla_paginas = list_create();
-	t_list* memoria_cache = list_create();
-
-
+	tabla_paginas = list_create();
+	memoria_cache = crear_cola_cache();
 }
 
-void log_cache_in_disk(t_list* cache) {
+void log_cache_in_disk(t_queue* cache) {
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
 
     log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");
@@ -265,9 +263,5 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
     log_destroy(logger);
 
     printf("contenido_memoria.log generado con exito! \n");
-}
-
-void limpiar_memoria_cache(){
-	list_destroy(cache);
 }
 

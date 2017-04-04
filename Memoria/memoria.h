@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include "cache.h"
 
 #include "helperFunctions.h"
 
@@ -31,16 +32,10 @@ typedef struct {
 	int nro_pagina;
 } t_pagina_invertida;
 
-typedef struct {
-	int pid;
-	int nro_pagina;
-	char* contenido_pagina;
-} t_entrada_cache;
-
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);
-void log_cache_in_disk(t_list*);
+void log_cache_in_disk(t_queue*);
 void log_estructuras_memoria_in_disk(t_list*);
 void log_contenido_memoria_in_disk(t_list*);
 void limpiar_memoria_cache();
