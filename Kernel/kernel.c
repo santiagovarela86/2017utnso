@@ -319,7 +319,7 @@ void * handler_conexion_consola(void * sock) {
 	char consola_message[1000] = "";
 	char* codigo;
 
-	while((recv((int) sock, consola_message, sizeof(consola_message), 0)) > 0){
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
 			codigo = strtok(consola_message, ";");
 
 			if(atoi(codigo) == 300){
@@ -332,8 +332,8 @@ void * handler_conexion_consola(void * sock) {
 				printf("Se rechazo una conexion incorrecta \n");
 				strcpy(consola_message, "199;");
 				enviarMensaje(&sock, consola_message);
-			}
-		}
+	}
+
 
 	recv((int) sock, consola_message, sizeof(consola_message), 0);
 

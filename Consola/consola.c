@@ -157,7 +157,9 @@ void iniciar_programa(int socket){
 	char buffer[1000 + 1];
 
 	while(!feof(ptr_fich1)){
+
 		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+
 		buffer[num*sizeof(char)] = '\0';
 	}
 
