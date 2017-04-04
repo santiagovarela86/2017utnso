@@ -13,6 +13,8 @@
 #include "configuracion.h"
 #include "socketHelper.h"
 
+void iniciar_programa();
+
 int main(int argc , char **argv)
 {
 
@@ -76,22 +78,8 @@ int main(int argc , char **argv)
 
 			if(numero == 1){
 				numero_correcto = 1;
-				puts("Ingrese nombre del programa");
 
-				char directorio[1000];
-
-				scanf("%s", directorio);
-
-				FILE *ptr_fich1 = fopen(directorio, "r");
-
-				int num;
-				char buffer[1000 + 1];
-
-				while(!feof(ptr_fich1)){
-					num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
-					buffer[num*sizeof(char)] = '\0';
-					printf("%s \n",buffer);
-				}
+				iniciar_programa(socketConsola);
 
 				}else{
 					intentos_fallidos++;
@@ -123,4 +111,26 @@ int main(int argc , char **argv)
     return EXIT_SUCCESS;
 }
 
+void iniciar_programa(int socket){
 
+	puts("Ingrese nombre del programa");
+
+	char directorio[1000];
+
+	scanf("%s", directorio);
+
+	FILE *ptr_fich1 = fopen(directorio, "r");
+
+	int num;
+	char buffer[1000 + 1];
+
+	while(!feof(ptr_fich1)){
+		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+		buffer[num*sizeof(char)] = '\0';
+
+	}
+
+	enviarMensaje(&socket, buffer);
+
+	return;
+}
