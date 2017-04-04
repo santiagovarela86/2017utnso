@@ -180,14 +180,12 @@ void iniciar_programa(int socket){
 	programa* program = malloc(sizeof(program));
 
 	if(atoi(codigo) == 103){
-
 		program->pid = atoi(strtok(NULL, ";"));
 		program->duracion = 0;
 		program->fin = 0;
 		program->inicio = 0;
 		program->mensajes = 0;
 		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
-
 	}else{
 		printf("Mensaje Inesperado\n");
 		return;
