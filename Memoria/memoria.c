@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	while ((socketCliente = accept(socketMemoria, (struct sockaddr *) &direccionMemoria, (socklen_t*) &length))) {
 		pthread_t thread_id;
 
-		creoThread(&thread_id, handler_conexion, (void *) &socketCliente);
+		creoThread(&thread_id, handler_conexion, (void *) socketCliente);
 		/*
 		if (pthread_create(&thread_id, NULL, handler_conexion, (void*) &socketCliente)< 0) {
 			perror("Error al crear el Hilo");
@@ -89,13 +89,13 @@ void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * arg
 	}
 }
 
-void* handler_conexion(void *socket_desc) {
+void* handler_conexion(void * socket_desc) {
 
-	int socketHandler;
+	//int socketHandler;
 	char consola_message[1000] = "";
 	char* codigo;
 
-	while ((recv(socketHandler, consola_message, sizeof(consola_message), 0)) > 0) {
+	while ((recv((int) socket_desc, consola_message, sizeof(consola_message), 0)) > 0) {
 		codigo = strtok(consola_message, ";");
 
 		if (atoi(codigo) == 100) {
@@ -108,7 +108,7 @@ void* handler_conexion(void *socket_desc) {
 			consola_message[2] = '1';
 			consola_message[3] = ';';
 
-			if (send(socketHandler, consola_message, strlen(consola_message), 0) < 0) {
+			if (send((int) socket_desc, consola_message, strlen(consola_message), 0) < 0) {
 				puts("Fallo el envio al servidor");
 				exit(errno);
 				//return EXIT_FAILURE;
@@ -124,7 +124,7 @@ void* handler_conexion(void *socket_desc) {
 			consola_message[2] = '2';
 			consola_message[3] = ';';
 
-			if (send(socketHandler, consola_message,
+			if (send((int) socket_desc, consola_message,
 					strlen(consola_message), 0) < 0) {
 				puts("Fallo el envio al servidor");
 				exit(errno);
@@ -138,7 +138,7 @@ void* handler_conexion(void *socket_desc) {
 			consola_message[2] = '9';
 			consola_message[3] = ';';
 
-			if (send(socketHandler, consola_message, strlen(consola_message), 0) < 0) {
+			if (send((int) socket_desc, consola_message, strlen(consola_message), 0) < 0) {
 				puts("Fallo el envio al servidor");
 				exit(errno);
 				//return EXIT_FAILURE;
@@ -237,7 +237,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	//Seria el tamanio del marco * la cantidad de marcos
 
 	int tamanio_memoria = config->marcos * config->marco_size;
-	int bloque_memoria = malloc(sizeof(tamanio_memoria));
+	int bloque_memoria = malloc(sizeof(tamanio_memoria)); //no deberia ser int * bloque_memoria esto?
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
