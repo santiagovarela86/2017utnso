@@ -17,12 +17,10 @@ pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
 t_list* tabla_paginas;
 t_list* cache;
 
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
-
 int main(int argc, char **argv) {
 
 	if (argc != 2) {
-		printf("Error. Parametros incorrectos \n");
+		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
 
@@ -78,15 +76,6 @@ int main(int argc, char **argv) {
 	pthread_join(hilo_consola_memoria, NULL);
 
 	return EXIT_SUCCESS;
-}
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
-	int resultado = pthread_create(threadID, NULL, threadHandler, args);
-
-	if (resultado < 0) {
-		perror("Error al crear el Hilo");
-		exit(errno);
-	}
 }
 
 void* handler_conexion(void * socket_desc) {

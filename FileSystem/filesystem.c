@@ -9,14 +9,11 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "configuracion.h"
-#include "socketHelper.h"
 #include <errno.h>
+#include <pthread.h>
+#include "helperFunctions.h"
 
-#define MAXBUF 1024
-
-void esperoKernel(int * socketFileSystem, struct sockaddr_in * direccionFileSystem, char * buffer);
-
-void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado);
+void * handler_kernel(void * args);
 
 int main(int argc, char** argv) {
 
@@ -25,65 +22,53 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-	char buffer[MAXBUF];
-	int socketFileSystem;
-	struct sockaddr_in direccionSocket;
 	FileSystem_Config * configuracion;
-
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
+	int socketFileSystem;
+	struct sockaddr_in direccionSocket;
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
-	esperoKernel(&socketFileSystem, &direccionSocket, buffer);
+
+	threadSocketInfo * threadSocketInfoKernel;
+	threadSocketInfoKernel = malloc(sizeof(struct threadSocketInfo));
+	threadSocketInfoKernel->sock = socketFileSystem;
+	threadSocketInfoKernel->direccion = direccionSocket;
+
+	pthread_t thread_kernel;
+	creoThread(&thread_kernel, handler_kernel, threadSocketInfoKernel);
+
+	pthread_join(thread_kernel, NULL);
+
+	free(configuracion);
+	free(threadSocketInfoKernel);
 
 	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
+
 	return EXIT_SUCCESS;
 }
 
-void esperoKernel(int * socketFileSystem, struct sockaddr_in * direccionFileSystem, char * buffer) {
+void * handler_kernel(void * args){
+	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
+
 	while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
+		//socklen_t length = sizeof(socklen_t);
 		socklen_t length = sizeof direccionCliente;
 
-		socketCliente = accept(*socketFileSystem, (struct sockaddr *) &direccionCliente, &length);
+		socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
 
-		//char* test = inet_ntoa(direccionCliente.sin_addr);
-		//char* test2 = inet_ntoa(direccionFileSystem->sin_addr);
-		//socketCliente = accept(*socketFileSystem, direccionFileSystem, (socklen_t*) &length);
-		//socketCliente = accept(*socketFileSystem, (struct sockaddr_in *) &direccionCliente, (socklen_t*) &length);
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
-		handShake(&socketFileSystem, &socketCliente, 100, 401, 499);
-
-		//send(socketCliente, buffer, recv(socketCliente, buffer, MAXBUF, 0), 0);
+		handShake(threadSocketInfoKernel->sock, &socketCliente, 100, 401, 499, "Kernel");
 
 		shutdown(socketCliente, 0);
 		close(socketCliente);
 	}
-}
 
-void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado){
-	char message[MAXBUF];
-	char * codigo;
-
-	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
-		codigo = strtok(message, ";");
-
-		if(atoi(codigo) == codigoEsperado){
-			printf("Se acepto la conexion del Kernel \n");
-
-			strcpy(message, strcat(string_itoa(codigoAceptado), ";"));
-			enviarMensaje(socketCliente, message);
-
-		}else{
-			printf("Se rechazo una conexion incorrecta \n");
-
-			strcpy(message, strcat(string_itoa(codigoRechazado), ";"));
-			enviarMensaje(socketCliente, message);
-		}
-	}
+	return EXIT_SUCCESS;
 }

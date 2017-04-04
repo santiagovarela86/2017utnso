@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "helperFunctions.h"
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -57,5 +58,36 @@ void enviarMensaje(int * sock, char * message){
 	if (resultado < 0) {
 		puts("Error al enviar mensaje");
 		exit(errno);
+	}
+}
+
+void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
+	int resultado = pthread_create(threadID, NULL, threadHandler, args);
+
+	if (resultado < 0) {
+		perror("Error al crear el Hilo");
+		exit(errno);
+	}
+}
+
+void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado, char * componente){
+	char message[MAXBUF];
+	char * codigo;
+
+	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+		codigo = strtok(message, ";");
+
+		if(atoi(codigo) == codigoEsperado){
+			printf("Se acepto la conexion del %s \n", componente);
+
+			strcpy(message, strcat(string_itoa(codigoAceptado), ";"));
+			enviarMensaje(socketCliente, message);
+
+		}else{
+			printf("Se rechazo la conexion del %s \n", componente);
+
+			strcpy(message, strcat(string_itoa(codigoRechazado), ";"));
+			enviarMensaje(socketCliente, message);
+		}
 	}
 }

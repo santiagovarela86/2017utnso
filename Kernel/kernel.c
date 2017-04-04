@@ -18,7 +18,8 @@
 #include <pthread.h>
 #include "configuracion.h"
 #include "kernel.h"
-#include "socketHelper.h"
+
+#include "helperFunctions.h"
 
 #define MAXCON 10
 #define MAXCPU 10
@@ -28,8 +29,6 @@ int conexionesConsola = 0;
 Kernel_Config* configuracion;
 int grado_multiprogramacion;
 pthread_mutex_t mutex_grado_multiprog = PTHREAD_MUTEX_INITIALIZER;
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc, char **argv) {
 
@@ -64,15 +63,6 @@ int main(int argc, char **argv) {
 	free(configuracion);
 
 	return EXIT_SUCCESS;
-}
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
-	int resultado = pthread_create(threadID, NULL, threadHandler, args);
-
-	if (resultado < 0) {
-		perror("Error al crear el Hilo");
-		exit(errno);
-	}
 }
 
 void * inicializar_consola(void* args){

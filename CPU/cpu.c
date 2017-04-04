@@ -14,14 +14,12 @@
 #include <commons/string.h>
 #include <pthread.h>
 #include "configuracion.h"
-#include "socketHelper.h"
+#include "helperFunctions.h"
 
 void* manejo_memoria();
 void* manejo_kernel();
 
 CPU_Config* configuracion;
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc , char **argv){
 
@@ -70,15 +68,6 @@ int main(int argc , char **argv){
 	free(configuracion);
 
     return EXIT_SUCCESS;
-}
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
-	int resultado = pthread_create(threadID, NULL, threadHandler, args);
-
-	if (resultado < 0) {
-		perror("Error al crear el Hilo");
-		exit(errno);
-	}
 }
 
 void* manejo_kernel(){

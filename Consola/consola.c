@@ -12,8 +12,8 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include "configuracion.h"
-#include "socketHelper.h"
 #include <pthread.h>
+#include "helperFunctions.h"
 
 typedef struct{
 	int pid;
@@ -28,7 +28,6 @@ void terminar_proceso();
 void desconectar_consola();
 void limpiar_mensajes();
 void gestionar_programa(void* p);
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 
 int main(int argc , char **argv)
 {
@@ -128,15 +127,6 @@ int main(int argc , char **argv)
 
     close(socketConsola);
     return EXIT_SUCCESS;
-}
-
-void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args) {
-	int resultado = pthread_create(threadID, NULL, threadHandler, args);
-
-	if (resultado < 0) {
-		perror("Error al crear el Hilo");
-		exit(errno);
-	}
 }
 
 void terminar_proceso(){

@@ -18,7 +18,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include "socketHelper.h"
+
+#include "helperFunctions.h"
 
 typedef struct {
 	int socket_consola;
