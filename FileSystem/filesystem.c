@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <commons/bitarray.h>
 #include "configuracion.h"
 #include <errno.h>
 #include <pthread.h>
@@ -30,6 +31,9 @@ int main(int argc, char** argv) {
 	metadata_Config* metadata;
 	metadata = leerMetaData(configuracion->punto_montaje);
 	imprimirMetadata(metadata);
+
+	size_t tamanio_bitmap = (metadata->cantidad_bloques * metadata->tamanio_bloques);
+	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
 
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;

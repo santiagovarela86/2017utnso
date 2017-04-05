@@ -4,6 +4,7 @@
 #include <commons/string.h>
 #include <commons/config.h>
 #include <commons/collections/list.h>
+#include <commons/bitarray.h>
 #include <commons/log.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,5 +26,7 @@ void imprimirConfiguracion(FileSystem_Config* fileSystem);
 
 metadata_Config* leerMetaData(char* mnt);
 void imprimirMetadata(metadata_Config* meta);
+
+t_bitarray* crearBitmap(char* mnt, size_t tamanio);
 
 #endif /* CONFIGURACION_H_ */

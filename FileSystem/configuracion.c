@@ -32,9 +32,7 @@ metadata_Config* leerMetaData(char* mnt){
 	char* directorio = string_new();
 	directorio = string_substring(mnt,1,string_length(mnt));
 
-	string_append(&directorio,"Metadata/Metadata");
-
-	printf("el directorio es: %s\n", directorio);
+	string_append(&directorio,"Metadata/Metadata.bin");
 
 	t_config* metadata = config_create(directorio);
 
@@ -53,4 +51,27 @@ void imprimirMetadata(metadata_Config* meta) {
 	printf("TAMANIO BLOQUES: %d\n", meta->tamanio_bloques);
 	printf("CANTIDAD BLOQUES: %d\n", meta->cantidad_bloques);
 	printf("MAGIC NUMBER: %s\n", meta->magic_number);
+}
+
+t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
+	char* directorio = string_new();
+	directorio = string_substring(mnt,1,string_length(mnt));
+
+	string_append(&directorio,"Metadata/Bitmap.bin");
+
+	FILE *ptr_fich1 = fopen(directorio, "r");
+
+	int num;
+	char buffer[1000 + 1];
+
+	while(!feof(ptr_fich1)){
+
+		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
+
+		buffer[num*sizeof(char)] = '\0';
+	}
+
+	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
+
+	return bitmap;
 }
