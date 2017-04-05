@@ -28,7 +28,6 @@ int main(int argc, char** argv) {
 	imprimirConfiguracion(configuracion);
 
 	metadata_Config* metadata;
-
 	metadata = leerMetaData(configuracion->punto_montaje);
 	imprimirMetadata(metadata);
 
