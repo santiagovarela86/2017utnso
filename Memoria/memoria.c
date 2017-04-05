@@ -12,14 +12,14 @@
 int conexionesKernel = 0;
 int conexionesCPU = 0;
 int tiempo_retardo;
-//Memoria_Config * configuracion;
 pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
 int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
 
-void * handler_kernel(void * args);
-void * handler_cpu(void * args);
+void * hilo_conexiones_kernel(void * args);
+void * hilo_conexiones_cpu(void * args);
+void * handler_conexiones_cpu(void * args);
 
 int main(int argc, char **argv) {
 
@@ -27,9 +27,6 @@ int main(int argc, char **argv) {
 		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
-
-	//char message[1000] = "";
-	//char server_reply[2000] = "";
 
 	Memoria_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
@@ -57,11 +54,11 @@ int main(int argc, char **argv) {
 	pthread_t thread_cpu;
 
 	creoThread(&thread_consola, inicializar_consola, configuracion);
-	creoThread(&thread_kernel, handler_kernel, threadSocketInfoMemoria);
+	creoThread(&thread_kernel, hilo_conexiones_kernel, threadSocketInfoMemoria);
 
 	while(semaforo == 0){}
 
-	creoThread(&thread_cpu, handler_cpu, threadSocketInfoMemoria);
+	creoThread(&thread_cpu, hilo_conexiones_cpu, threadSocketInfoMemoria);
 
 	pthread_join(thread_consola, NULL);
 	pthread_join(thread_kernel, NULL);
@@ -76,151 +73,58 @@ int main(int argc, char **argv) {
 	return EXIT_SUCCESS;
 }
 
-void * handler_kernel(void * args){
+void * hilo_conexiones_kernel(void * args){
 	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
 
-		int socketCliente;
-		struct sockaddr_in direccionCliente;
-		socklen_t length = sizeof direccionCliente;
+	int socketCliente;
+	struct sockaddr_in direccionCliente;
+	socklen_t length = sizeof direccionCliente;
 
-		socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+	socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+
+	semaforo = 1;
+
+	printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+
+	handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
+
+	shutdown(socketCliente, 0);
+	close(socketCliente);
+
+	return EXIT_SUCCESS;
+}
+
+void * hilo_conexiones_cpu(void * args){
+	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
+
+	int socketCliente;
+	struct sockaddr_in direccionCliente;
+	socklen_t length = sizeof direccionCliente;
+
+	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)){
+		pthread_t thread_cpu;
+
+		if (socketCliente < 0) {
+			perror("Fallo en el manejo del hilo CPU");
+			return EXIT_FAILURE;
+		}
 
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
-		handShake(threadSocketInfoMemoria->sock, &socketCliente, 100, 201, 299, "Kernel");
+		creoThread(&thread_cpu, handler_conexiones_cpu, (void *) socketCliente);
+	}
 
-		semaforo = 1;
-
-		shutdown(socketCliente, 0);
-		close(socketCliente);
-
+	shutdown(socketCliente, 0);
+	close(socketCliente);
 
 	return EXIT_SUCCESS;
 }
 
-void * handler_cpu(void * args){
-	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
-
-	while (1) {
-		int socketCliente;
-		struct sockaddr_in direccionCliente;
-		socklen_t length = sizeof direccionCliente;
-
-		socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
-
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-
-		handShake(threadSocketInfoMemoria->sock, &socketCliente, 500, 202, 499, "CPU");
-
-		shutdown(socketCliente, 0);
-		close(socketCliente);
-	}
+void * handler_conexiones_cpu(void * socketCliente) {
+	handShakeListen(&socketCliente, "500", "202", "299", "CPU");
 
 	return EXIT_SUCCESS;
 }
-
-/*
-
-	inicializar_estructuras_administrativas(configuracion);
-
-	creoThread(&hilo_consola_memoria, inicializar_consola, NULL);
-
-
-
-	if (pthread_create(&hilo_consola_memoria, NULL, inicializar_consola, NULL) < 0) {
-		perror("Error al crear el Hilo de Consola Memoria");
-		return EXIT_FAILURE;
-	}
-
-	while ((socketCliente = accept(socketMemoria, (struct sockaddr *) &direccionMemoria, (socklen_t*) &length))) {
-		pthread_t thread_id;
-
-		creoThread(&thread_id, handler_conexion, (void *) socketCliente);
-
-		if (pthread_create(&thread_id, NULL, handler_conexion, (void*) &socketCliente)< 0) {
-			perror("Error al crear el Hilo");
-			return 1;
-		}
-
-	}
-
-	if (socketCliente < 0) {
-		perror("Fallo en la conexion");
-		return 1;
-	}
-
-	pthread_join(hilo_consola_memoria, NULL);
-
-	return EXIT_SUCCESS;
-}
-
-*/
-
-/*
-void* handler_conexion(void * socket_desc) {
-
-	//int socketHandler;
-	char consola_message[1000] = "";
-	char* codigo;
-
-	while ((recv((int) socket_desc, consola_message, sizeof(consola_message), 0)) > 0) {
-		codigo = strtok(consola_message, ";");
-
-		if (atoi(codigo) == 100) {
-			printf("Se acepto la conexion del Kernel \n");
-			conexionesKernel++;
-			printf("Tengo %d Kernel(s) conectado(s) \n", conexionesKernel);
-
-			consola_message[0] = '2';
-			consola_message[1] = '0';
-			consola_message[2] = '1';
-			consola_message[3] = ';';
-
-			if (send((int) socket_desc, consola_message, strlen(consola_message), 0) < 0) {
-				puts("Fallo el envio al servidor");
-				exit(errno);
-				//return EXIT_FAILURE;
-			}
-
-		} else if (atoi(codigo) == 500) {
-			printf("Se acepto la conexion de la CPU \n");
-			conexionesCPU++;
-			printf("Tengo %d CPU(s) conectado(s) \n", conexionesCPU);
-
-			consola_message[0] = '2';
-			consola_message[1] = '0';
-			consola_message[2] = '2';
-			consola_message[3] = ';';
-
-			if (send((int) socket_desc, consola_message,
-					strlen(consola_message), 0) < 0) {
-				puts("Fallo el envio al servidor");
-				exit(errno);
-				//return EXIT_FAILURE;
-			}
-		} else {
-			printf("Se rechazo una conexion incorrecta \n");
-
-			consola_message[0] = '2';
-			consola_message[1] = '9';
-			consola_message[2] = '9';
-			consola_message[3] = ';';
-
-			if (send((int) socket_desc, consola_message, strlen(consola_message), 0) < 0) {
-				puts("Fallo el envio al servidor");
-				exit(errno);
-				//return EXIT_FAILURE;
-			}
-		}
-	}
-
-	while (1) {
-	}
-
-	return EXIT_SUCCESS;
-}
-
-*/
 
 void * inicializar_consola(void* args){
 

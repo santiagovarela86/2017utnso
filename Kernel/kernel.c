@@ -18,7 +18,6 @@
 #include <pthread.h>
 #include "configuracion.h"
 #include "kernel.h"
-
 #include "helperFunctions.h"
 
 #define MAXCON 10
@@ -195,90 +194,43 @@ void log_console_in_disk(char* mensaje) {
 }
 
 void* manejo_filesystem(void *args) {
-	char message[1000] = "";
-	char* codigo;
-
 	int socketFS;
 	struct sockaddr_in direccionFS;
 
 	creoSocket(&socketFS, &direccionFS, inet_addr(configuracion->ip_fs), configuracion->puerto_fs);
-
 	puts("Socket de conexion a FileSystem creado correctamente\n");
 
 	conectarSocket(&socketFS, &direccionFS);
-
 	puts("Conectado al File System\n");
 
-	message[0] = '1';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
-
-	enviarMensaje(&socketFS, message);
-
-	while ((recv(socketFS, message, sizeof(message), 0)) > 0) {
-
-		codigo = strtok(message, ";");
-
-		if (atoi(codigo) == 401) {
-			printf("El File System acepto la conexion \n");
-			printf("\n");
-		} else {
-			printf("El File System rechazo la conexion \n");
-			return EXIT_FAILURE;
-		}
-
-	}
+	handShakeSend(&socketFS, "100", "401", "File System");
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
 
+	shutdown(socketFS, 0);
 	close(socketFS);
 	return EXIT_SUCCESS;
 }
 
 void* manejo_memoria(void *args) {
-
-	char message[1000] = "";
-	char* codigo;
-
 	int socketMemoria;
 	struct sockaddr_in direccionMemoria;
 
 	creoSocket(&socketMemoria, &direccionMemoria, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);
-
 	puts("Socket de conexion a Memoria creado correctamente\n");
 
 	conectarSocket(&socketMemoria, &direccionMemoria);
-
 	puts("Conectado a la Memoria\n");
 
-	message[0] = '1';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
-
-	enviarMensaje(&socketMemoria, message);
-
-	while ((recv(socketMemoria, message, sizeof(message), 0)) > 0) {
-
-		codigo = strtok(message, ";");
-
-		if (atoi(codigo) == 201) {
-			printf("La Memoria acepto la conexion \n");
-			printf("\n");
-		} else {
-			printf("La Memoria rechazo la conexion \n");
-			return EXIT_FAILURE;
-		}
-
-	}
+	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
 
+	shutdown(socketMemoria, 0);
 	close(socketMemoria);
 	return EXIT_SUCCESS;
 }
@@ -344,54 +296,6 @@ void * handler_conexion_consola(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-/*
-void * handler_conexion_consola(void * sock) {
-
-	char consola_message[1000] = "";
-	char* codigo;
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-
-	codigo = strtok(consola_message, ";");
-
-	if (atoi(codigo) == 300) {
-		printf("Se acepto una consola \n");
-		conexionesConsola++;
-		printf("Tengo %d Consolas conectadas \n", conexionesConsola);
-
-		consola_message[0] = '1';
-		consola_message[1] = '0';
-		consola_message[2] = '1';
-		consola_message[3] = ';';
-
-		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-			puts("Fallo el envio al servidor");
-			return EXIT_FAILURE;
-		}
-	} else {
-		printf("Se rechazo una conexion incorrecta \n");
-
-		consola_message[0] = '1';
-		consola_message[1] = '9';
-		consola_message[2] = '9';
-		consola_message[3] = ';';
-
-		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-			puts("Fallo el envio al servidor");
-			return EXIT_FAILURE;
-		}
-	}
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-
-	printf("%s", consola_message);
-
-	while (1) {}
-
-	return EXIT_SUCCESS;
-}
-*/
-
 void* hilo_conexiones_cpu(void *args) {
 
 	int socketKernelCPU;
@@ -417,30 +321,6 @@ void* hilo_conexiones_cpu(void *args) {
 				return EXIT_FAILURE;
 			}
 		}
-
-	/*
-	int creado_correctamente = 0;
-
-	while (creado_correctamente == 0) {
-		socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length);
-
-		if (socketClienteCPU != -1) {
-			creado_correctamente = 1;
-		}
-	}
-
-	while (socketClienteCPU) {
-		pthread_t thread_proceso_cpu;
-
-		creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
-	}
-
-	if (socketClienteCPU < 0) {
-		perror("Fallo en el manejo del hilo CPU");
-		return EXIT_FAILURE;
-	}
-
-	*/
 
 	return EXIT_SUCCESS;
 }
@@ -471,51 +351,3 @@ void * handler_conexion_cpu(void * sock) {
 
 	return EXIT_SUCCESS;
 }
-
-/*
-void* handler_conexion_cpu(void * sock) {
-
-	char cpu_message[1000] = "";
-	char* codigo;
-
-	while ((recv((int) sock, cpu_message, sizeof(cpu_message), 0)) > 0) {
-		//puts("Se acepto un CPU");
-		codigo = strtok(cpu_message, ";");
-
-		if (atoi(codigo) == 500) {
-			printf("Se acepto una CPU \n");
-			conexionesCPU++;
-			printf("Tengo %d CPU conectados \n", conexionesCPU);
-
-			cpu_message[0] = '1';
-			cpu_message[1] = '0';
-			cpu_message[2] = '2';
-			cpu_message[3] = ';';
-
-			if (send((int) sock, cpu_message, strlen(cpu_message), 0)
-					< 0) {
-				puts("Fallo el envio al servidor");
-				return EXIT_FAILURE;
-			}
-		} else {
-			printf("Se rechazo una conexion incorrecta \n");
-
-			cpu_message[0] = '1';
-			cpu_message[1] = '9';
-			cpu_message[2] = '9';
-			cpu_message[3] = ';';
-
-			if (send((int) sock, cpu_message, strlen(cpu_message), 0)
-					< 0) {
-				puts("Fallo el envio al servidor");
-				return EXIT_FAILURE;
-			}
-		}
-
-	}
-
-	while (1) {}
-
-	return EXIT_SUCCESS;
-}
-*/

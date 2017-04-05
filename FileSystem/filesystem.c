@@ -14,7 +14,7 @@
 #include <pthread.h>
 #include "helperFunctions.h"
 
-void * handler_kernel(void * args);
+void * hilo_conexiones_kernel(void * args);
 void atender_peticiones(int socket);
 
 int main(int argc, char** argv) {
@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
 	threadSocketInfoKernel->direccion = direccionSocket;
 
 	pthread_t thread_kernel;
-	creoThread(&thread_kernel, handler_kernel, threadSocketInfoKernel);
+	creoThread(&thread_kernel, hilo_conexiones_kernel, threadSocketInfoKernel);
 
 	pthread_join(thread_kernel, NULL);
 
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 	return EXIT_SUCCESS;
 }
 
-void * handler_kernel(void * args){
+void * hilo_conexiones_kernel(void * args){
 	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
 
 	while (1) {

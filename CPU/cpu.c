@@ -34,31 +34,8 @@ int main(int argc , char **argv){
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
-	/*
-
-	ip_memoria = configuracion->ip_memoria;
-	puerto_memoria = configuracion->puerto_memoria;
-	ip_kernel = configuracion->ip_kernel;
-	puerto_kernel = configuracion->puerto_kernel;
-
-	*/
-
 	creoThread(&thread_id_kernel, manejo_kernel, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
-
-	/*
-	if(pthread_create(&thread_id_kernel, NULL, manejo_kernel, NULL) < 0)
-	{
-		perror("Error al crear el Hilo");
-		return 1;
-	}
-
-	if(pthread_create( &thread_id_memoria, NULL, manejo_memoria, NULL) < 0)
-	{
-		perror("Error al crear el Hilo");
-		return 1;
-	}
-	*/
 
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
@@ -70,167 +47,44 @@ int main(int argc , char **argv){
     return EXIT_SUCCESS;
 }
 
-void * manejo_kernel(void * args){
-    char* codigo;
-	int sock;
-	struct sockaddr_in server;
-	char message[1000] = "";
-	char server_reply[2000] = "";
+void* manejo_kernel(void *args) {
+	int socketKernel;
+	struct sockaddr_in direccionKernel;
 
-	creoSocket(&sock, &server, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
-	puts("Socket de conexion a Kernel creado correctamente\n");
+	creoSocket(&socketKernel, &direccionKernel, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+	puts("Socket de conexion al Kernel creado correctamente\n");
 
-	/*
-	//Creacion de Socket
-	sock = socket(AF_INET , SOCK_STREAM , 0);
+	conectarSocket(&socketKernel, &direccionKernel);
+	puts("Conectado al Kernel\n");
 
-	if (sock == -1){
-		printf("Error. No se pudo crear el socket de conexion\n");
-	    return 0;
-	}
-
-	puts("Socket de conexion a Kernel creado correctamente\n");
-
-	server.sin_addr.s_addr = inet_addr(ip_kernel);
-	server.sin_family = AF_INET;
-	server.sin_port = htons(puerto_kernel);
-
-	*/
-
-	printf("PUERTO KERNEL: %d\n", server.sin_port);
-
-	conectarSocket(&sock, &server);
-
-	/*
-
-	//Conexion al Servidor
-	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0){
-		perror("Fallo el intento de conexion al servidor\n");
-	    return 0;
-	}
-	*/
-
-	puts("Conectado al servidor\n");
-
-	strcpy(message, "500;");
-
-	enviarMensaje(&sock, message);
-
-	/*
-	message[0] = '5';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
-
-    if(send(sock , message , strlen(message) , 0) < 0)
-    {
-        puts("Fallo el envio al servidor");
-        return EXIT_FAILURE;
-    }
-    */
-
-	while((recv(sock, message, sizeof(message), 0)) > 0)
-	{
-
-		codigo = strtok(message, ";");
-
-		if(atoi(codigo) == 102){
-			printf("El Kernel acepto la conexion \n");
-			printf("\n");
-		}else{
-			printf("Conexion rechazada \n");
-			return EXIT_FAILURE;
-		}
-
-	}
+	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
 	//Loop para seguir comunicado con el servidor
-	while(1){}
+	while (1) {
+	}
 
-	close(sock);
-	return 0;
+	shutdown(socketKernel, 0);
+	close(socketKernel);
+	return EXIT_SUCCESS;
 }
 
 void* manejo_memoria(void * args){
-	char* codigo;
-	int sock;
-	struct sockaddr_in server;
-	char message[1000] = "";
-	char server_reply[2000] = "";
+	int socketMemoria;
+	struct sockaddr_in direccionMemoria;
 
-	creoSocket(&sock, &server, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);
-	puts("Socket de conexion a Memoria creado correctamente\n");
+	creoSocket(&socketMemoria, &direccionMemoria, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);
+	puts("Socket de conexion a la Memoria creado correctamente\n");
 
-	/*
+	conectarSocket(&socketMemoria, &direccionMemoria);
+	puts("Conectado a la Memoria\n");
 
-	//Creacion de Socket
-	sock = socket(AF_INET , SOCK_STREAM , 0);
-
-	if (sock == -1){
-		printf("Error. No se pudo crear el socket de conexion\n");
-		return 0;
-	}
-
-	puts("Socket de conexion a Memoria creado correctamente\n");
-
-	server.sin_addr.s_addr = inet_addr(ip_memoria);
-	server.sin_family = AF_INET;
-	server.sin_port = htons(puerto_memoria);
-
-	*/
-
-	conectarSocket(&sock, &server);
-
-	/*
-
-	//Conexion al Servidor
-	if (connect(sock, (struct sockaddr *)&server , sizeof(server)) < 0)	    {
-		perror("Fallo el intento de conexion al servidor\n");
-		return 0;
-	}
-
-	*/
-
-	puts("Conectado al servidor\n");
-	strcpy(message, "500;");
-
-	/*
-
-	message[0] = '5';
-	message[1] = '0';
-	message[2] = '0';
-	message[3] = ';';
-
-	*/
-
-	enviarMensaje(&sock, message);
-
-	/*
-    if(send(sock , message , strlen(message) , 0) < 0)
-    {
-        puts("Fallo el envio al servidor");
-        return EXIT_FAILURE;
-    }
-    */
-
-	while((recv(sock, message, sizeof(message), 0)) > 0)
-	{
-
-		codigo = strtok(message, ";");
-
-		if(atoi(codigo) == 202){
-			printf("La Memoria acepto la conexion \n");
-			printf("\n");
-		}else{
-			printf("Conexion rechazada \n");
-			return EXIT_FAILURE;
-		}
-
-	}
+	handShakeSend(&socketMemoria, "500", "202", "Memoria");
 
 	//Loop para seguir comunicado con el servidor
-	while(1){}
+	while (1) {
+	}
 
-	close(sock);
-	return 0;
+	shutdown(socketMemoria, 0);
+	close(socketMemoria);
+	return EXIT_SUCCESS;
 }

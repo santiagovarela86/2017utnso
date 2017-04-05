@@ -70,24 +70,47 @@ void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * arg
 	}
 }
 
-void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int codigoAceptado, int codigoRechazado, char * componente){
+void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * proceso){
 	char message[MAXBUF];
 	char * codigo;
+	char * separador = ";";
 
-	recv(* socketCliente, message, sizeof(message), 0);
-		codigo = strtok(message, ";");
+	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+		codigo = strtok(message, separador);
 
-		if(atoi(codigo) == codigoEsperado){
-			printf("Se acepto la conexion del %s \n", componente);
-
-			strcpy(message, strcat(string_itoa(codigoAceptado), ";"));
+		if(strcmp(codigo, codigoEsperado) == 0){
+			printf("Se acepto la conexion del proceso %s \n", proceso);
+			strcpy(message, codigoAceptado);
+			strcat(message, separador);
 			enviarMensaje(socketCliente, message);
-
 		}else{
-			printf("Se rechazo la conexion del %s \n", componente);
-
-			strcpy(message, strcat(string_itoa(codigoRechazado), ";"));
+			strcpy(message, codigoRechazado);
+			strcat(message, separador);
+			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
+	}
+}
 
+void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
+	char message[MAXBUF];
+	char * codigo;
+	char * separador = ";";
+
+	strcpy(message, codigoEnvio);
+	strcat(message, separador);
+	enviarMensaje(socketServer, message);
+
+	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
+
+			codigo = strtok(message, separador);
+
+			if (strcmp(codigo, codigoEsperado) == 0) {
+				printf("El proceso %s acepto la conexion \n", proceso);
+				printf("\n");
+			} else {
+				printf("El proceso %s rechazo la conexion \n", proceso);
+				exit(errno);
+			}
+	}
 }

@@ -70,44 +70,46 @@ void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * arg
 	}
 }
 
-void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * componente){
+void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * proceso){
 	char message[MAXBUF];
 	char * codigo;
+	char * separador = ";";
 
 	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
-		codigo = strtok(message, ";");
+		codigo = strtok(message, separador);
 
 		if(strcmp(codigo, codigoEsperado) == 0){
-			printf("Se acepto la conexion del %s \n", componente);
+			printf("Se acepto la conexion del proceso %s \n", proceso);
 			strcpy(message, codigoAceptado);
-			strcat(message, ";");
+			strcat(message, separador);
 			enviarMensaje(socketCliente, message);
 		}else{
 			strcpy(message, codigoRechazado);
-			strcat(message, ";");
-			printf("Se rechazo la conexion del %s \n", componente);
+			strcat(message, separador);
+			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
 	}
 }
 
-void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * componente){
+void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
 	char message[MAXBUF];
 	char * codigo;
+	char * separador = ";";
 
 	strcpy(message, codigoEnvio);
-	strcat(message, ";");
+	strcat(message, separador);
 	enviarMensaje(socketServer, message);
 
 	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
 
-			codigo = strtok(message, ";");
+			codigo = strtok(message, separador);
 
 			if (strcmp(codigo, codigoEsperado) == 0) {
-				printf("El %s acepto la conexion \n", componente);
+				printf("El proceso %s acepto la conexion \n", proceso);
 				printf("\n");
 			} else {
-				printf("El %s rechazo la conexion \n", componente);
+				printf("El proceso %s rechazo la conexion \n", proceso);
 				exit(errno);
 			}
 	}
