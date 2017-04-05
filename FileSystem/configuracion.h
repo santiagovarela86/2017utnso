@@ -14,7 +14,16 @@ typedef struct{
 	char* punto_montaje; /*PUNTO_MONTAJE*/
 } FileSystem_Config;
 
+typedef struct{
+	int tamanio_bloques;
+	int cantidad_bloques;
+	char* magic_number;
+} metadata_Config;
+
 FileSystem_Config* leerConfiguracion(char* path);
 void imprimirConfiguracion(FileSystem_Config* fileSystem);
+
+metadata_Config* leerMetaData(char* mnt);
+void imprimirMetadata(metadata_Config* meta);
 
 #endif /* CONFIGURACION_H_ */

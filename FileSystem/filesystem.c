@@ -14,6 +14,7 @@
 #include "helperFunctions.h"
 
 void * handler_kernel(void * args);
+void atender_peticiones(int socket);
 
 int main(int argc, char** argv) {
 
@@ -25,6 +26,11 @@ int main(int argc, char** argv) {
 	FileSystem_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
+
+	metadata_Config* metadata;
+
+	metadata = leerMetaData(configuracion->punto_montaje);
+	imprimirMetadata(metadata);
 
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
@@ -65,9 +71,20 @@ void * handler_kernel(void * args){
 
 		handShake(threadSocketInfoKernel->sock, &socketCliente, 100, 401, 499, "Kernel");
 
+		atender_peticiones(socketCliente);
+
 		shutdown(socketCliente, 0);
 		close(socketCliente);
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void atender_peticiones(int socket){
+
+
+
+	while(1){
+
+	}
 }
