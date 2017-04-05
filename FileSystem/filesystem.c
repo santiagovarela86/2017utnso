@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 void * hilo_conexiones_kernel(void * args){
 	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
 
-	while (1) {
+	//while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
 		socklen_t length = sizeof direccionCliente;
@@ -78,7 +78,7 @@ void * hilo_conexiones_kernel(void * args){
 
 		shutdown(socketCliente, 0);
 		close(socketCliente);
-	}
+	//}
 
 	return EXIT_SUCCESS;
 }

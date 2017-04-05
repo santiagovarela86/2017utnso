@@ -261,7 +261,8 @@ void * hilo_conexiones_consola(void *args) {
 		}
 	}
 
-
+	shutdown(socketClienteConsola, 0);
+	close(socketClienteConsola);
 
 	return EXIT_SUCCESS;
 }
@@ -298,6 +299,8 @@ void * hilo_conexiones_cpu(void *args) {
 			}
 		}
 
+	shutdown(socketClienteCPU, 0);
+	close(socketClienteCPU);
 	return EXIT_SUCCESS;
 }
 
