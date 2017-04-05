@@ -84,7 +84,7 @@ int main(int argc , char **argv)
 		puts("***********************************************************");
 
 		int numero = 0;
-		int numero_correcto = 0 ;
+		int numero_correcto = 0;
 		int intentos_fallidos = 0;
 
 		while(numero_correcto == 0 && intentos_fallidos < 10){
