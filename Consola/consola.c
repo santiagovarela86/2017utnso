@@ -80,7 +80,7 @@ int main(int argc , char **argv)
 		puts("1) Iniciar programa");
 		puts("2) Finalizar programa");
 		puts("3) Desconectar");
-		puts("4) Limpar");
+		puts("4) Limpiar");
 		puts("***********************************************************");
 
 		int numero = 0;

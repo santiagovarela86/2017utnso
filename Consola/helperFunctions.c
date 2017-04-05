@@ -90,4 +90,8 @@ void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int 
 			enviarMensaje(socketCliente, message);
 		}
 	}
+
+	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {
+		printf("se desconecto un socket del proceso %s \n", componente);
+	}
 }
