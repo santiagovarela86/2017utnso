@@ -180,7 +180,7 @@ void iniciar_programa(int socket){
 		program->mensajes = 0;
 		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
 	}else{
-		printf("Mensaje Inesperado\n");
+		printf("El programa no puedo iniciarse\n");
 		return;
 	}
 
