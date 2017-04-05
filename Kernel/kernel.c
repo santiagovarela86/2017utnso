@@ -268,35 +268,14 @@ void * hilo_conexiones_consola(void *args) {
 
 void * handler_conexion_consola(void * sock) {
 
-	char consola_message[1000] = "";
-	char* codigo;
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-			codigo = strtok(consola_message, ";");
-
-			if(atoi(codigo) == 300){
-				printf("Se acepto una consola \n");
-				conexionesConsola++;
-				printf("Tengo %d Consolas conectadas \n", conexionesConsola);
-				strcpy(consola_message, "101;");
-				enviarMensaje(&sock, consola_message);
-			}else{
-				printf("Se rechazo una conexion incorrecta \n");
-				strcpy(consola_message, "199;");
-				enviarMensaje(&sock, consola_message);
-	}
-
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-
-	printf("%s", consola_message);
+	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
 
 	//while (1) {}
 
 	return EXIT_SUCCESS;
 }
 
-void* hilo_conexiones_cpu(void *args) {
+void * hilo_conexiones_cpu(void *args) {
 
 	int socketKernelCPU;
 	struct sockaddr_in direccionKernel;
@@ -307,9 +286,6 @@ void* hilo_conexiones_cpu(void *args) {
 	creoSocket(&socketKernelCPU, &direccionKernel, INADDR_ANY, configuracion->puerto_cpu);
 	bindSocket(&socketKernelCPU, &direccionKernel);
 	listen(socketKernelCPU, MAXCPU);
-	//generoHilosPorConexion(&socketKernelCPU, &socketClienteCPU, &direccionCPU, handler_conexion_cpu);
-
-
 
 	while ((socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length))) {
 			pthread_t thread_proceso_cpu;
@@ -327,25 +303,7 @@ void* hilo_conexiones_cpu(void *args) {
 
 void * handler_conexion_cpu(void * sock) {
 
-	char cpu_message[1000] = "";
-	char* codigo;
-
-	while((recv((int) sock, cpu_message, sizeof(cpu_message), 0)) > 0){
-			codigo = strtok(cpu_message, ";");
-
-			if(atoi(codigo) == 500){
-				printf("Se acepto una CPU \n");
-				conexionesCPU++;
-				printf("Tengo %d CPUs conectados \n", conexionesCPU);
-				strcpy(cpu_message, "102;");
-				enviarMensaje(&sock, cpu_message);
-			}else{
-				printf("Se rechazo una conexion incorrecta \n");
-				strcpy(cpu_message, "199;");
-				enviarMensaje(&sock, cpu_message);
-			}
-		}
-	printf("%s", cpu_message);
+	handShakeListen((int *) &sock, "500", "102", "199", "CPU");
 
 	//while (1) {}
 
