@@ -28,12 +28,12 @@ int main(int argc, char** argv) {
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
-	metadata_Config* metadata;
-	metadata = leerMetaData(configuracion->punto_montaje);
-	imprimirMetadata(metadata);
+	//metadata_Config* metadata;
+	//metadata = leerMetaData(configuracion->punto_montaje);
+	//imprimirMetadata(metadata);
 
-	size_t tamanio_bitmap = (metadata->cantidad_bloques * metadata->tamanio_bloques);
-	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
+	//size_t tamanio_bitmap = (metadata->cantidad_bloques * metadata->tamanio_bloques);
+	//t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
 
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
@@ -72,7 +72,7 @@ void * handler_kernel(void * args){
 
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
-		handShake(threadSocketInfoKernel->sock, &socketCliente, 100, 401, 499, "Kernel");
+		handShakeListen(&socketCliente, "100", "401", "499", "Kernel");
 
 		atender_peticiones(socketCliente);
 
@@ -84,8 +84,6 @@ void * handler_kernel(void * args){
 }
 
 void atender_peticiones(int socket){
-
-
 
 	while(1){
 
