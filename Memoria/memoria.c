@@ -348,3 +348,18 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
     printf("contenido_memoria.log generado con exito! \n");
 }
 
+/* FUNCION DE HASH */
+uint32_t f_hash(const void *buf, size_t buflength) {
+     const uint8_t *buffer = (const uint8_t*)buf;
+
+     uint32_t s1 = 1;
+     uint32_t s2 = 0;
+     size_t i;
+
+     for (i = 0; i < buflength; i++) {
+        s1 = (s1 + buffer[i]) % 65521;
+        s2 = (s2 + s1) % 65521;
+     }
+     return (s2 << 16) | s1;
+}
+
