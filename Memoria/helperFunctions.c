@@ -74,7 +74,7 @@ void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int 
 	char message[MAXBUF];
 	char * codigo;
 
-	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+	recv(* socketCliente, message, sizeof(message), 0);
 		codigo = strtok(message, ";");
 
 		if(atoi(codigo) == codigoEsperado){
@@ -89,5 +89,5 @@ void handShake(int * socketServer, int * socketCliente, int codigoEsperado, int 
 			strcpy(message, strcat(string_itoa(codigoRechazado), ";"));
 			enviarMensaje(socketCliente, message);
 		}
-	}
+
 }

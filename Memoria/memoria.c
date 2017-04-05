@@ -14,6 +14,7 @@ int conexionesCPU = 0;
 int tiempo_retardo;
 //Memoria_Config * configuracion;
 pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
+int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
 
@@ -57,6 +58,9 @@ int main(int argc, char **argv) {
 
 	creoThread(&thread_consola, inicializar_consola, configuracion);
 	creoThread(&thread_kernel, handler_kernel, threadSocketInfoMemoria);
+
+	while(semaforo == 0){}
+
 	creoThread(&thread_cpu, handler_cpu, threadSocketInfoMemoria);
 
 	pthread_join(thread_consola, NULL);
@@ -75,7 +79,6 @@ int main(int argc, char **argv) {
 void * handler_kernel(void * args){
 	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
 
-	while (1) {
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
 		socklen_t length = sizeof direccionCliente;
@@ -86,9 +89,11 @@ void * handler_kernel(void * args){
 
 		handShake(threadSocketInfoMemoria->sock, &socketCliente, 100, 201, 299, "Kernel");
 
+		semaforo = 1;
+
 		shutdown(socketCliente, 0);
 		close(socketCliente);
-	}
+
 
 	return EXIT_SUCCESS;
 }
