@@ -13,7 +13,7 @@
 int conexionesKernel = 0;
 int conexionesCPU = 0;
 int tiempo_retardo;
-pthread_mutex_t mutex_tiempo_retardo = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_tiempo_retardo;
 int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
@@ -28,6 +28,8 @@ int main(int argc, char **argv) {
 		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
+
+	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 
 	Memoria_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
