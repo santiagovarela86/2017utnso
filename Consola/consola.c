@@ -46,11 +46,20 @@ int main(int argc , char **argv)
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
 
+	int socketKernel;
+	struct sockaddr_in direccionKernel;
+
+	creoSocket(&socketKernel, &direccionKernel, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+	puts("Socket de conexion al Kernel creado correctamente\n");
+
+	conectarSocket(&socketKernel, &direccionKernel);
+	puts("Conectado al Kernel\n");
+
     pthread_t threadConsola;
     pthread_t threadKernel;
 
-    creoThread(&threadConsola, handlerConsola, NULL);
-    creoThread(&threadKernel, handlerKernel, NULL);
+    creoThread(&threadConsola, handlerConsola, &socketKernel);
+    creoThread(&threadKernel, handlerKernel, &socketKernel);
 
 	pthread_join(threadConsola, NULL);
 	pthread_join(threadKernel, NULL);
@@ -153,6 +162,8 @@ int main(int argc , char **argv)
 
 void * handlerConsola(void * args){
 
+	int * socketKernel = (int *) args;
+
 	puts("");
 			puts("***********************************************************");
 			puts("Ingrese numero de la acción a realizar");
@@ -171,7 +182,7 @@ void * handlerConsola(void * args){
 
 				if(numero == 1){
 					numero_correcto = 1;
-					//iniciar_programa(socketConsola);
+					iniciar_programa(* socketKernel);
 
 				}else if(numero == 2){
 					terminar_proceso();
@@ -192,6 +203,9 @@ void * handlerConsola(void * args){
 
 void * handlerKernel(void * args){
 
+	int * socketKernel = (int *) args;
+
+	/*
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
 
@@ -200,8 +214,9 @@ void * handlerKernel(void * args){
 
 	conectarSocket(&socketKernel, &direccionKernel);
 	puts("Conectado al Kernel\n");
+	*/
 
-	handShakeSend(&socketKernel, "300", "101", "Kernel");
+	handShakeSend(socketKernel, "300", "101", "Kernel");
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
