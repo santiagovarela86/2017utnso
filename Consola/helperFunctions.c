@@ -92,7 +92,7 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 	}
 
 	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {
-		printf("se desconecto un socket del proceso %s \n", componente);
+		printf("se desconecto un socket del proceso %s \n", proceso);
 	}
 }
 

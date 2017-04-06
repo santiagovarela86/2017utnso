@@ -71,7 +71,7 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 		buffer[num*sizeof(char)] = '\0';
 	}
 
-	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
+	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap / 8);
 
 	return bitmap;
 }

@@ -28,12 +28,14 @@ int main(int argc, char** argv) {
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
-	//metadata_Config* metadata;
-	//metadata = leerMetaData(configuracion->punto_montaje);
-	//imprimirMetadata(metadata);
+	metadata_Config* metadata;
+	metadata = leerMetaData(configuracion->punto_montaje);
+	imprimirMetadata(metadata);
 
-	//size_t tamanio_bitmap = (metadata->cantidad_bloques * metadata->tamanio_bloques);
-	//t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
+	size_t tamanio_bitmap = (metadata->cantidad_bloques);
+	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
+
+	printf("\nEL TAMANIO DEL BITMAP ES: %d\n", bitarray_get_max_bit(bitmap));
 
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
