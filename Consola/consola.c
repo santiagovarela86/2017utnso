@@ -29,6 +29,11 @@ void desconectar_consola();
 void limpiar_mensajes();
 void gestionar_programa(void* p);
 
+void * handlerConsola(void * args);
+void * handlerKernel(void * args);
+
+Consola_Config* configuracion;
+
 int main(int argc , char **argv)
 {
 
@@ -38,15 +43,32 @@ int main(int argc , char **argv)
     	return EXIT_FAILURE;
     }
 
-	Consola_Config* configuracion;
+	configuracion = leerConfiguracion(argv[1]);
+    imprimirConfiguracion(configuracion);
+
+    pthread_t threadConsola;
+    pthread_t threadKernel;
+
+    creoThread(&threadConsola, handlerConsola, NULL);
+    creoThread(&threadKernel, handlerKernel, NULL);
+
+	pthread_join(threadConsola, NULL);
+	pthread_join(threadKernel, NULL);
+
+	//while(1){}
+
+	free(configuracion);
+
+    return EXIT_SUCCESS;
+}
+
+    /*
 	int socketConsola;
     struct sockaddr_in direccionConsola;
     char message[1000] = "";
     char server_reply[2000] = "";
     char* codigo;
 
-    configuracion = leerConfiguracion(argv[1]);
-    imprimirConfiguracion(configuracion);
 
     creoSocket(&socketConsola, &direccionConsola, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
     puts("Socket de Consola creado correctamente\n");
@@ -127,6 +149,68 @@ int main(int argc , char **argv)
 
     close(socketConsola);
     return EXIT_SUCCESS;
+    */
+
+void * handlerConsola(void * args){
+
+	puts("");
+			puts("***********************************************************");
+			puts("Ingrese numero de la acción a realizar");
+			puts("1) Iniciar programa");
+			puts("2) Finalizar programa");
+			puts("3) Desconectar");
+			puts("4) Limpar");
+			puts("***********************************************************");
+
+			int numero = 0;
+			int numero_correcto = 0;
+			int intentos_fallidos = 0;
+
+			while(numero_correcto == 0 && intentos_fallidos < 10){
+				scanf("%d",&numero);
+
+				if(numero == 1){
+					numero_correcto = 1;
+					//iniciar_programa(socketConsola);
+
+				}else if(numero == 2){
+					terminar_proceso();
+				}else if(numero == 3){
+					desconectar_consola();
+				}else if(numero == 4){
+					limpiar_mensajes();
+				}else{
+					intentos_fallidos++;
+					puts("Ingrese una opción de 1 a 4");
+				}
+			}
+
+				if(intentos_fallidos == 10){
+					return EXIT_FAILURE;
+				}
+}
+
+void * handlerKernel(void * args){
+
+	int socketKernel;
+	struct sockaddr_in direccionKernel;
+
+	creoSocket(&socketKernel, &direccionKernel, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+	puts("Socket de conexion al Kernel creado correctamente\n");
+
+	conectarSocket(&socketKernel, &direccionKernel);
+	puts("Conectado al Kernel\n");
+
+	handShakeSend(&socketKernel, "300", "101", "Kernel");
+
+	//Loop para seguir comunicado con el servidor
+	while (1) {
+	}
+
+	shutdown(socketKernel, 0);
+	close(socketKernel);
+	return EXIT_SUCCESS;
+
 }
 
 void terminar_proceso(){

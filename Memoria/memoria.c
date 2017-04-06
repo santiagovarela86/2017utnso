@@ -8,6 +8,7 @@
 #include "configuracion.h"
 #include "memoria.h"
 #include <errno.h>
+#include "helperFunctions.h"
 
 int conexionesKernel = 0;
 int conexionesCPU = 0;
