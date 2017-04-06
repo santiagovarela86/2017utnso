@@ -89,6 +89,9 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
+
+		recv(* socketCliente, message, sizeof(message), 0); //afecta esto a otros handshake listen???
+		printf("%s", message); //o sirve tambien para otros???
 	}
 
 	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {

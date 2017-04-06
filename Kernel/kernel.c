@@ -267,6 +267,55 @@ void * hilo_conexiones_consola(void *args) {
 	return EXIT_SUCCESS;
 }
 
+/*
+void * handler_conexion_consola(void * sock) {
+
+	char consola_message[1000] = "";
+	char* codigo;
+
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
+
+	codigo = strtok(consola_message, ";");
+
+	if (atoi(codigo) == 300) {
+		printf("Se acepto una consola \n");
+		conexionesConsola++;
+		printf("Tengo %d Consolas conectadas \n", conexionesConsola);
+
+		consola_message[0] = '1';
+		consola_message[1] = '0';
+		consola_message[2] = '1';
+		consola_message[3] = ';';
+
+		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
+			puts("Fallo el envio al servidor");
+			return EXIT_FAILURE;
+		}
+	} else {
+		printf("Se rechazo una conexion incorrecta \n");
+
+		consola_message[0] = '1';
+		consola_message[1] = '9';
+		consola_message[2] = '9';
+		consola_message[3] = ';';
+
+		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
+			puts("Fallo el envio al servidor");
+			return EXIT_FAILURE;
+		}
+	}
+
+	recv((int) sock, consola_message, sizeof(consola_message), 0);
+
+	printf("%s", consola_message);
+
+	while (1) {}
+
+	return EXIT_SUCCESS;
+}
+*/
+
+
 void * handler_conexion_consola(void * sock) {
 
 	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
@@ -275,6 +324,7 @@ void * handler_conexion_consola(void * sock) {
 
 	return EXIT_SUCCESS;
 }
+
 
 void * hilo_conexiones_cpu(void *args) {
 
