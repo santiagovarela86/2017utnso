@@ -28,5 +28,6 @@ typedef struct{
 
 Kernel_Config* leerConfiguracion(char* path);
 void imprimirConfiguracion(Kernel_Config* kernel);
+bool archivo_config_erroneo(t_config* config);
 
 #endif /* CONFIGURACION_H_ */
