@@ -13,9 +13,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include "helperFunctions.h"
-
-void * hilo_conexiones_kernel(void * args);
-void atender_peticiones(int socket);
+#include "filesystem.h"
 
 int main(int argc, char** argv) {
 
