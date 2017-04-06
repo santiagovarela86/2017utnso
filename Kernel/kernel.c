@@ -317,8 +317,12 @@ void * handler_conexion_consola(void * sock) {
 
 
 void * handler_conexion_consola(void * sock) {
-
+	char message[MAXBUF];
 	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
+
+	int * socketCliente = (int *) &sock;
+	recv(* socketCliente, message, sizeof(message), 0);
+	printf("%s", message);
 
 	//while (1) {}
 

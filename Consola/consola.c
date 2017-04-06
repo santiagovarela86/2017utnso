@@ -34,6 +34,7 @@ void * handlerKernel(void * args);
 
 Consola_Config* configuracion;
 
+
 int main(int argc , char **argv)
 {
 
@@ -71,150 +72,51 @@ int main(int argc , char **argv)
     return EXIT_SUCCESS;
 }
 
-    /*
-	int socketConsola;
-    struct sockaddr_in direccionConsola;
-    char message[1000] = "";
-    char server_reply[2000] = "";
-    char* codigo;
-
-
-    creoSocket(&socketConsola, &direccionConsola, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
-    puts("Socket de Consola creado correctamente\n");
-
-    conectarSocket(&socketConsola, &direccionConsola);
-    puts("Conectado al Kernel\n");
-
-    strcpy(message, "300;");
-
-	//message[0] = '3';
-	//message[1] = '0';
-	//message[2] = '0';
-	//message[3] = ';';
-
-	enviarMensaje(&socketConsola, message);
-
-	while((recv(socketConsola, message, sizeof(message), 0)) > 0)
-	{
-		codigo = strtok(message, ";");
-
-		if(atoi(codigo) == 101){
-			printf("El Kernel acepto la conexion\n");
-		}else{
-			printf("El Kernel rechazo la conexion\n");
-			return EXIT_FAILURE;
-		}
-
-		puts("");
-		puts("***********************************************************");
-		puts("Ingrese numero de la acción a realizar");
-		puts("1) Iniciar programa");
-		puts("2) Finalizar programa");
-		puts("3) Desconectar");
-		puts("4) Limpiar");
-		puts("***********************************************************");
-
-		int numero = 0;
-		int numero_correcto = 0;
-		int intentos_fallidos = 0;
-
-		while(numero_correcto == 0 && intentos_fallidos < 10){
-			scanf("%d",&numero);
-
-			if(numero == 1){
-				numero_correcto = 1;
-				iniciar_programa(socketConsola);
-
-			}else if(numero == 2){
-				terminar_proceso();
-			}else if(numero == 3){
-				desconectar_consola();
-			}else if(numero == 4){
-				limpiar_mensajes();
-			}else{
-				intentos_fallidos++;
-				puts("Ingrese una opción de 1 a 4");
-			}
-		}
-
-			if(intentos_fallidos == 10){
-				return EXIT_FAILURE;
-			}
-
-		}
-
-    //Loop para seguir comunicado con el servidor
-    while(1)
-    {
-
-        //Verifico si hubo respuesta del servidor
-        if(recv(socketConsola, server_reply , 2000 , 0) < 0)
-        {
-            puts("Desconexion del cliente");
-            break;
-        }
-
-    }
-
-    close(socketConsola);
-    return EXIT_SUCCESS;
-    */
-
 void * handlerConsola(void * args){
 
 	int * socketKernel = (int *) args;
 
-	puts("");
-			puts("***********************************************************");
-			puts("Ingrese numero de la acción a realizar");
-			puts("1) Iniciar programa");
-			puts("2) Finalizar programa");
-			puts("3) Desconectar");
-			puts("4) Limpar");
-			puts("***********************************************************");
+	int numero = 0;
+	int numero_correcto = 0;
+	int intentos_fallidos = 0;
 
-			int numero = 0;
-			int numero_correcto = 0;
-			int intentos_fallidos = 0;
+	while(intentos_fallidos < 10){
 
-			while(numero_correcto == 0 && intentos_fallidos < 10){
-				scanf("%d",&numero);
+		puts("");
+		puts("***********************************************************");
+		puts("Ingrese el numero de la acción a realizar");
+		puts("1) Iniciar programa");
+		puts("2) Finalizar programa");
+		puts("3) Desconectar");
+		puts("4) Limpar");
+		puts("***********************************************************");
 
-				if(numero == 1){
-					numero_correcto = 1;
-					iniciar_programa(* socketKernel);
+		scanf("%d",&numero);
 
-				}else if(numero == 2){
-					terminar_proceso();
-				}else if(numero == 3){
-					desconectar_consola();
-				}else if(numero == 4){
-					limpiar_mensajes();
-				}else{
-					intentos_fallidos++;
-					puts("Ingrese una opción de 1 a 4");
-				}
-			}
+		if(numero == 1){
 
-				if(intentos_fallidos == 10){
-					return EXIT_FAILURE;
-				}
+			iniciar_programa(socketKernel);
+
+		}else if(numero == 2){
+			terminar_proceso();
+		}else if(numero == 3){
+			desconectar_consola();
+		}else if(numero == 4){
+			limpiar_mensajes();
+		}else{
+			intentos_fallidos++;
+			puts("Ingrese una opción de 1 a 4");
+		}
+	}
+
+	if(intentos_fallidos == 10){
+		return EXIT_FAILURE;
+	}
 }
 
 void * handlerKernel(void * args){
 
 	int * socketKernel = (int *) args;
-
-	/*
-	int socketKernel;
-	struct sockaddr_in direccionKernel;
-
-	creoSocket(&socketKernel, &direccionKernel, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
-	puts("Socket de conexion al Kernel creado correctamente\n");
-
-	conectarSocket(&socketKernel, &direccionKernel);
-	puts("Conectado al Kernel\n");
-	*/
 
 	handShakeSend(socketKernel, "300", "101", "Kernel");
 
@@ -240,10 +142,10 @@ void limpiar_mensajes(){
 	return;
 }
 
-void iniciar_programa(int socket){
+void iniciar_programa(int* socket_kernel){
 
 	pthread_t thread_id_programa;
-
+	puts("");
 	puts("Ingrese nombre del programa");
 
 	char directorio[1000];
@@ -262,10 +164,13 @@ void iniciar_programa(int socket){
 		buffer[num*sizeof(char)] = '\0';
 	}
 
-	enviarMensaje(&socket, buffer);
+	enviarMensaje(socket_kernel, buffer);
 
-	recv(socket, buffer, sizeof(buffer), 0);
+	recv(socket_kernel, buffer, sizeof(buffer), 0);
 
+	while(1){
+
+	}
 	char* codigo;
 	codigo = strtok(buffer, ";");
 

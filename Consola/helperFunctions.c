@@ -105,7 +105,7 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 	strcat(message, separador);
 	enviarMensaje(socketServer, message);
 
-	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
+	recv(* socketServer, message, sizeof(message), 0);
 
 			codigo = strtok(message, separador);
 
@@ -116,5 +116,5 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 				printf("El proceso %s rechazo la conexion \n", proceso);
 				exit(errno);
 			}
-	}
+
 }

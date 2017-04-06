@@ -75,7 +75,7 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 	char * codigo;
 	char * separador = ";";
 
-	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+	recv(* socketCliente, message, sizeof(message), 0);
 		codigo = strtok(message, separador);
 
 		if(strcmp(codigo, codigoEsperado) == 0){
@@ -90,13 +90,6 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			enviarMensaje(socketCliente, message);
 		}
 
-		recv(* socketCliente, message, sizeof(message), 0); //afecta esto a otros handshake listen???
-		printf("%s", message); //o sirve tambien para otros???
-	}
-
-	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {
-		printf("se desconecto un socket del proceso %s \n", proceso);
-	}
 }
 
 void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
