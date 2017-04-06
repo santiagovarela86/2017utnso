@@ -90,14 +90,14 @@ void * hilo_conexiones_kernel(void * args){
 }
 
 void atender_peticiones(int socket){
-
+/*
 	puts("escriba path archivo");
 	char directorio[1000];
 
 	scanf("%s", directorio);
 
 	validar_archivo(directorio);
-
+*/
 	while(1){
 
 	}
