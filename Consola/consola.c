@@ -33,7 +33,7 @@ void * handlerConsola(void * args);
 void * handlerKernel(void * args);
 
 Consola_Config* configuracion;
-
+int proceso_a_terminar = -1;
 
 int main(int argc , char **argv)
 {
