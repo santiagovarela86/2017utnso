@@ -27,7 +27,7 @@ int conexionesCPU = 0;
 int conexionesConsola = 0;
 Kernel_Config* configuracion;
 int grado_multiprogramacion;
-pthread_mutex_t mutex_grado_multiprog = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_grado_multiprog;
 
 int main(int argc, char **argv) {
 
@@ -35,6 +35,8 @@ int main(int argc, char **argv) {
 		printf("Error. Parametros incorrectos. \n");
 		return EXIT_FAILURE;
 	}
+
+	pthread_mutex_init(&mutex_grado_multiprog, NULL);
 
 	pthread_t thread_id_filesystem;
 	pthread_t thread_id_memoria;
