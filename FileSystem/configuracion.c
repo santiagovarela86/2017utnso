@@ -71,7 +71,31 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 		buffer[num*sizeof(char)] = '\0';
 	}
 
-	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap / 8);
+	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
 
 	return bitmap;
+}
+
+void imprimirBitmap(t_bitarray* bitmap){
+
+	int j = 0, i = 0;
+	int octavos = 0;
+
+	//LA ASIGNACION CORRECTA ES LA DE BITMAP->SIZE PERO COMO ES MUY GRANDE Y EL ARCHIVO QUE CREE SOLO TIENE 64 CHARS
+	//HARCODEO CON 64.
+	//i = bitmap->size;
+	i = 64;
+
+	puts(" ");
+	puts("EL BITMAP ES:");
+
+	while(j <= i){
+		octavos++;
+		printf("%c", bitmap->bitarray[j]);
+		j++;
+		if(octavos == 16){
+			printf("\n");
+			octavos = 0;
+		}
+	}
 }

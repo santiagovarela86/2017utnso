@@ -28,5 +28,6 @@ metadata_Config* leerMetaData(char* mnt);
 void imprimirMetadata(metadata_Config* meta);
 
 t_bitarray* crearBitmap(char* mnt, size_t tamanio);
+void imprimirBitmap(t_bitarray* bitmap);
 
 #endif /* CONFIGURACION_H_ */
