@@ -15,6 +15,8 @@
 #include "helperFunctions.h"
 #include "filesystem.h"
 
+char* montaje;
+
 int main(int argc, char** argv) {
 
 	if (argc != 2) {
@@ -22,9 +24,13 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	montaje = string_new();
+
 	FileSystem_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
+
+	montaje = configuracion->punto_montaje;
 
 	metadata_Config* metadata;
 	metadata = leerMetaData(configuracion->punto_montaje);
@@ -85,7 +91,31 @@ void * hilo_conexiones_kernel(void * args){
 
 void atender_peticiones(int socket){
 
+	puts("escriba path archivo");
+	char directorio[1000];
+
+	scanf("%s", directorio);
+
+	validar_archivo(directorio);
+
 	while(1){
 
 	}
+}
+
+void validar_archivo(char* directorio){
+
+	char* path = string_new();
+
+	path = string_substring(montaje,1,string_length(montaje));
+
+	string_append(&path,"Archivos/");
+	string_append(&path,directorio);
+
+	if (fopen(path, "r") == NULL){
+		puts("El archivo no existe");
+	}else{
+		puts("El archivo existe");
+	}
+
 }

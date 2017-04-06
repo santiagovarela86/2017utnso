@@ -10,5 +10,6 @@
 
 void * hilo_conexiones_kernel(void * args);
 void atender_peticiones(int socket);
+void validar_archivo(char* directorio);
 
 #endif /* FILESYSTEM_H_ */
