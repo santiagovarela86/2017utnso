@@ -158,6 +158,7 @@ void iniciar_programa(int* socket_kernel){
 	FILE *ptr_fich1 = fopen(directorio, "r");
 
 	int num;
+//TODO Cambiar el Buffer por una estructura Dinamica que alloque memoria por cada caracter leido
 	char buffer[1000 + 1];
 
 	while(!feof(ptr_fich1)){
