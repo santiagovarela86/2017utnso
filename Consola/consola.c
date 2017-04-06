@@ -34,6 +34,7 @@ void * handlerKernel(void * args);
 
 Consola_Config* configuracion;
 int proceso_a_terminar = -1;
+int estado_consola = 1;
 
 int main(int argc , char **argv)
 {
@@ -77,10 +78,10 @@ void * handlerConsola(void * args){
 	int * socketKernel = (int *) args;
 
 	int numero = 0;
-	int numero_correcto = 0;
+
 	int intentos_fallidos = 0;
 
-	while(intentos_fallidos < 10){
+	while(intentos_fallidos < 10 && estado_consola == 1){
 
 		puts("");
 		puts("***********************************************************");
@@ -112,6 +113,7 @@ void * handlerConsola(void * args){
 	if(intentos_fallidos == 10){
 		return EXIT_FAILURE;
 	}
+
 }
 
 void * handlerKernel(void * args){
@@ -121,7 +123,7 @@ void * handlerKernel(void * args){
 	handShakeSend(socketKernel, "300", "101", "Kernel");
 
 	//Loop para seguir comunicado con el servidor
-	while (1) {
+	while (estado_consola == 1) {
 	}
 
 	shutdown(socketKernel, 0);
@@ -135,6 +137,7 @@ void terminar_proceso(){
 }
 
 void desconectar_consola(){
+	estado_consola = 0;
 	return;
 }
 
