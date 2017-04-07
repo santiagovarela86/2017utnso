@@ -28,6 +28,11 @@ int conexionesConsola = 0;
 Kernel_Config* configuracion;
 int grado_multiprogramacion;
 pthread_mutex_t mutex_grado_multiprog;
+t_queue* cola_listos;
+t_queue* cola_bloqueados;
+t_queue* cola_ejecucion;
+t_queue* cola_terminados;
+int numerador_pcb = 100;
 
 int main(int argc, char **argv) {
 
@@ -48,6 +53,11 @@ int main(int argc, char **argv) {
 	imprimirConfiguracion(configuracion);
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
+
+	cola_listos = crear_cola_pcb();
+	cola_bloqueados = crear_cola_pcb();
+	cola_ejecucion = crear_cola_pcb();
+	cola_terminados = crear_cola_pcb();
 
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
@@ -317,7 +327,6 @@ void * handler_conexion_consola(void * sock) {
 }
 */
 
-
 void * handler_conexion_consola(void * sock) {
 	char message[MAXBUF];
 	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
@@ -326,7 +335,19 @@ void * handler_conexion_consola(void * sock) {
 	recv(* socketCliente, message, sizeof(message), 0);
 	printf("%s", message);
 
-	//while (1) {}
+	t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, NULL, NULL);
+	queue_push(cola_listos, new_pcb);
+
+	char* info_pid = string_new();
+	char* respuestaAConsola = string_new();
+	string_append(&info_pid, "103");
+	string_append(&info_pid, ";");
+	string_append(&info_pid, string_itoa(new_pcb->pid));
+	string_append(&info_pid, ";");
+	string_append(&respuestaAConsola, info_pid);
+	printf("Mensaje a Consola: %s\n", respuestaAConsola);
+	//TODO: El enviar mensaje a consola no puede enviar el PID
+	//enviarMensaje(socketCliente, respuestaAConsola);
 
 	return EXIT_SUCCESS;
 }
@@ -367,4 +388,31 @@ void * handler_conexion_cpu(void * sock) {
 	//while (1) {}
 
 	return EXIT_SUCCESS;
+}
+
+t_pcb *nuevo_pcb(int pid, int* program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
+	t_pcb* new = malloc(sizeof(t_pcb));
+	new->pid = pid;
+	new->program_counter = program_counter;
+	new->tabla_archivos = tabla_arch;
+	new->pos_stack = pos_stack;
+	new->socket_cpu = socket_cpu;
+	new->exit_code = exit_code;
+	numerador_pcb++;
+	return new;
+}
+
+t_queue* crear_cola_pcb(){
+	t_queue* cola = queue_create();
+	return cola;
+}
+
+void flush_cola_pcb(t_queue* queue){
+	 queue_destroy_and_destroy_elements(queue, (void*) eliminar_pcb);
+}
+
+void eliminar_pcb(t_pcb *self){
+	free(self->program_counter);
+	free(self->tabla_archivos);
+	free(self);
 }
