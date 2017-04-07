@@ -42,6 +42,7 @@ metadata_Config* leerMetaData(char* mnt){
 	fileSystem_metadata->cantidad_bloques = config_get_int_value(metadata, "CANTIDAD_BLOQUES");
 	fileSystem_metadata->magic_number = config_get_string_value(metadata, "MAGIC_NUMBER");
 
+	free(directorio);
 	return fileSystem_metadata;
 }
 
@@ -72,7 +73,7 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	}
 
 	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
-
+	free(directorio);
 	return bitmap;
 }
 
