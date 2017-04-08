@@ -6,12 +6,8 @@
  *      Author: utnso
  */
 
-
 #include "helper.h"
 
-//Esto lo puede implementar la consola, la cual envía el programa al Kernel
-//Y luego el CPU recibe el programa por sockets, a efectos de probar el parser
-//se lee desde un archivo
 char * leerArchivo(char * path){
 	FILE * fp;
 	long lSize;
@@ -19,7 +15,7 @@ char * leerArchivo(char * path){
 
 	fp = fopen (path , "r");
 	if( !fp ) {
-		perror("No se pudo abrir el archivo\n");
+		perror("No se pudo abrir el archivo");
 		exit(errno);
 	}
 
@@ -30,14 +26,14 @@ char * leerArchivo(char * path){
 	buffer = calloc( 1, lSize+1 );
 	if( !buffer ){
 		fclose(fp);
-		perror("No se pudo reservar memoria\n");
+		perror("No se pudo reservar memoria");
 		exit(errno);
 	}
 
 	if ( 1!=fread( buffer , lSize, 1 , fp) ){
 		fclose(fp);
 		free(buffer);
-		perror("No se pudo leer el archivo\n");
+		perror("No se pudo leer el archivo");
 		exit(errno);
 	}
 
@@ -46,7 +42,7 @@ char * leerArchivo(char * path){
 	return buffer;
 }
 
-void procesoLineas(char * programa){
+void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines ??? // que pasa con los comentarios y los begin? el analizador no los detecta
 	AnSISOP_funciones funcANSI;
 	AnSISOP_kernel kernelANSI;
 
@@ -60,7 +56,7 @@ void procesoLineas(char * programa){
 
 	      //printf("curLine=[%s]\n", curLine);
 
-	      if (!esComentario(curLine)){
+	      if (!esComentario(curLine) && !esBegin(curLine)){
 	    	  analizadorLinea(curLine, &funcANSI, &kernelANSI);
 	      }
 
@@ -73,22 +69,9 @@ void procesoLineas(char * programa){
 }
 
 bool esComentario(char* linea){
-	return string_starts_with(linea, "#");
+	return string_starts_with(linea, TEXT_COMMENT);
 }
 
-
-
-
-/*
-void procesoLineas(char * programa) {
-	  char *p, *temp;
-	  p = strtok_r(programa, "\n", &temp);
-	  do {
-	      //printf("current line = %s", p);
-		  if (!esComentario(p)){
-			analizadorLinea(curLine, &funcANSI, &kernelANSI);
-		  }
-	  } while ((p - strtok_r(NULL, "\n", &temp) != NULL));
+bool esBegin(char* linea){
+	return string_starts_with(linea, TEXT_BEGIN);
 }
-*/
-

@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
 	//Esto lo puede implementar la consola, la cual envía el programa al Kernel
 	//Y luego el CPU recibe el programa por sockets, a efectos de probar el parser
 	//se lee desde un archivo
-	char * programa = leerArchivo("/home/utnso/workspace/PruebasParser/Debug/facil.ansisop");
+	char * programa = leerArchivo("/home/utnso/git/tp-2017-1c-Nene-Malloc/PruebasParser/Debug/facil.ansisop");
 
 	t_metadata_program * metadataPrograma;
 	metadataPrograma = metadata_desde_literal(programa);

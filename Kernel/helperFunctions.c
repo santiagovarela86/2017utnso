@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "helperFunctions.h"
+#include <pthread.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 

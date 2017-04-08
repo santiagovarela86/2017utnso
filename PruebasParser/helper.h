@@ -12,12 +12,14 @@
 #include <strings.h>
 #include <stdio.h>
 #include <errno.h>
-#include "sintax.h"
-#include "parser.h"
-#include "metadata_program.h"
+
+#include "parser/parser.h"
+#include "parser/metadata_program.h"
 
 char * leerArchivo(char * path);
 void procesoLineas(char * programa);
 bool esComentario(char* linea);
+bool esBegin(char* linea);
+bool esEnd(char* linea);
 
 #endif /* HELPER_H_ */
