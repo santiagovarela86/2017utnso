@@ -5,15 +5,17 @@
  *      Author: utnso
  */
 
-#include "helper.h"
+#include "helperParser.h"
 
 int main(int argc, char **argv) {
-	//char * programa = "a = a + b";
 
-	//Esto lo puede implementar la consola, la cual envía el programa al Kernel
-	//Y luego el CPU recibe el programa por sockets, a efectos de probar el parser
-	//se lee desde un archivo
-	char * programa = leerArchivo("/home/utnso/git/tp-2017-1c-Nene-Malloc/PruebasParser/Debug/facil.ansisop");
+	if (argc != 2) {
+		printf("Error. Parametros incorrectos.\n");
+		return EXIT_FAILURE;
+	}
+
+	//char * programa = leerArchivo("/home/utnso/git/tp-2017-1c-Nene-Malloc/PruebasParser/Debug/facil.ansisop");
+	char * programa = leerArchivo(argv[1]);
 
 	t_metadata_program * metadataPrograma;
 	metadataPrograma = metadata_desde_literal(programa);
