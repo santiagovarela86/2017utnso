@@ -21,6 +21,7 @@ typedef struct{
 	int fin;
 	int duracion;
 	int mensajes;
+	int socket_kernel;
 } programa;
 
 void iniciar_programa();
@@ -35,6 +36,7 @@ void * handlerKernel(void * args);
 Consola_Config* configuracion;
 int proceso_a_terminar = -1;
 int estado_consola = 1;
+int programas_ejecutando;
 
 int main(int argc , char **argv)
 {
@@ -45,6 +47,7 @@ int main(int argc , char **argv)
     	return EXIT_FAILURE;
     }
 
+	programas_ejecutando = 0;
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
 
@@ -133,15 +136,29 @@ void * handlerKernel(void * args){
 }
 
 void terminar_proceso(){
+
+	puts(" ");
+	puts("Ingrese PID del proceso a terminar");
+
+	int pid_ingresado;
+
+	scanf("%d", pid_ingresado);
+
+	proceso_a_terminar = pid_ingresado;
+
 	return;
 }
 
 void desconectar_consola(){
 	estado_consola = 0;
+	while(programas_ejecutando != 0){
+
+	}
 	return;
 }
 
 void limpiar_mensajes(){
+	system("clear");
 	return;
 }
 
@@ -186,6 +203,7 @@ void iniciar_programa(int* socket_kernel){
 		program->fin = 0;
 		program->inicio = 0;
 		program->mensajes = 0;
+		program->socket_kernel = socket_kernel;
 		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
 	}else{
 		printf("El programa no puedo iniciarse\n");
@@ -196,8 +214,20 @@ void iniciar_programa(int* socket_kernel){
 }
 
 void gestionar_programa(void* p){
+	programas_ejecutando++;
+
 	programa* program = malloc(sizeof(programa));
 	program = (programa*) p;
 
+	char buffer[1000];
 
+	while(program->pid != proceso_a_terminar && estado_consola == 1){
+
+		recv(program->socket_kernel, buffer, sizeof(buffer), 0);
+
+		printf("El proceso %d envio el mensaje: %s \n", program->pid, buffer);
+	}
+
+	programas_ejecutando = programas_ejecutando - 1;
+	free(program);
 }
