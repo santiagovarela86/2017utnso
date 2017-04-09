@@ -3,9 +3,16 @@
 //101 KER A CON - RESPUESTA HANDSHAKE
 //103 KER A CON - PID DE PROGRAMA
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <stddef.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -172,20 +179,20 @@ void iniciar_programa(int* socket_kernel){
 
 	scanf("%s", directorio);
 
-	FILE *ptr_fich1 = fopen(directorio, "r");
+//	FILE *ptr_fich1 = fopen(directorio, "r");
+
+	int fd_script = open(directorio, O_RDWR);
+	struct stat scriptFileStat;
+	fstat(fd_script, &scriptFileStat);
+	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 
 	int num;
-//TODO Cambiar el Buffer por una estructura Dinamica que alloque memoria por cada caracter leido
 	char buffer[1000 + 1];
 
-	while(!feof(ptr_fich1)){
+	enviarMensaje(socket_kernel, pmap_script);
 
-		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
-
-		buffer[num*sizeof(char)] = '\0';
-	}
-
-	enviarMensaje(socket_kernel, buffer);
+	close(fd_script);
+	munmap(pmap_script,scriptFileStat.st_size);
 
 	recv(socket_kernel, buffer, sizeof(buffer), 0);
 
