@@ -179,8 +179,6 @@ void iniciar_programa(int* socket_kernel){
 
 	scanf("%s", directorio);
 
-//	FILE *ptr_fich1 = fopen(directorio, "r");
-
 	int fd_script = open(directorio, O_RDWR);
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);

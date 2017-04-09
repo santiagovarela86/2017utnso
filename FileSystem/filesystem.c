@@ -39,8 +39,6 @@ int main(int argc, char** argv) {
 	size_t tamanio_bitmap = (metadata->cantidad_bloques);
 	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
 
-	imprimirBitmap(bitmap);
-
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);

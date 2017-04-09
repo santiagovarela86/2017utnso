@@ -82,10 +82,7 @@ void imprimirBitmap(t_bitarray* bitmap){
 	int j = 0, i = 0;
 	int octavos = 0;
 
-	//LA ASIGNACION CORRECTA ES LA DE BITMAP->SIZE PERO COMO ES MUY GRANDE Y EL ARCHIVO QUE CREE SOLO TIENE 64 CHARS
-	//HARCODEO CON 64.
-	//i = bitmap->size;
-	i = 64;
+	i = bitmap->size;
 
 	puts(" ");
 	puts("EL BITMAP ES:");
