@@ -59,6 +59,11 @@ void* manejo_kernel(void *args) {
 
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
+	char message[MAXBUF];
+
+	recv(socketKernel, message, sizeof(message), 0);
+	printf("%s", message);
+
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}

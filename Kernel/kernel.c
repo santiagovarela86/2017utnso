@@ -34,6 +34,8 @@ t_queue* cola_ejecucion;
 t_queue* cola_terminados;
 int numerador_pcb = 100;
 int skt_memoria;
+//TODO crear estructura de socket cpu
+int skt_cpu;
 
 int main(int argc, char **argv) {
 
@@ -291,6 +293,14 @@ void * handler_conexion_consola(void * sock) {
 	printf("%s", message);
 
 	enviarMensaje(&skt_memoria, message);
+	//caclcular tam de mess
+	//enviar c otro skt mem . recivir en mem
+	// llega mensaje de la mem validando si hay esp en mem
+	//asumumos que hay espacio
+
+
+
+	enviarMensaje(&skt_cpu, message);
 
 	t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, NULL, NULL);
 	queue_push(cola_listos, new_pcb);
@@ -323,7 +333,9 @@ void * hilo_conexiones_cpu(void *args) {
 	listen(socketKernelCPU, MAXCPU);
 
 	while ((socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length))) {
-			pthread_t thread_proceso_cpu;
+		skt_cpu = socketClienteCPU;
+
+		pthread_t thread_proceso_cpu;
 
 			creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
 
@@ -339,6 +351,7 @@ void * hilo_conexiones_cpu(void *args) {
 }
 
 void * handler_conexion_cpu(void * sock) {
+
 
 	handShakeListen((int *) &sock, "500", "102", "199", "CPU");
 

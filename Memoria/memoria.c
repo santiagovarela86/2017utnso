@@ -95,6 +95,7 @@ void * hilo_conexiones_kernel(void * args){
 
 	recv(socketCliente, message, sizeof(message), 0);
 	printf("%s", message);
+	//re recv(socketCliente, message, sizeof(message), 0); con el len
 
 	shutdown(socketCliente, 0);
 	close(socketCliente);
