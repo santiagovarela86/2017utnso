@@ -21,24 +21,7 @@
 #include "configuracion.h"
 #include <pthread.h>
 #include "helperFunctions.h"
-
-typedef struct{
-	int pid;
-	int inicio;
-	int fin;
-	int duracion;
-	int mensajes;
-	int socket_kernel;
-} programa;
-
-void iniciar_programa();
-void terminar_proceso();
-void desconectar_consola();
-void limpiar_mensajes();
-void gestionar_programa(void* p);
-
-void * handlerConsola(void * args);
-void * handlerKernel(void * args);
+#include "consola.h"
 
 Consola_Config* configuracion;
 int proceso_a_terminar = -1;
@@ -99,7 +82,7 @@ void * handlerConsola(void * args){
 		puts("1) Iniciar programa");
 		puts("2) Finalizar programa");
 		puts("3) Desconectar");
-		puts("4) Limpar");
+		puts("4) Limpiar");
 		puts("***********************************************************");
 
 		scanf("%d",&numero);
