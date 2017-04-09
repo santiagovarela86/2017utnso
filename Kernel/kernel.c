@@ -33,6 +33,7 @@ t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
 t_queue* cola_terminados;
 int numerador_pcb = 100;
+int skt_memoria;
 
 int main(int argc, char **argv) {
 
@@ -236,6 +237,8 @@ void* manejo_memoria(void *args) {
 	conectarSocket(&socketMemoria, &direccionMemoria);
 	puts("Conectado a la Memoria\n");
 
+	skt_memoria = socketMemoria;
+
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
 	//Loop para seguir comunicado con el servidor
@@ -279,54 +282,6 @@ void * hilo_conexiones_consola(void *args) {
 	return EXIT_SUCCESS;
 }
 
-/*
-void * handler_conexion_consola(void * sock) {
-
-	char consola_message[1000] = "";
-	char* codigo;
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-
-	codigo = strtok(consola_message, ";");
-
-	if (atoi(codigo) == 300) {
-		printf("Se acepto una consola \n");
-		conexionesConsola++;
-		printf("Tengo %d Consolas conectadas \n", conexionesConsola);
-
-		consola_message[0] = '1';
-		consola_message[1] = '0';
-		consola_message[2] = '1';
-		consola_message[3] = ';';
-
-		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-			puts("Fallo el envio al servidor");
-			return EXIT_FAILURE;
-		}
-	} else {
-		printf("Se rechazo una conexion incorrecta \n");
-
-		consola_message[0] = '1';
-		consola_message[1] = '9';
-		consola_message[2] = '9';
-		consola_message[3] = ';';
-
-		if (send((int) sock, consola_message, strlen(consola_message), 0) < 0) {
-			puts("Fallo el envio al servidor");
-			return EXIT_FAILURE;
-		}
-	}
-
-	recv((int) sock, consola_message, sizeof(consola_message), 0);
-
-	printf("%s", consola_message);
-
-	while (1) {}
-
-	return EXIT_SUCCESS;
-}
-*/
-
 void * handler_conexion_consola(void * sock) {
 	char message[MAXBUF];
 	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
@@ -334,6 +289,8 @@ void * handler_conexion_consola(void * sock) {
 	int * socketCliente = (int *) &sock;
 	recv(* socketCliente, message, sizeof(message), 0);
 	printf("%s", message);
+
+	enviarMensaje(&skt_memoria, message);
 
 	t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, NULL, NULL);
 	queue_push(cola_listos, new_pcb);

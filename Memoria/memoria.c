@@ -91,6 +91,11 @@ void * hilo_conexiones_kernel(void * args){
 
 	handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
 
+	char message[MAXBUF];
+
+	recv(socketCliente, message, sizeof(message), 0);
+	printf("%s", message);
+
 	shutdown(socketCliente, 0);
 	close(socketCliente);
 

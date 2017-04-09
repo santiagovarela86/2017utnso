@@ -75,7 +75,7 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 	char * codigo;
 	char * separador = ";";
 
-	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+	recv(* socketCliente, message, sizeof(message), 0);
 		codigo = strtok(message, separador);
 
 		if(strcmp(codigo, codigoEsperado) == 0){
@@ -89,11 +89,7 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
-	}
 
-	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {
-		printf("se desconecto un socket del proceso %s \n", proceso);
-	}
 }
 
 void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
