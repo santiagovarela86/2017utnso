@@ -177,9 +177,10 @@ void iniciar_programa(int* socket_kernel){
 
 	recv(socket_kernel, buffer, sizeof(buffer), 0);
 
-	while(1){
+	/*while(1){
 
 	}
+	*/
 	char* codigo;
 	codigo = strtok(buffer, ";");
 
