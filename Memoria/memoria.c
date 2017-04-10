@@ -220,9 +220,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
-
-	int tamanio_memoria = config->marcos * config->marco_size;
-	int bloque_memoria = malloc(sizeof(tamanio_memoria)); //no deberia ser int * bloque_memoria esto?
+	int* bloque_memoria = calloc(config->marcos, config->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
