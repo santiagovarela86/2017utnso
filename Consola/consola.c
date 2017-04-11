@@ -167,7 +167,6 @@ void iniciar_programa(int* socket_kernel){
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 
-	int num;
 	char buffer[1000 + 1];
 
 	enviarMensaje(socket_kernel, pmap_script);
@@ -177,10 +176,6 @@ void iniciar_programa(int* socket_kernel){
 
 	recv(*socket_kernel, buffer, sizeof(buffer), 0);
 
-	/*while(1){
-
-	}
-	*/
 	char** respuesta_kernel = string_split(buffer, ",");
 
 	programa* program = malloc(sizeof(program));
@@ -191,7 +186,7 @@ void iniciar_programa(int* socket_kernel){
 		program->fin = 0;
 		program->inicio = 0;
 		program->mensajes = 0;
-		program->socket_kernel = socket_kernel;
+		program->socket_kernel = *socket_kernel;
 		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
 	}else{
 		printf("El programa no puedo iniciarse\n");
@@ -215,6 +210,8 @@ void gestionar_programa(void* p){
 
 		printf("El proceso %d envio el mensaje: %s \n", program->pid, buffer);
 	}
+
+	puts("aca no deberia llegar");
 
 	programas_ejecutando = programas_ejecutando - 1;
 	free(program);
