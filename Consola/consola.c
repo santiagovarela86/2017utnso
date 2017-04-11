@@ -175,19 +175,18 @@ void iniciar_programa(int* socket_kernel){
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
 
-	recv(socket_kernel, buffer, sizeof(buffer), 0);
+	recv(*socket_kernel, buffer, sizeof(buffer), 0);
 
 	/*while(1){
 
 	}
 	*/
-	char* codigo;
-	codigo = strtok(buffer, ";");
+	char** respuesta_kernel = string_split(buffer, ",");
 
 	programa* program = malloc(sizeof(program));
 
-	if(atoi(codigo) == 103){
-		program->pid = atoi(strtok(NULL, ";"));
+	if(atoi(respuesta_kernel[0]) == 103){
+		program->pid = atoi(respuesta_kernel[1]);
 		program->duracion = 0;
 		program->fin = 0;
 		program->inicio = 0;
