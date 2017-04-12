@@ -225,7 +225,7 @@ void* manejo_filesystem(void *args) {
 	//}
 
 	char * message;
-	int result = recv(&socketFS, message, sizeof(message), 0);
+	int result = recv(socketFS, message, sizeof(message), 0);
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -251,7 +251,7 @@ void* manejo_memoria(void *args) {
 	//}
 
 	char * message;
-	int result = recv(&socketMemoria, message, sizeof(message), 0);
+	int result = recv(socketMemoria, message, sizeof(message), 0);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -328,6 +328,7 @@ void * handler_conexion_consola(void * sock) {
 		// llega mensaje de la mem validando si hay esp en mem
 		//asumumos que hay espacio
 
+		//LO COMENTO PARA PROBAR SOLO LA CONSOLA
 		enviarMensaje(&skt_cpu, message);
 
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
