@@ -151,9 +151,6 @@ void * handlerConsola(void * args){
 	if(intentos_fallidos == 10){
 		return EXIT_FAILURE;
 	}
-
-	//VA?
-	//pthread_exit(NULL);
 }
 
 void * handlerKernel(void * args){
@@ -171,8 +168,6 @@ void * handlerKernel(void * args){
 	//shutdown(socketKernel, 0);
 	//close(socketKernel);
 
-	//VA?
-	//pthread_exit(NULL);
 	return EXIT_SUCCESS;
 }
 
@@ -194,12 +189,13 @@ void terminar_proceso(){
 void desconectar_consola(){
 	//estado_consola = 0;
 	infoConsola.estado_consola = 0;
+
+	/* SEGUN EL TP, EL DESCONECTAR CONSOLA DEBE SER ABORTIVO
 	//while(programas_ejecutando != 0){
 	while(infoConsola.programas_ejecutando != 0){
 
 	}
-
-	//destruirEstado(&infoConsola);
+	*/
 
 	return;
 }
@@ -231,23 +227,27 @@ void iniciar_programa(int* socket_kernel){
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
 
-	recv(*socket_kernel, buffer, sizeof(buffer), 0);
+	int result = recv(*socket_kernel, buffer, sizeof(buffer), 0);
 
-	char** respuesta_kernel = string_split(buffer, ",");
+	if (result > 0){
+		char** respuesta_kernel = string_split(buffer, ",");
 
-	programa* program = malloc(sizeof(program));
+		programa* program = malloc(sizeof(program));
 
-	if(atoi(respuesta_kernel[0]) == 103){
-		program->pid = atoi(respuesta_kernel[1]);
-		program->duracion = 0;
-		program->fin = 0;
-		program->inicio = 0;
-		program->mensajes = 0;
-		program->socket_kernel = *socket_kernel;
-		creoThread(&thread_id_programa, gestionar_programa, (void*)program);
-	}else{
-		printf("El programa no puedo iniciarse\n");
-		return;
+		if(atoi(respuesta_kernel[0]) == 103){
+			program->pid = atoi(respuesta_kernel[1]);
+			program->duracion = 0;
+			program->fin = 0;
+			program->inicio = 0;
+			program->mensajes = 0;
+			program->socket_kernel = *socket_kernel;
+			creoThread(&thread_id_programa, gestionar_programa, (void*)program);
+		}else{
+			printf("El programa no puedo iniciarse\n");
+			return;
+		}
+	} else {
+		printf("Error al recibir datos del Kernel");
 	}
 
 	return;

@@ -221,11 +221,13 @@ void* manejo_filesystem(void *args) {
 	handShakeSend(&socketFS, "100", "401", "File System");
 
 	//Loop para seguir comunicado con el servidor
-	//while (1) {
-	//}
+	while (1) {
+	}
 
+	/* POR ALGUNA RAZON NO QUEDA BLOQUEADO... SE DESBLOQUEA (MENSAJE REPLICADO AL FILESYSTEM?)
 	char * message;
 	int result = recv(socketFS, message, sizeof(message), 0);
+	*/
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -247,11 +249,13 @@ void* manejo_memoria(void *args) {
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
 	//Loop para seguir comunicado con el servidor
-	//while (1) {
-	//}
+	while (1) {
+	}
 
+	/* POR ALGUNA RAZON NO QUEDA BLOQUEADO... SE DESBLOQUEA (MENSAJE REPLICADO A LA MEMORIA?)
 	char * message;
 	int result = recv(socketMemoria, message, sizeof(message), 0);
+	*/
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -269,16 +273,6 @@ void * hilo_conexiones_consola(void *args) {
 	creoSocket(&socketKernelConsola, &direccionKernel, INADDR_ANY, configuracion->puerto_programa);
 	bindSocket(&socketKernelConsola, &direccionKernel);
 	listen(socketKernelConsola, MAXCON);
-	//generoHilosPorConexion(&socketKernelConsola, &socketClienteConsola, &direccionConsola, handler_conexion_consola);
-
-	socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length);
-	pthread_t thread_proceso_consola;
-	creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
-
-	if (socketClienteConsola < 0) {
-				perror("Fallo en el manejo del hilo Consola");
-				return EXIT_FAILURE;
-	}
 
 	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
 		pthread_t thread_proceso_consola;
@@ -289,21 +283,6 @@ void * hilo_conexiones_consola(void *args) {
 			return EXIT_FAILURE;
 		}
 	}
-
-	/*
-
-	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
-		pthread_t thread_proceso_consola;
-
-		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
-
-		if (socketClienteConsola < 0) {
-			perror("Fallo en el manejo del hilo Consola");
-			return EXIT_FAILURE;
-		}
-	}
-
-	*/
 
 	shutdown(socketClienteConsola, 0);
 	close(socketClienteConsola);
@@ -319,17 +298,12 @@ void * handler_conexion_consola(void * sock) {
 
 	int result = recv(* socketCliente, message, sizeof(message), 0);
 
-	if (result > 0) {
+	while (result) {
 		printf("%s", message);
 
-		enviarMensaje(&skt_memoria, message);
-		//caclcular tam de mess
-		//enviar c otro skt mem . recivir en mem
-		// llega mensaje de la mem validando si hay esp en mem
-		//asumumos que hay espacio
-
-		//LO COMENTO PARA PROBAR SOLO LA CONSOLA
-		enviarMensaje(&skt_cpu, message);
+		//SE COMENTO PORQUE POR ALGUNA RAZON, AL ENVIAR EL MENSAJE DESDE UNA CONSOLA 3 VECES, EL KERNEL CRASHEA
+		//enviarMensaje(&skt_memoria, message);
+		//enviarMensaje(&skt_cpu, message);
 
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
 		queue_push(cola_listos, new_pcb);
@@ -341,7 +315,11 @@ void * handler_conexion_consola(void * sock) {
 		string_append(&info_pid, string_itoa(new_pcb->pid));
 		string_append(&respuestaAConsola, info_pid);
 		enviarMensaje(socketCliente, respuestaAConsola);
-	}else{
+
+		result = recv(* socketCliente, message, sizeof(message), 0);
+	}
+
+	if (result <= 0) {
 		printf("Se desconecto una Consola\n");
 	}
 
@@ -373,7 +351,6 @@ void * handler_conexion_consola(void * sock) {
 
 	return EXIT_SUCCESS;
 }
-
 
 void * hilo_conexiones_cpu(void *args) {
 
