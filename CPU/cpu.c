@@ -68,11 +68,11 @@ void* manejo_kernel(void *args) {
 	t_metadata_program* programa = metadata_desde_literal(message);
 
 	//ESTOS PRINTF SON PARA VER QUE LEA BIEN EL SCRIPT - LUEGO HAY QUE QUITARLOS
-	printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
-	printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
+	//printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
+	//printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
 
 	//esta es la llamada al parser
-	procesoLineas(message);
+	//procesoLineas(message);
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
