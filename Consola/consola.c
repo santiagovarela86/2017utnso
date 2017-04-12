@@ -241,7 +241,9 @@ void iniciar_programa(int* socket_kernel){
 			program->inicio = 0;
 			program->mensajes = 0;
 			program->socket_kernel = *socket_kernel;
-			creoThread(&thread_id_programa, gestionar_programa, (void*)program);
+			//COMENTE ESTO PARA PODER TERMINAR BIEN LA COMUNICACION ENTRE MEMORIA KERNEL CONSOLA Y CPU
+			//ESTE THREAD INTERRUMPE LA CONSOLA
+			//creoThread(&thread_id_programa, gestionar_programa, (void*)program);
 		}else{
 			printf("El programa no puedo iniciarse\n");
 			return;

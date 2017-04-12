@@ -85,6 +85,53 @@ void * hilo_conexiones_kernel(void * args){
 
 	socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
 
+	if (socketCliente) {
+		semaforo = 1;
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+		handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
+		char message[MAXBUF];
+
+		int result = recv(socketCliente, message, sizeof(message), 0);
+
+		while (result) {
+			printf("%s", message);
+			result = recv(socketCliente, message, sizeof(message), 0);
+		}
+
+		if (result <= 0) {
+			printf("Se desconecto el Kernel\n");
+		}
+	} else {
+		perror("Fallo en el manejo del hilo Kernel");
+		return EXIT_FAILURE;
+	}
+
+	/*
+	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)) {
+		semaforo = 1;
+
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+		handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
+
+		char message[MAXBUF];
+		int result = recv(socketCliente, message, sizeof(message), 0);
+
+		if (result) {
+			printf("%s", message);
+		} else {
+			printf("Se desconecto el Kernel\n");
+		}
+	}
+
+	if (socketCliente < 0) {
+		perror("Fallo en el manejo del hilo Kernel");
+		return EXIT_FAILURE;
+	}
+	*/
+
+	/*
+	socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+
 	semaforo = 1;
 
 	printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
@@ -96,6 +143,7 @@ void * hilo_conexiones_kernel(void * args){
 	recv(socketCliente, message, sizeof(message), 0);
 	printf("%s", message);
 	//re recv(socketCliente, message, sizeof(message), 0); con el len
+	*/
 
 	shutdown(socketCliente, 0);
 	close(socketCliente);

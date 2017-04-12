@@ -302,7 +302,7 @@ void * handler_conexion_consola(void * sock) {
 		printf("%s", message);
 
 		//SE COMENTO PORQUE POR ALGUNA RAZON, AL ENVIAR EL MENSAJE DESDE UNA CONSOLA 3 VECES, EL KERNEL CRASHEA
-		//enviarMensaje(&skt_memoria, message);
+		enviarMensaje(&skt_memoria, message);
 		//enviarMensaje(&skt_cpu, message);
 
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
