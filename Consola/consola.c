@@ -20,13 +20,51 @@
 #include <commons/string.h>
 #include "configuracion.h"
 #include <pthread.h>
-#include "helperFunctions.h"
+#include "helperFunctions.h"l
 #include "consola.h"
 
 Consola_Config* configuracion;
+
+/*
 int proceso_a_terminar = -1;
 int estado_consola = 1;
-int programas_ejecutando;
+int programas_ejecutando = 0;
+*/
+
+typedef struct InfoConsola {
+	int proceso_a_terminar;
+	int estado_consola;
+	int programas_ejecutando;
+	t_list * threads;
+	t_list * sockets;
+} InfoConsola ;
+
+void inicializarEstado(InfoConsola * infoConsola){
+	infoConsola->proceso_a_terminar = -1;
+	infoConsola->estado_consola = 1;
+	infoConsola->programas_ejecutando = 0;
+	infoConsola->threads = list_create();
+	infoConsola->sockets = list_create();
+}
+
+/*
+void threadDestroyer(void * thread){
+	pthread_cancel(thread);
+}
+*/
+
+void socketDestroyer(void * socket){
+	shutdown(socket, 0);
+	close(socket);
+}
+
+void destruirEstado(InfoConsola * infoConsola){
+	list_destroy(infoConsola->threads);
+	//list_destroy_and_destroy_elements(infoConsola->threads, threadDestroyer);
+	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
+}
+
+InfoConsola infoConsola;
 
 int main(int argc , char **argv)
 {
@@ -37,12 +75,15 @@ int main(int argc , char **argv)
     	return EXIT_FAILURE;
     }
 
-	programas_ejecutando = 0;
+	//programas_ejecutando = 0;
+	inicializarEstado(&infoConsola);
+
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
 
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
+	list_add(infoConsola.sockets, &socketKernel);
 
 	creoSocket(&socketKernel, &direccionKernel, inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
 	puts("Socket de conexion al Kernel creado correctamente\n");
@@ -52,6 +93,8 @@ int main(int argc , char **argv)
 
     pthread_t threadConsola;
     pthread_t threadKernel;
+    list_add(infoConsola.threads, &threadConsola);
+    list_add(infoConsola.threads, &threadKernel);
 
     creoThread(&threadConsola, handlerConsola, &socketKernel);
     creoThread(&threadKernel, handlerKernel, &socketKernel);
@@ -61,6 +104,7 @@ int main(int argc , char **argv)
 
 	//while(1){}
 
+	destruirEstado(&infoConsola);
 	free(configuracion);
 
     return EXIT_SUCCESS;
@@ -74,7 +118,8 @@ void * handlerConsola(void * args){
 
 	int intentos_fallidos = 0;
 
-	while(intentos_fallidos < 10 && estado_consola == 1){
+	//while(intentos_fallidos < 10 && estado_consola == 1){
+	while(intentos_fallidos < 10 && infoConsola.estado_consola == 1){
 
 		puts("");
 		puts("***********************************************************");
@@ -107,6 +152,8 @@ void * handlerConsola(void * args){
 		return EXIT_FAILURE;
 	}
 
+	//VA?
+	//pthread_exit(NULL);
 }
 
 void * handlerKernel(void * args){
@@ -116,13 +163,17 @@ void * handlerKernel(void * args){
 	handShakeSend(socketKernel, "300", "101", "Kernel");
 
 	//Loop para seguir comunicado con el servidor
-	while (estado_consola == 1) {
+	//while (estado_consola == 1) {
+	while (infoConsola.estado_consola == 1) {
 	}
 
-	shutdown(socketKernel, 0);
-	close(socketKernel);
-	return EXIT_SUCCESS;
+	//Lo hace el destructor
+	//shutdown(socketKernel, 0);
+	//close(socketKernel);
 
+	//VA?
+	//pthread_exit(NULL);
+	return EXIT_SUCCESS;
 }
 
 void terminar_proceso(){
@@ -134,16 +185,22 @@ void terminar_proceso(){
 
 	scanf("%d", pid_ingresado);
 
-	proceso_a_terminar = pid_ingresado;
+	//proceso_a_terminar = pid_ingresado;
+	infoConsola.proceso_a_terminar = pid_ingresado;
 
 	return;
 }
 
 void desconectar_consola(){
-	estado_consola = 0;
-	while(programas_ejecutando != 0){
+	//estado_consola = 0;
+	infoConsola.estado_consola = 0;
+	//while(programas_ejecutando != 0){
+	while(infoConsola.programas_ejecutando != 0){
 
 	}
+
+	//destruirEstado(&infoConsola);
+
 	return;
 }
 
@@ -197,14 +254,16 @@ void iniciar_programa(int* socket_kernel){
 }
 
 void gestionar_programa(void* p){
-	programas_ejecutando++;
+	//programas_ejecutando++;
+	infoConsola.programas_ejecutando++;
 
 	programa* program = malloc(sizeof(programa));
 	program = (programa*) p;
 
 	char buffer[1000];
 
-	while(program->pid != proceso_a_terminar && estado_consola == 1){
+	//while(program->pid != proceso_a_terminar && estado_consola == 1){
+	while(program->pid != infoConsola.proceso_a_terminar && infoConsola.estado_consola == 1){
 
 		recv(program->socket_kernel, buffer, sizeof(buffer), 0);
 
@@ -213,6 +272,7 @@ void gestionar_programa(void* p){
 
 	puts("aca no deberia llegar");
 
-	programas_ejecutando = programas_ejecutando - 1;
+	//programas_ejecutando = programas_ejecutando - 1;
+	infoConsola.programas_ejecutando = infoConsola.programas_ejecutando - 1;
 	free(program);
 }
