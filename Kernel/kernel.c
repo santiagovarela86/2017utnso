@@ -221,8 +221,11 @@ void* manejo_filesystem(void *args) {
 	handShakeSend(&socketFS, "100", "401", "File System");
 
 	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
+	//while (1) {
+	//}
+
+	char * message;
+	int result = recv(&socketFS, message, sizeof(message), 0);
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -244,8 +247,11 @@ void* manejo_memoria(void *args) {
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
 	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
+	//while (1) {
+	//}
+
+	char * message;
+	int result = recv(&socketMemoria, message, sizeof(message), 0);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -265,7 +271,26 @@ void * hilo_conexiones_consola(void *args) {
 	listen(socketKernelConsola, MAXCON);
 	//generoHilosPorConexion(&socketKernelConsola, &socketClienteConsola, &direccionConsola, handler_conexion_consola);
 
+	socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length);
+	pthread_t thread_proceso_consola;
+	creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
 
+	if (socketClienteConsola < 0) {
+				perror("Fallo en el manejo del hilo Consola");
+				return EXIT_FAILURE;
+	}
+
+	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
+		pthread_t thread_proceso_consola;
+		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
+
+		if (socketClienteConsola < 0) {
+			perror("Fallo en el manejo del hilo Consola");
+			return EXIT_FAILURE;
+		}
+	}
+
+	/*
 
 	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
 		pthread_t thread_proceso_consola;
@@ -278,6 +303,8 @@ void * hilo_conexiones_consola(void *args) {
 		}
 	}
 
+	*/
+
 	shutdown(socketClienteConsola, 0);
 	close(socketClienteConsola);
 
@@ -289,7 +316,35 @@ void * handler_conexion_consola(void * sock) {
 	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
 
 	int * socketCliente = (int *) &sock;
-	recv(* socketCliente, message, sizeof(message), 0);
+
+	int result = recv(* socketCliente, message, sizeof(message), 0);
+
+	if (result > 0) {
+		printf("%s", message);
+
+		enviarMensaje(&skt_memoria, message);
+		//caclcular tam de mess
+		//enviar c otro skt mem . recivir en mem
+		// llega mensaje de la mem validando si hay esp en mem
+		//asumumos que hay espacio
+
+		enviarMensaje(&skt_cpu, message);
+
+		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
+		queue_push(cola_listos, new_pcb);
+
+		char* info_pid = string_new();
+		char* respuestaAConsola = string_new();
+		string_append(&info_pid, "103");
+		string_append(&info_pid, ",");
+		string_append(&info_pid, string_itoa(new_pcb->pid));
+		string_append(&respuestaAConsola, info_pid);
+		enviarMensaje(socketCliente, respuestaAConsola);
+	}else{
+		printf("Se desconecto una Consola\n");
+	}
+
+	/*recv(* socketCliente, message, sizeof(message), 0);
 	printf("%s", message);
 
 	enviarMensaje(&skt_memoria, message);
@@ -312,6 +367,8 @@ void * handler_conexion_consola(void * sock) {
 	string_append(&info_pid, string_itoa(new_pcb->pid));
 	string_append(&respuestaAConsola, info_pid);
 	enviarMensaje(socketCliente, respuestaAConsola);
+
+	*/
 
 	return EXIT_SUCCESS;
 }

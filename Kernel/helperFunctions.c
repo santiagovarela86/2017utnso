@@ -76,7 +76,9 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 	char * codigo;
 	char * separador = ";";
 
-	recv(* socketCliente, message, sizeof(message), 0);
+	int result = recv(* socketCliente, message, sizeof(message), 0);
+
+	if (result > 0) {
 		codigo = strtok(message, separador);
 
 		if(strcmp(codigo, codigoEsperado) == 0){
@@ -90,6 +92,9 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
+	} else {
+		printf("Error al recibir datos del %s", proceso);
+	}
 
 }
 
@@ -101,6 +106,24 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 	strcpy(message, codigoEnvio);
 	strcat(message, separador);
 	enviarMensaje(socketServer, message);
+
+	int result = recv(* socketServer, message, sizeof(message), 0);
+
+	if (result > 0) {
+		codigo = strtok(message, separador);
+
+		if (strcmp(codigo, codigoEsperado) == 0) {
+			printf("El proceso %s acepto la conexion \n", proceso);
+			printf("\n");
+		} else {
+			printf("El proceso %s rechazo la conexion \n", proceso);
+			exit(errno);
+		}
+	} else {
+		printf("Error al recibir datos del %s", proceso);
+	}
+
+	/*
 
 	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
 
@@ -114,4 +137,6 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 				exit(errno);
 			}
 	}
+
+	*/
 }
