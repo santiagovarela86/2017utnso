@@ -62,17 +62,24 @@ void* manejo_kernel(void *args) {
 
 	char message[MAXBUF];
 
-	recv(socketKernel, message, sizeof(message), 0);
-	printf("%s", message);
+	int result = recv(socketKernel, message, sizeof(message), 0);
+
+	while (result) {
+		printf("%s", message);
+		//esta es la llamada al parser
+		//procesoLineas(message);
+		result = recv(socketKernel, message, sizeof(message), 0);
+	}
+
+	if (result <= 0) {
+		printf("Se desconecto el Kernel\n");
+	}
 
 	t_metadata_program* programa = metadata_desde_literal(message);
 
 	//ESTOS PRINTF SON PARA VER QUE LEA BIEN EL SCRIPT - LUEGO HAY QUE QUITARLOS
 	//printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
 	//printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
-
-	//esta es la llamada al parser
-	//procesoLineas(message);
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
