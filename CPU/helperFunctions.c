@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "helperFunctions.h"
+#include <pthread.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -75,7 +76,9 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 	char * codigo;
 	char * separador = ";";
 
-	while((recv(* socketCliente, message, sizeof(message), 0)) > 0){
+	int result = recv(* socketCliente, message, sizeof(message), 0);
+
+	if (result > 0) {
 		codigo = strtok(message, separador);
 
 		if(strcmp(codigo, codigoEsperado) == 0){
@@ -89,11 +92,10 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			printf("Se rechazo la conexion del proceso %s \n", proceso);
 			enviarMensaje(socketCliente, message);
 		}
+	} else {
+		printf("Error al recibir datos del %s", proceso);
 	}
 
-	if ((recv(* socketCliente, message, sizeof(message), 0)) <= 0) {
-		printf("se desconecto un socket del proceso %s \n", proceso);
-	}
 }
 
 void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
@@ -105,7 +107,25 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 	strcat(message, separador);
 	enviarMensaje(socketServer, message);
 
-	recv(* socketServer, message, sizeof(message), 0);
+	int result = recv(* socketServer, message, sizeof(message), 0);
+
+	if (result > 0) {
+		codigo = strtok(message, separador);
+
+		if (strcmp(codigo, codigoEsperado) == 0) {
+			printf("El proceso %s acepto la conexion \n", proceso);
+			printf("\n");
+		} else {
+			printf("El proceso %s rechazo la conexion \n", proceso);
+			exit(errno);
+		}
+	} else {
+		printf("Error al recibir datos del %s", proceso);
+	}
+
+	/*
+
+	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
 
 			codigo = strtok(message, separador);
 
@@ -116,5 +136,7 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 				printf("El proceso %s rechazo la conexion \n", proceso);
 				exit(errno);
 			}
+	}
 
+	*/
 }
