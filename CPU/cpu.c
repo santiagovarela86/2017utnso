@@ -15,6 +15,9 @@
 #include <pthread.h>
 #include "configuracion.h"
 #include "helperFunctions.h"
+#include "metadata_program.h"
+#include "parser.h"
+#include "sintax.h"
 
 void* manejo_memoria();
 void* manejo_kernel();
@@ -63,6 +66,12 @@ void* manejo_kernel(void *args) {
 
 	recv(socketKernel, message, sizeof(message), 0);
 	printf("%s", message);
+
+	t_metadata_program* programa = metadata_desde_literal(message);
+
+	//ESTOS PRINTF SON PARA VER QUE LEA BIEN EL SCRIPT - LUEGO HAY QUE QUITARLOS
+	printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
+	printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
