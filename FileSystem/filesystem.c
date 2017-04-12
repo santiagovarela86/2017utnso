@@ -2,9 +2,14 @@
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //499 FIL A OTR - RESPUESTA A CONEXION INCORRECTA
 
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -94,14 +99,44 @@ void atender_peticiones(int socket){
 
 	scanf("%s", directorio);
 
-	validar_archivo(directorio);
+	char permi = 'r';
+
+	if(validar_archivo(directorio) == 1){
+
+		char* archi = abrir_archivo(directorio, permi);
+
+	}else{
+	puts("El archivo no existe");
+	}
 */
 	while(1){
 
 	}
 }
 
-void validar_archivo(char* directorio){
+char* abrir_archivo(char* directorio, char permiso){
+	int fd_script = open(directorio, O_RDWR);
+	struct stat scriptFileStat;
+	fstat(fd_script, &scriptFileStat);
+
+	if(permiso == 'r'){
+		char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
+		close(fd_script);
+		return arch;
+	}else if(permiso == 'w'){
+		char* arch = mmap(0, scriptFileStat.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
+		close(fd_script);
+		return arch;
+	}else{
+		puts("Permiso incorrecto");
+	}
+
+	close(fd_script);
+	return 0;
+
+}
+
+int validar_archivo(char* directorio){
 
 	char* path = string_new();
 
@@ -111,9 +146,11 @@ void validar_archivo(char* directorio){
 	string_append(&path,directorio);
 
 	if (fopen(path, "r") == NULL){
-		puts("El archivo no existe");
+	 //El archivo no existe
+		return -1;
 	}else{
-		puts("El archivo existe");
+	 //El archivo existe
+		return 1;
 	}
 
 }

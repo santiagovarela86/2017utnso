@@ -10,6 +10,7 @@
 
 void * hilo_conexiones_kernel(void * args);
 void atender_peticiones(int socket);
-void validar_archivo(char* directorio);
+int validar_archivo(char* directorio);
+char* abrir_archivo(char* directorio, char permiso);
 
 #endif /* FILESYSTEM_H_ */
