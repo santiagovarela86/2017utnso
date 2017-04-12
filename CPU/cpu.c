@@ -15,9 +15,7 @@
 #include <pthread.h>
 #include "configuracion.h"
 #include "helperFunctions.h"
-#include "metadata_program.h"
-#include "parser.h"
-#include "sintax.h"
+#include "helperParser.h"
 
 void* manejo_memoria();
 void* manejo_kernel();
@@ -72,6 +70,9 @@ void* manejo_kernel(void *args) {
 	//ESTOS PRINTF SON PARA VER QUE LEA BIEN EL SCRIPT - LUEGO HAY QUE QUITARLOS
 	printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
 	printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
+
+	//esta es la llamada al parser
+	procesoLineas(message);
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
