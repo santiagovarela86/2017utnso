@@ -280,10 +280,12 @@ void * hilo_conexiones_consola(void *args) {
 		printf("%s:%d conectado\n", inet_ntoa(direccionConsola.sin_addr), ntohs(direccionConsola.sin_port));
 		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
 
+		/*
 		if (socketClienteConsola < 0) {
 			perror("Fallo en el manejo del hilo Consola");
 			return EXIT_FAILURE;
 		}
+		*/
 	}
 
 	shutdown(socketClienteConsola, 0);
@@ -374,10 +376,12 @@ void * hilo_conexiones_cpu(void *args) {
 		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
 		creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
 
+		/*
 		if (socketClienteCPU < 0) {
 			perror("Fallo en el manejo del hilo CPU");
 			return EXIT_FAILURE;
 		}
+		*/
 	}
 
 	shutdown(socketClienteCPU, 0);

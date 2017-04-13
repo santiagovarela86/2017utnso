@@ -72,7 +72,33 @@ int main(int argc, char** argv) {
 void * hilo_conexiones_kernel(void * args){
 	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
 
-	//while (1) {
+	int socketCliente;
+	struct sockaddr_in direccionCliente;
+	socklen_t length = sizeof direccionCliente;
+
+	socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
+
+	if (socketCliente) {
+		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+		handShakeListen(&socketCliente, "100", "401", "499", "Kernel");
+		char message[MAXBUF];
+
+		int result = recv(socketCliente, message, sizeof(message), 0);
+
+		while (result) {
+			printf("%s", message);
+			result = recv(socketCliente, message, sizeof(message), 0);
+		}
+
+		if (result <= 0) {
+			printf("Se desconecto el Kernel\n");
+		}
+	} else {
+		perror("Fallo en el manejo del hilo Kernel");
+		return EXIT_FAILURE;
+	}
+
+	/*
 		int socketCliente;
 		struct sockaddr_in direccionCliente;
 		socklen_t length = sizeof direccionCliente;
@@ -87,7 +113,15 @@ void * hilo_conexiones_kernel(void * args){
 
 		shutdown(socketCliente, 0);
 		close(socketCliente);
-	//}
+	*/
+
+	//Lo comento porque es un while 1
+	//La idea seria usar el message en el while de arriba para transmitirse mensajes
+	//entre el kernel y el FS
+	//atender_peticiones(socketCliente);
+
+	shutdown(socketCliente, 0);
+	close(socketCliente);
 
 	return EXIT_SUCCESS;
 }
