@@ -12,8 +12,8 @@
 
 typedef struct {
 	int pid;
-	int* program_counter;
-	int* tabla_archivos;
+	int program_counter;
+	int tabla_archivos;
 	int pos_stack;
 	int* socket_cpu;
 	int exit_code;
@@ -30,7 +30,8 @@ void log_console_in_disk(char*);
 void eliminar_pcb(t_pcb*);
 void flush_cola_pcb(t_queue*);
 t_queue* crear_cola_pcb();
-t_pcb* nuevo_pcb(int, int*, int*, int, int*, int);
+t_pcb* nuevo_pcb(int, int, int*, int, int*, int);
+char* serializar_pcb(t_pcb* pcb);
 
 
 #endif /* KERNEL_H_ */

@@ -32,7 +32,7 @@ t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
 t_queue* cola_terminados;
-int numerador_pcb = 100;
+int numerador_pcb = 1000;
 int skt_memoria;
 //TODO crear estructura de socket cpu
 int skt_cpu;
@@ -307,10 +307,17 @@ void * handler_conexion_consola(void * sock) {
 
 		//SE COMENTO PORQUE POR ALGUNA RAZON, AL ENVIAR EL MENSAJE DESDE UNA CONSOLA 3 VECES, EL KERNEL CRASHEA
 		enviarMensaje(&skt_memoria, message);
-		enviarMensaje(&skt_cpu, message);
 
-		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
+		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
 		queue_push(cola_listos, new_pcb);
+
+
+		enviarMensaje(&skt_cpu, message);
+		/*//GSIMOIS: SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
+		char* mensajeACPU = serializar_pcb(new_pcb);
+		enviarMensaje(&skt_cpu, mensajeACPU);
+		//FIN CODIGO DE SERIALIZACION DEL PCB
+		 */
 
 		char* info_pid = string_new();
 		char* respuestaAConsola = string_new();
@@ -354,6 +361,20 @@ void * handler_conexion_consola(void * sock) {
 	*/
 
 	return EXIT_SUCCESS;
+}
+
+char* serializar_pcb(t_pcb* pcb){
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, string_itoa(pcb->pid));
+	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, string_itoa(pcb->program_counter));
+	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
+	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
+	return mensajeACPU;
 }
 
 void * hilo_conexiones_cpu(void *args) {
@@ -413,7 +434,7 @@ void * handler_conexion_cpu(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-t_pcb *nuevo_pcb(int pid, int* program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
+t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
 	t_pcb* new = malloc(sizeof(t_pcb));
 	new->pid = pid;
 	new->program_counter = program_counter;
@@ -435,7 +456,6 @@ void flush_cola_pcb(t_queue* queue){
 }
 
 void eliminar_pcb(t_pcb *self){
-	free(self->program_counter);
 	free(self->tabla_archivos);
 	free(self);
 }
