@@ -268,7 +268,7 @@ void * hilo_conexiones_consola(void *args) {
 	struct sockaddr_in direccionKernel;
 	int socketClienteConsola;
 	struct sockaddr_in direccionConsola;
-	socklen_t length;
+	socklen_t length = sizeof direccionConsola;
 
 	creoSocket(&socketKernelConsola, &direccionKernel, INADDR_ANY, configuracion->puerto_programa);
 	bindSocket(&socketKernelConsola, &direccionKernel);
@@ -276,6 +276,8 @@ void * hilo_conexiones_consola(void *args) {
 
 	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
 		pthread_t thread_proceso_consola;
+
+		printf("%s:%d conectado\n", inet_ntoa(direccionConsola.sin_addr), ntohs(direccionConsola.sin_port));
 		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
 
 		if (socketClienteConsola < 0) {
@@ -358,7 +360,7 @@ void * hilo_conexiones_cpu(void *args) {
 	struct sockaddr_in direccionKernel;
 	int socketClienteCPU;
 	struct sockaddr_in direccionCPU;
-	socklen_t length;
+	socklen_t length = sizeof direccionCPU;
 
 	creoSocket(&socketKernelCPU, &direccionKernel, INADDR_ANY, configuracion->puerto_cpu);
 	bindSocket(&socketKernelCPU, &direccionKernel);
@@ -369,13 +371,14 @@ void * hilo_conexiones_cpu(void *args) {
 
 		pthread_t thread_proceso_cpu;
 
-			creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
+		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
+		creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
 
-			if (socketClienteCPU < 0) {
-				perror("Fallo en el manejo del hilo CPU");
-				return EXIT_FAILURE;
-			}
+		if (socketClienteCPU < 0) {
+			perror("Fallo en el manejo del hilo CPU");
+			return EXIT_FAILURE;
 		}
+	}
 
 	shutdown(socketClienteCPU, 0);
 	close(socketClienteCPU);
@@ -383,9 +386,23 @@ void * hilo_conexiones_cpu(void *args) {
 }
 
 void * handler_conexion_cpu(void * sock) {
-
+	char message[MAXBUF];
 
 	handShakeListen((int *) &sock, "500", "102", "199", "CPU");
+
+	int * socketCliente = (int *) &sock;
+
+	int result = recv(* socketCliente, message, sizeof(message), 0);
+
+	while (result) {
+		printf("%s", message);
+
+		result = recv(* socketCliente, message, sizeof(message), 0);
+	}
+
+	if (result <= 0) {
+		printf("Se desconecto un CPU\n");
+	}
 
 	//while (1) {}
 
