@@ -161,10 +161,12 @@ void * hilo_conexiones_cpu(void * args){
 	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)){
 		pthread_t thread_cpu;
 
+		/*
 		if (socketCliente < 0) {
 			perror("Fallo en el manejo del hilo CPU");
 			return EXIT_FAILURE;
 		}
+		*/
 
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
@@ -178,7 +180,35 @@ void * hilo_conexiones_cpu(void * args){
 }
 
 void * handler_conexiones_cpu(void * socketCliente) {
-	handShakeListen(&socketCliente, "500", "202", "299", "CPU");
+
+
+	//socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+
+		if (socketCliente > 0) {
+
+			handShakeListen(&socketCliente, "500", "202", "299", "CPU");
+			char message[MAXBUF];
+
+			int result = recv(socketCliente, message, sizeof(message), 0);
+
+			while (result) {
+				printf("%s", message);
+				result = recv(socketCliente, message, sizeof(message), 0);
+			}
+
+			if (result <= 0) {
+				printf("Se desconecto un CPU\n");
+			}
+		} else {
+			perror("Fallo en el manejo del hilo CPU");
+			return EXIT_FAILURE;
+		}
+
+
+
+
+
+	//handShakeListen(&socketCliente, "500", "202", "299", "CPU");
 
 	return EXIT_SUCCESS;
 }
