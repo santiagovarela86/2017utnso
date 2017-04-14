@@ -19,6 +19,11 @@ typedef struct {
 	int exit_code;
 } t_pcb;
 
+typedef struct{
+	int socket;
+	int pid_asignado;
+} estruct_cpu;
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);

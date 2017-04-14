@@ -32,6 +32,7 @@ t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
 t_queue* cola_terminados;
+t_queue* cola_cpu;
 int numerador_pcb = 1000;
 int skt_memoria;
 //TODO crear estructura de socket cpu
@@ -46,6 +47,7 @@ int main(int argc, char **argv) {
 
 	pthread_mutex_init(&mutex_grado_multiprog, NULL);
 
+	cola_cpu = crear_cola_pcb();
 	pthread_t thread_id_filesystem;
 	pthread_t thread_id_memoria;
 	pthread_t thread_proceso_consola;
@@ -280,12 +282,6 @@ void * hilo_conexiones_consola(void *args) {
 		printf("%s:%d conectado\n", inet_ntoa(direccionConsola.sin_addr), ntohs(direccionConsola.sin_port));
 		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
 
-		/*
-		if (socketClienteConsola < 0) {
-			perror("Fallo en el manejo del hilo Consola");
-			return EXIT_FAILURE;
-		}
-		*/
 	}
 
 	shutdown(socketClienteConsola, 0);
@@ -310,11 +306,11 @@ void * handler_conexion_consola(void * sock) {
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
 		queue_push(cola_listos, new_pcb);
 
-		/*//GSIMOIS: SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
+		//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
 		char* mensajeACPU = serializar_pcb(new_pcb);
 		enviarMensaje(&skt_cpu, mensajeACPU);
 		//FIN CODIGO DE SERIALIZACION DEL PCB
-		 */
+
 
 		//TODO - VALIDACION DE ESPACIO EN MEMORIA
 
@@ -388,6 +384,12 @@ void * handler_conexion_cpu(void * sock) {
 
 	handShakeListen((int *) &sock, "500", "102", "199", "CPU");
 
+	estruct_cpu cpus;
+	cpus.socket = *((int *) &sock);
+	cpus.pid_asignado = -1;
+
+	queue_push(cola_cpu, &cpus);
+
 	int * socketCliente = (int *) &sock;
 
 	int result = recv(* socketCliente, message, sizeof(message), 0);
@@ -431,4 +433,9 @@ void flush_cola_pcb(t_queue* queue){
 void eliminar_pcb(t_pcb *self){
 	free(self->tabla_archivos);
 	free(self);
+}
+
+void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
+	queue_pop(origen);
+	queue_push(fin, element);
 }

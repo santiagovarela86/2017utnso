@@ -123,20 +123,4 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 		printf("Error al recibir datos del %s", proceso);
 	}
 
-	/*
-
-	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
-
-			codigo = strtok(message, separador);
-
-			if (strcmp(codigo, codigoEsperado) == 0) {
-				printf("El proceso %s acepto la conexion \n", proceso);
-				printf("\n");
-			} else {
-				printf("El proceso %s rechazo la conexion \n", proceso);
-				exit(errno);
-			}
-	}
-
-	*/
 }

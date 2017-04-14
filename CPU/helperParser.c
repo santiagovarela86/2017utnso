@@ -7,6 +7,7 @@
  */
 
 #include "helperParser.h"
+#include "parser/parser.h"
 
 /*
  * DEFINIR VARIABLE
@@ -302,7 +303,7 @@ void liberar(t_puntero puntero) {
 	printf("Libero Memoria\n");
 }
 
-void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines ??? // que pasa con los comentarios y los begin? el analizador no los detecta
+void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines ???
 	AnSISOP_funciones * funciones = NULL;
 	AnSISOP_kernel * kernel = NULL;
 
@@ -340,7 +341,6 @@ void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines 
 	    	  *nextLine = '\0';
 	      }
 
-	      //printf("curLine=[%s]\n", curLine);
 
 	      if (meInteresa(curLine)){//(!esComentario(curLine) && !esBegin(curLine) && !esNewLine(curLine)){
 	    	  printf("Linea Actual: %s\n\n", curLine);

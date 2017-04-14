@@ -41,8 +41,6 @@ int main(int argc , char **argv){
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
 
-	//while(1){}
-
 	free(configuracion);
 
     return EXIT_SUCCESS;
@@ -64,19 +62,17 @@ void* manejo_kernel(void *args) {
 
 	int result = recv(socketKernel, message, sizeof(message), 0);
 
-	/*GSIMOIS: INICIO CODIGO DE DESERIALIZACION DEL PCB
+	//INICIO CODIGO DE DESERIALIZACION DEL PCB
 	char** msg_kernel_pcb = string_split(message, ",");
 	printf("BUFFER: %s\n", message);
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(msg_kernel_pcb[0]));
 	printf("PC: %d\n", atoi(msg_kernel_pcb[1]));
 	//FIN CODIGO DE DESERIALIZACION DEL PCB
-	*/
 
 	while (result) {
 		printf("%s", message);
-		//esta es la llamada al parser
-		//procesoLineas(message);
+		procesoLineas(message);
 		result = recv(socketKernel, message, sizeof(message), 0);
 	}
 
@@ -85,10 +81,6 @@ void* manejo_kernel(void *args) {
 	}
 
 	t_metadata_program* programa = metadata_desde_literal(message);
-
-	//ESTOS PRINTF SON PARA VER QUE LEA BIEN EL SCRIPT - LUEGO HAY QUE QUITARLOS
-	//printf("La cantidad de etiquetas son %d \n", programa->cantidad_de_etiquetas);
-	//printf("La cantidad de funciones son %d \n", programa->cantidad_de_funciones);
 
 	//Loop para seguir comunicado con el servidor
 	while (1) {
