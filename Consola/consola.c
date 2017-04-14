@@ -41,6 +41,8 @@ int main(int argc , char **argv)
     	return EXIT_FAILURE;
     }
 
+	cola_programas = crear_cola_programas();
+
 	inicializarEstado(&infoConsola);
 
 	configuracion = leerConfiguracion(argv[1]);
@@ -187,7 +189,7 @@ void * escuchar_Kernel(void * args){
 				program->socket_kernel = *socketKernel;
 				printf("llego el pid %d \n", program->pid);
 				queue_push(cola_programas, program);
-
+				puts("aqui paso");
 			}else if(atoi(respuesta_kernel[0]) == 104){
 				printf("El programa no puedo iniciarse\n");
 			}else{
