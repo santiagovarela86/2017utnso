@@ -25,7 +25,7 @@ void gestionar_programa(void* p);
 
 void * handlerConsola(void * args);
 void * handlerKernel(void * args);
-
+void * escuchar_Kernel(void * args);
 
 
 #endif /* CONSOLA_H_ */

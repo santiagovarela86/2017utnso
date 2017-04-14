@@ -25,12 +25,6 @@
 
 Consola_Config* configuracion;
 
-/*
-int proceso_a_terminar = -1;
-int estado_consola = 1;
-int programas_ejecutando = 0;
-*/
-
 typedef struct InfoConsola {
 	int proceso_a_terminar;
 	int estado_consola;
@@ -46,12 +40,6 @@ void inicializarEstado(InfoConsola * infoConsola){
 	infoConsola->threads = list_create();
 	infoConsola->sockets = list_create();
 }
-
-/*
-void threadDestroyer(void * thread){
-	pthread_cancel(thread);
-}
-*/
 
 void socketDestroyer(void * socket){
 	shutdown(socket, 0);
@@ -93,6 +81,7 @@ int main(int argc , char **argv)
 
     pthread_t threadConsola;
     pthread_t threadKernel;
+
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
 
@@ -133,9 +122,7 @@ void * handlerConsola(void * args){
 		scanf("%d",&numero);
 
 		if(numero == 1){
-
 			iniciar_programa(socketKernel);
-
 		}else if(numero == 2){
 			terminar_proceso();
 		}else if(numero == 3){
@@ -158,6 +145,9 @@ void * handlerKernel(void * args){
 	int * socketKernel = (int *) args;
 
 	handShakeSend(socketKernel, "300", "101", "Kernel");
+
+    pthread_t threadEscuchaKernel;
+    creoThread(&threadEscuchaKernel, escuchar_Kernel, socketKernel);
 
 	//Loop para seguir comunicado con el servidor
 	//while (estado_consola == 1) {
@@ -205,6 +195,39 @@ void limpiar_mensajes(){
 	return;
 }
 
+void * escuchar_Kernel(void * args){
+	char buffer[1000 + 1];
+
+	int * socketKernel = (int *) args;
+
+	while(infoConsola.estado_consola == 1){
+	int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
+
+		if (result > 0){
+			char** respuesta_kernel = string_split(buffer, ",");
+
+			programa* program = malloc(sizeof(program));
+
+			if(atoi(respuesta_kernel[0]) == 103){
+				program->pid = atoi(respuesta_kernel[1]);
+				program->duracion = 0;
+				program->fin = 0;
+				program->inicio = 0;
+				program->mensajes = 0;
+				program->socket_kernel = *socketKernel;
+
+				//creoThread(&thread_id_programa, gestionar_programa, (void*)program);
+			}else if(atoi(respuesta_kernel[0]) == 104){
+				printf("El programa no puedo iniciarse\n");
+			}else{
+				printf("Mensaje de programa: %s\n", respuesta_kernel);
+			}
+		} else {
+			printf("Error al recibir datos del Kernel");
+		}
+	}
+}
+
 void iniciar_programa(int* socket_kernel){
 
 	pthread_t thread_id_programa;
@@ -226,31 +249,6 @@ void iniciar_programa(int* socket_kernel){
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
-
-	int result = recv(*socket_kernel, buffer, sizeof(buffer), 0);
-
-	if (result > 0){
-		char** respuesta_kernel = string_split(buffer, ",");
-
-		programa* program = malloc(sizeof(program));
-
-		if(atoi(respuesta_kernel[0]) == 103){
-			program->pid = atoi(respuesta_kernel[1]);
-			program->duracion = 0;
-			program->fin = 0;
-			program->inicio = 0;
-			program->mensajes = 0;
-			program->socket_kernel = *socket_kernel;
-			//COMENTE ESTO PARA PODER TERMINAR BIEN LA COMUNICACION ENTRE MEMORIA KERNEL CONSOLA Y CPU
-			//ESTE THREAD INTERRUMPE LA CONSOLA
-			//creoThread(&thread_id_programa, gestionar_programa, (void*)program);
-		}else{
-			printf("El programa no puedo iniciarse\n");
-			return;
-		}
-	} else {
-		printf("Error al recibir datos del Kernel");
-	}
 
 	return;
 }
