@@ -323,6 +323,7 @@ void * handler_conexion_consola(void * sock) {
 		string_append(&info_pid, "103");
 		string_append(&info_pid, ",");
 		string_append(&info_pid, string_itoa(new_pcb->pid));
+		string_append(&respuestaAConsola, info_pid);
 		enviarMensaje(socketCliente, respuestaAConsola);
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
