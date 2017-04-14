@@ -187,9 +187,9 @@ void * escuchar_Kernel(void * args){
 				program->inicio = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
-				printf("llego el pid %d \n", program->pid);
+
 				queue_push(cola_programas, program);
-				puts("aqui paso");
+
 			}else if(atoi(respuesta_kernel[0]) == 104){
 				printf("El programa no puedo iniciarse\n");
 			}else{

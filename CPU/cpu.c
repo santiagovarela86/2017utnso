@@ -70,18 +70,11 @@ void* manejo_kernel(void *args) {
 	printf("PC: %d\n", atoi(msg_kernel_pcb[1]));
 	//FIN CODIGO DE DESERIALIZACION DEL PCB
 
-	while (result) {
-		printf("%s", message);
-		procesoLineas(message);
-		result = recv(socketKernel, message, sizeof(message), 0);
-	}
+	procesoLineas(message);
 
 	if (result <= 0) {
 		printf("Se desconecto el Kernel\n");
 	}
-
-	t_metadata_program* programa = metadata_desde_literal(message);
-
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}

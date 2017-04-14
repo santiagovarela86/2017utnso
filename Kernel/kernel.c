@@ -306,12 +306,6 @@ void * handler_conexion_consola(void * sock) {
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
 		queue_push(cola_listos, new_pcb);
 
-		//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
-		char* mensajeACPU = serializar_pcb(new_pcb);
-		enviarMensaje(&skt_cpu, mensajeACPU);
-		//FIN CODIGO DE SERIALIZACION DEL PCB
-
-
 		//TODO - VALIDACION DE ESPACIO EN MEMORIA
 
 		char* info_pid = string_new();
@@ -321,6 +315,13 @@ void * handler_conexion_consola(void * sock) {
 		string_append(&info_pid, string_itoa(new_pcb->pid));
 		string_append(&respuestaAConsola, info_pid);
 		enviarMensaje(socketCliente, respuestaAConsola);
+
+		if(queue_size(cola_cpu) != 0){
+			//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
+			char* mensajeACPU = serializar_pcb(new_pcb);
+			enviarMensaje(&skt_cpu, mensajeACPU);
+			//FIN CODIGO DE SERIALIZACION DEL PCB
+		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
 	}
