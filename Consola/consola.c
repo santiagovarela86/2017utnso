@@ -1,5 +1,7 @@
 //CODIGOS
 //300 CON A KER - HANDSHAKE
+//399 CON A KER - ADIOS CONSOLA
+//398 CON A KER - ENVIO DE PID DEL PROGRAMA A FINALIZAR
 //101 KER A CON - RESPUESTA HANDSHAKE
 //103 KER A CON - PID DE PROGRAMA
 
@@ -96,9 +98,9 @@ void * handlerConsola(void * args){
 		if(numero == 1){
 			iniciar_programa(socketKernel);
 		}else if(numero == 2){
-			terminar_proceso();
+			terminar_proceso(socketKernel);
 		}else if(numero == 3){
-			desconectar_consola();
+			desconectar_consola(socketKernel);
 		}else if(numero == 4){
 			limpiar_mensajes();
 		}else{
@@ -125,26 +127,34 @@ void * handlerKernel(void * args){
 	return EXIT_SUCCESS;
 }
 
-void terminar_proceso(){
+void terminar_proceso(int* socket_kernel){
 
 	puts(" ");
 	puts("Ingrese PID del proceso a terminar");
 
-	int pid_ingresado = 0;
+	char* pid_ingresado = 0;
 
-	scanf("%d", &pid_ingresado);
+	scanf("%s", pid_ingresado);
 
-	infoConsola.proceso_a_terminar = pid_ingresado;
+	char message[MAXBUF];
+
+	strcpy(message, "398;");
+	strcat(message, pid_ingresado);
+
+	enviarMensaje(socket_kernel, message);
 
 	return;
 }
 
-void desconectar_consola(){
+void desconectar_consola(int* socket_kernel){
 	infoConsola.estado_consola = 0;
 
-	while(infoConsola.programas_ejecutando != 0){
-		//TODO - Recorrer la cola de Programas para notificar al Kernel de que los mismos finalizan
-	}
+	char message[MAXBUF];
+	strcpy(message, "399;");
+
+	enviarMensaje(socket_kernel, message);
+
+	exit(-1);
 
 	return;
 }
@@ -242,6 +252,5 @@ void socketDestroyer(void * socket){
 
 void destruirEstado(InfoConsola * infoConsola){
 	list_destroy(infoConsola->threads);
-	//list_destroy_and_destroy_elements(infoConsola->threads, threadDestroyer);
 	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
 }

@@ -25,9 +25,9 @@ typedef struct InfoConsola {
 	t_list * sockets;
 } InfoConsola ;
 
-void iniciar_programa();
-void terminar_proceso();
-void desconectar_consola();
+void iniciar_programa(int* socket_kernel);
+void terminar_proceso(int* socket_kernel);
+void desconectar_consola(int* socket_kernel);
 void limpiar_mensajes();
 void gestionar_programa(void* p);
 t_queue* crear_cola_programas();
