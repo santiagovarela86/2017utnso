@@ -17,12 +17,20 @@ typedef struct{
 	int socket_kernel;
 } programa;
 
+typedef struct InfoConsola {
+	int proceso_a_terminar;
+	int estado_consola;
+	int programas_ejecutando;
+	t_list * threads;
+	t_list * sockets;
+} InfoConsola ;
+
 void iniciar_programa();
 void terminar_proceso();
 void desconectar_consola();
 void limpiar_mensajes();
 void gestionar_programa(void* p);
-
+t_queue* crear_cola_programas();
 void * handlerConsola(void * args);
 void * handlerKernel(void * args);
 void * escuchar_Kernel(void * args);

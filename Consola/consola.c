@@ -18,39 +18,15 @@
 #include <unistd.h>
 #include <commons/config.h>
 #include <commons/string.h>
+#include <commons/collections/queue.h>
 #include "configuracion.h"
 #include <pthread.h>
-#include "helperFunctions.h"l
+#include "helperFunctions.h"
 #include "consola.h"
 
+t_queue* cola_programas;
+
 Consola_Config* configuracion;
-
-typedef struct InfoConsola {
-	int proceso_a_terminar;
-	int estado_consola;
-	int programas_ejecutando;
-	t_list * threads;
-	t_list * sockets;
-} InfoConsola ;
-
-void inicializarEstado(InfoConsola * infoConsola){
-	infoConsola->proceso_a_terminar = -1;
-	infoConsola->estado_consola = 1;
-	infoConsola->programas_ejecutando = 0;
-	infoConsola->threads = list_create();
-	infoConsola->sockets = list_create();
-}
-
-void socketDestroyer(void * socket){
-	shutdown(socket, 0);
-	close(socket);
-}
-
-void destruirEstado(InfoConsola * infoConsola){
-	list_destroy(infoConsola->threads);
-	//list_destroy_and_destroy_elements(infoConsola->threads, threadDestroyer);
-	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
-}
 
 InfoConsola infoConsola;
 
@@ -63,7 +39,6 @@ int main(int argc , char **argv)
     	return EXIT_FAILURE;
     }
 
-	//programas_ejecutando = 0;
 	inicializarEstado(&infoConsola);
 
 	configuracion = leerConfiguracion(argv[1]);
@@ -82,6 +57,7 @@ int main(int argc , char **argv)
     pthread_t threadConsola;
     pthread_t threadKernel;
 
+
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
 
@@ -90,8 +66,6 @@ int main(int argc , char **argv)
 
 	pthread_join(threadConsola, NULL);
 	pthread_join(threadKernel, NULL);
-
-	//while(1){}
 
 	destruirEstado(&infoConsola);
 	free(configuracion);
@@ -107,7 +81,6 @@ void * handlerConsola(void * args){
 
 	int intentos_fallidos = 0;
 
-	//while(intentos_fallidos < 10 && estado_consola == 1){
 	while(intentos_fallidos < 10 && infoConsola.estado_consola == 1){
 
 		puts("");
@@ -149,15 +122,6 @@ void * handlerKernel(void * args){
     pthread_t threadEscuchaKernel;
     creoThread(&threadEscuchaKernel, escuchar_Kernel, socketKernel);
 
-	//Loop para seguir comunicado con el servidor
-	//while (estado_consola == 1) {
-	while (infoConsola.estado_consola == 1) {
-	}
-
-	//Lo hace el destructor
-	//shutdown(socketKernel, 0);
-	//close(socketKernel);
-
 	return EXIT_SUCCESS;
 }
 
@@ -170,22 +134,17 @@ void terminar_proceso(){
 
 	scanf("%d", pid_ingresado);
 
-	//proceso_a_terminar = pid_ingresado;
 	infoConsola.proceso_a_terminar = pid_ingresado;
 
 	return;
 }
 
 void desconectar_consola(){
-	//estado_consola = 0;
 	infoConsola.estado_consola = 0;
 
-	/* SEGUN EL TP, EL DESCONECTAR CONSOLA DEBE SER ABORTIVO
-	//while(programas_ejecutando != 0){
 	while(infoConsola.programas_ejecutando != 0){
 
 	}
-	*/
 
 	return;
 }
@@ -199,10 +158,11 @@ void * escuchar_Kernel(void * args){
 	char buffer[1000 + 1];
 
 	int * socketKernel = (int *) args;
-
+	printf("llego el skt %d \n",*socketKernel);
 	while(infoConsola.estado_consola == 1){
-	int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
 
+		int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
+		puts("Escuchando al kernel");
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ",");
 
@@ -215,8 +175,9 @@ void * escuchar_Kernel(void * args){
 				program->inicio = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
+				printf("llego el pid %d \n", program->pid);
+				queue_push(cola_programas, program);
 
-				//creoThread(&thread_id_programa, gestionar_programa, (void*)program);
 			}else if(atoi(respuesta_kernel[0]) == 104){
 				printf("El programa no puedo iniciarse\n");
 			}else{
@@ -226,6 +187,8 @@ void * escuchar_Kernel(void * args){
 			printf("Error al recibir datos del Kernel");
 		}
 	}
+
+	return 0;
 }
 
 void iniciar_programa(int* socket_kernel){
@@ -253,26 +216,34 @@ void iniciar_programa(int* socket_kernel){
 	return;
 }
 
-void gestionar_programa(void* p){
-	//programas_ejecutando++;
-	infoConsola.programas_ejecutando++;
+t_queue* crear_cola_programas(){
+	t_queue* cola = queue_create();
+	return cola;
+}
 
-	programa* program = malloc(sizeof(programa));
-	program = (programa*) p;
+void eliminar_programa(programa *self){
 
-	char buffer[1000];
+}
 
-	//while(program->pid != proceso_a_terminar && estado_consola == 1){
-	while(program->pid != infoConsola.proceso_a_terminar && infoConsola.estado_consola == 1){
+void flush_cola_programas(t_queue* queue){
+	 queue_destroy_and_destroy_elements(queue, (void*) eliminar_programa);
+}
 
-		recv(program->socket_kernel, buffer, sizeof(buffer), 0);
+void inicializarEstado(InfoConsola * infoConsola){
+	infoConsola->proceso_a_terminar = -1;
+	infoConsola->estado_consola = 1;
+	infoConsola->programas_ejecutando = 0;
+	infoConsola->threads = list_create();
+	infoConsola->sockets = list_create();
+}
 
-		printf("El proceso %d envio el mensaje: %s \n", program->pid, buffer);
-	}
+void socketDestroyer(void * socket){
+	shutdown(socket, 0);
+	close(socket);
+}
 
-	puts("aca no deberia llegar");
-
-	//programas_ejecutando = programas_ejecutando - 1;
-	infoConsola.programas_ejecutando = infoConsola.programas_ejecutando - 1;
-	free(program);
+void destruirEstado(InfoConsola * infoConsola){
+	list_destroy(infoConsola->threads);
+	//list_destroy_and_destroy_elements(infoConsola->threads, threadDestroyer);
+	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
 }

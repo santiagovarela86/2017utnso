@@ -317,6 +317,8 @@ void * handler_conexion_consola(void * sock) {
 		//FIN CODIGO DE SERIALIZACION DEL PCB
 		 */
 
+		//TODO - VALIDACION DE ESPACIO EN MEMORIA
+
 		char* info_pid = string_new();
 		char* respuestaAConsola = string_new();
 		string_append(&info_pid, "103");
@@ -330,32 +332,6 @@ void * handler_conexion_consola(void * sock) {
 	if (result <= 0) {
 		printf("Se desconecto una Consola\n");
 	}
-
-	/*recv(* socketCliente, message, sizeof(message), 0);
-	printf("%s", message);
-
-	enviarMensaje(&skt_memoria, message);
-	//caclcular tam de mess
-	//enviar c otro skt mem . recivir en mem
-	// llega mensaje de la mem validando si hay esp en mem
-	//asumumos que hay espacio
-
-
-
-	enviarMensaje(&skt_cpu, message);
-
-	t_pcb * new_pcb = nuevo_pcb(numerador_pcb, NULL, NULL, NULL, &skt_cpu, NULL);
-	queue_push(cola_listos, new_pcb);
-
-	char* info_pid = string_new();
-	char* respuestaAConsola = string_new();
-	string_append(&info_pid, "103");
-	string_append(&info_pid, ",");
-	string_append(&info_pid, string_itoa(new_pcb->pid));
-	string_append(&respuestaAConsola, info_pid);
-	enviarMensaje(socketCliente, respuestaAConsola);
-
-	*/
 
 	return EXIT_SUCCESS;
 }
