@@ -57,7 +57,6 @@ int main(int argc , char **argv)
     pthread_t threadConsola;
     pthread_t threadKernel;
 
-
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
 
@@ -104,13 +103,13 @@ void * handlerConsola(void * args){
 			limpiar_mensajes();
 		}else{
 			intentos_fallidos++;
-			puts("Ingrese una opción de 1 a 4");
 		}
 	}
 
 	if(intentos_fallidos == 10){
-		return EXIT_FAILURE;
+		return 0;
 	}
+	return 0;
 }
 
 void * handlerKernel(void * args){
@@ -122,6 +121,7 @@ void * handlerKernel(void * args){
     pthread_t threadEscuchaKernel;
     creoThread(&threadEscuchaKernel, escuchar_Kernel, socketKernel);
 
+	pthread_join(threadEscuchaKernel, NULL);
 	return EXIT_SUCCESS;
 }
 
@@ -130,9 +130,9 @@ void terminar_proceso(){
 	puts(" ");
 	puts("Ingrese PID del proceso a terminar");
 
-	int pid_ingresado;
+	int pid_ingresado = 0;
 
-	scanf("%d", pid_ingresado);
+	scanf("%d", &pid_ingresado);
 
 	infoConsola.proceso_a_terminar = pid_ingresado;
 
@@ -143,7 +143,7 @@ void desconectar_consola(){
 	infoConsola.estado_consola = 0;
 
 	while(infoConsola.programas_ejecutando != 0){
-
+		//TODO - Recorrer la cola de Programas para notificar al Kernel de que los mismos finalizan
 	}
 
 	return;
@@ -158,11 +158,11 @@ void * escuchar_Kernel(void * args){
 	char buffer[1000 + 1];
 
 	int * socketKernel = (int *) args;
-	printf("llego el skt %d \n",*socketKernel);
+
 	while(infoConsola.estado_consola == 1){
 
 		int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
-		puts("Escuchando al kernel");
+
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ",");
 
@@ -181,7 +181,7 @@ void * escuchar_Kernel(void * args){
 			}else if(atoi(respuesta_kernel[0]) == 104){
 				printf("El programa no puedo iniciarse\n");
 			}else{
-				printf("Mensaje de programa: %s\n", respuesta_kernel);
+				printf("Mensaje de programa: %s\n", *respuesta_kernel);
 			}
 		} else {
 			printf("Error al recibir datos del Kernel");
@@ -193,7 +193,6 @@ void * escuchar_Kernel(void * args){
 
 void iniciar_programa(int* socket_kernel){
 
-	pthread_t thread_id_programa;
 	puts("");
 	puts("Ingrese nombre del programa");
 
@@ -205,8 +204,6 @@ void iniciar_programa(int* socket_kernel){
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-
-	char buffer[1000 + 1];
 
 	enviarMensaje(socket_kernel, pmap_script);
 
@@ -238,8 +235,9 @@ void inicializarEstado(InfoConsola * infoConsola){
 }
 
 void socketDestroyer(void * socket){
-	shutdown(socket, 0);
-	close(socket);
+	int * skt = (int *) socket;
+	shutdown(*skt, 0);
+
 }
 
 void destruirEstado(InfoConsola * infoConsola){
