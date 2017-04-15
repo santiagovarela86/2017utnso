@@ -201,49 +201,6 @@ void retornar(t_valor_variable retorno) {
 }
 
 /*
- * IMPRIMIR VALOR
- *
- * Envía valor_mostrar al Kernel, para que termine siendo mostrado en la consola del Programa en ejecución.
- *
- * @sintax	TEXT_PRINT_NUMBER (print )
- * @param	valor_mostrar	Dato que se quiere imprimir
- * @return	void
- */
-
-void imprimirValor(t_valor_variable valor_mostrar) {
-	printf("Imprimo valor\n");
-}
-
-/*
- * IMPRIMIR LITERAL
- *
- * Envía mensaje al Kernel, para que termine siendo mostrado en la consola del Programa en ejecución.
- * El mensaje no posee parámetros, secuencias de escape, variables ni nada.
- *
- * @sintax TEXT_PRINT_LITERAL (textPrint )
- * @param	texto	Texto a imprimir
- * @return void
- */
-
-void imprimirLiteral(char* texto) {
-	printf("Imprimo Literal\n");
-}
-
-/*
- *	ENTRADA y SALIDA
- *
- *
- *	@sintax TEXT_IO (io )
- *	@param	dispositivo	Nombre del dispositivo a pedir
- *	@param	tiempo	Tiempo que se necesitara el dispositivo
- *	@return	void
- */
-
-void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo) {
-	printf("Entrada Salida\n");
-}
-
-/*
  * WAIT
  *
  * Informa al kernel que ejecute la función wait para el semáforo con el nombre identificador_semaforo.
@@ -303,6 +260,109 @@ void liberar(t_puntero puntero) {
 	printf("Libero Memoria\n");
 }
 
+/*
+ * RESERVAR MEMORIA
+ *
+ * Informa al kernel que reserve en el Heap una cantidad de memoria
+ * acorde al espacio recibido como parametro.
+ *
+ * @sintax	TEXT_MALLOC (alocar)
+ * @param	valor_variable Cantidad de espacio
+ * @return	puntero a donde esta reservada la memoria
+ */
+t_puntero reservar(t_valor_variable espacio){
+
+}
+
+/*
+ * ABRIR ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se abra un archivo.
+ *
+ * @syntax 	TEXT_OPEN_FILE (abrir)
+ * @param	direccion		Ruta al archivo a abrir
+ * @param	banderas		String que contiene los permisos con los que se abre el archivo
+ * @return	El valor del descriptor de archivo abierto por el sistema
+ */
+t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
+
+}
+
+/*
+ * BORRAR ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se borre un archivo.
+ *
+ * @syntax 	TEXT_DELETE_FILE (borrar)
+ * @param	direccion		Ruta al archivo a abrir
+ * @return	void
+ */
+void borrar(t_descriptor_archivo direccion){
+
+}
+
+/*
+ * CERRAR ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se cierre un archivo.
+ *
+ * @syntax 	TEXT_CLOSE_FILE (cerrar)
+ * @param	descriptor_archivo		Descriptor de archivo del archivo abierto
+ * @return	void
+ */
+
+void cerrar(t_descriptor_archivo descriptor_archivo){
+
+}
+
+/*
+ * MOVER CURSOR DE ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se mueva el cursor a la posicion indicada.
+ *
+ * @syntax 	TEXT_SEEK_FILE (buscar)
+ * @param	descriptor_archivo		Descriptor de archivo del archivo abierto
+ * @param	posicion			Posicion a donde mover el cursor
+ * @return	void
+ */
+void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
+
+}
+
+/*
+ * ESCRIBIR ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se escriba un archivo previamente abierto.
+ * El mismo escribira "tamanio" de bytes de "informacion" luego del cursor
+ * No es necesario mover el cursor luego de esta operación
+ *
+ * @syntax 	TEXT_WRITE_FILE (escribir)
+ * @param	descriptor_archivo		Descriptor de archivo del archivo abierto
+ * @param	informacion			Informacion a ser escrita
+ * @param	tamanio				Tamanio de la informacion a enviar
+ * @return	void
+ */
+void escribir(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
+
+}
+
+/*
+ * LEER ARCHIVO
+ *
+ * Informa al Kernel que el proceso requiere que se lea un archivo previamente abierto.
+ * El mismo leera "tamanio" de bytes luego del cursor.
+ * No es necesario mover el cursor luego de esta operación
+ *
+ * @syntax 	TEXT_READ_FILE (leer)
+ * @param	descriptor_archivo		Descriptor de archivo del archivo abierto
+ * @param	informacion			Puntero que indica donde se guarda la informacion leida
+ * @param	tamanio				Tamanio de la informacion a leer
+ * @return	void
+ */
+void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
+
+}
+
 void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines ???
 	AnSISOP_funciones * funciones = NULL;
 	AnSISOP_kernel * kernel = NULL;
@@ -318,20 +378,27 @@ void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines 
 	funciones->AnSISOP_asignarValorCompartida = asignarValorCompartida;
 	funciones->AnSISOP_definirVariable = definirVariable;
 	funciones->AnSISOP_dereferenciar = dereferenciar;
-	funciones->AnSISOP_entradaSalida = entradaSalida;
+	//funciones->AnSISOP_entradaSalida = entradaSalida;
 	funciones->AnSISOP_finalizar = finalizar;
-	funciones->AnSISOP_imprimirLiteral = imprimirLiteral;
-	funciones->AnSISOP_imprimirValor = imprimirValor;
+	//funciones->AnSISOP_imprimirLiteral = imprimirLiteral;
+	//funciones->AnSISOP_imprimirValor = imprimirValor;
 	funciones->AnSISOP_irAlLabel = irAlLabel;
 	funciones->AnSISOP_llamarConRetorno = llamarConRetorno;
 	funciones->AnSISOP_llamarSinRetorno = llamarSinRetorno;
 	funciones->AnSISOP_obtenerPosicionVariable = obtenerPosicionVariable;
 	funciones->AnSISOP_obtenerValorCompartida = obtenerValorCompartida;
 	funciones->AnSISOP_retornar = retornar;
-	kernel->AnSISOP_alocar = alocar;
+	//kernel->AnSISOP_alocar = alocar;
+	kernel->AnSISOP_abrir = abrir;
+	kernel->AnSISOP_borrar = borrar;
+	kernel->AnSISOP_cerrar = cerrar;
+	kernel->AnSISOP_escribir = escribir;
+	kernel->AnSISOP_leer = leer;
 	kernel->AnSISOP_liberar = liberar;
 	kernel->AnSISOP_signal = signal;
 	kernel->AnSISOP_wait = wait;
+	kernel->AnSISOP_moverCursor = moverCursor;
+	kernel->AnSISOP_reservar = reservar;
 
 	char * curLine = programa;
 	   while(curLine)

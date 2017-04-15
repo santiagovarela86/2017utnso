@@ -445,7 +445,7 @@ void planificar(int q){
 	while (1){
 	//recorre
 
-	cola_cpu pid_asignado =-1;
+	//cola_cpu pid_asignado =-1;
 	//si cola listos esta vacia
 	if(queue_is_empty(cola_listos)){
 		;

@@ -36,12 +36,17 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta);
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar);
 void finalizar(void);
 void retornar(t_valor_variable retorno);
-void imprimirValor(t_valor_variable valor_mostrar);
-void imprimirLiteral(char* texto);
-void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo);
 void wait(t_nombre_semaforo identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
 t_puntero alocar(t_valor_variable espacio);
 void liberar(t_puntero puntero);
+t_puntero reservar(t_valor_variable espacio);
+t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags);
+void borrar(t_descriptor_archivo direccion);
+void cerrar(t_descriptor_archivo descriptor_archivo);
+void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion);
+void escribir(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio);
+void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio);
+
 
 #endif /* HELPERPARSER_H_ */
