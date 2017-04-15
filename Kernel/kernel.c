@@ -440,3 +440,20 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_pop(origen);
 	queue_push(fin, element);
 }
+
+void planificar(int q){
+	while (1){
+	//recorre
+
+	cola_cpu pid_asignado =-1;
+	//si cola listos esta vacia
+	if(queue_is_empty(cola_listos)){
+		;
+		queue_pop(cola_listos);
+		int pcb; // no es int
+		queue_push(cola_ejecucion, pcb);
+	};
+
+	}
+	}
+
