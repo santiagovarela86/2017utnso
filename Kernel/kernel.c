@@ -510,26 +510,30 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_pop(origen);
 	queue_push(fin, element);
 }
-/*
+
 void planificar(int q){
 	while (1){
 		int corte = queue_size(cola_cpu);
-	//recorre
-	for(int i = 1 ;i<corte;i++){
-		estruct_cpu pcbtemporalCpu = queue_pop(cola_cpu);
-		if(!(pcbtemporalCpu.pid_asignado == -1)){
-			queue_push(cola_cpu);
-		}	else{
-			if(!queue_is_empty(cola_listos)){
-				t_pcb pcbtemporalListos = queue_pop(cola_listos);
-				pcbtemporalListos.pid = pcbtemporalCpu.socket;
-				pcbtemporalCpu.pid_asignado = pcbtemporalListos.pid;
+		int i;
 
-				queue_push(cola_ejecucion, pcbtemporalListos);
-			};
+		//recorre
+		for(i = 1 ;i<corte;i++){
+			estruct_cpu* pcbtemporalCpu = malloc(sizeof(estruct_cpu));
+			pcbtemporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+
+			if(!(pcbtemporalCpu->pid_asignado == -1)){
+				queue_push(cola_cpu, pcbtemporalCpu);
+			}else{
+				if(!queue_is_empty(cola_listos)){
+					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
+
+					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
+					pcbtemporalListos->pid = pcbtemporalCpu->socket;
+					pcbtemporalCpu->pid_asignado = pcbtemporalListos->pid;
+
+					queue_push(cola_ejecucion, pcbtemporalListos);
+				}
+			}
 		}
-		};
 	}
-	}
-
-}*/
+}
