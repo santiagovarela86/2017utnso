@@ -3,7 +3,10 @@
 //100 KER A FIL - HANDSHAKE
 //101 KER A CON - RESPUESTA HANDSHAKE DE CONSOLA
 //102 KER A CPU - RESPUESTA HANDSHAKE DE CPU
+//198 KER A CON - LIMITE GRADO MULTIPROGRAMACION
 //199 KER A OTR - RESPUESTA A CONEXION INCORRECTA
+//203 MEM A KER - ESPACIO SUFICIENTE PARA ALMACENAR PROGRAMA
+//298 MER A KER - ESPACIO INSUFICIENTE PARA ALMACENAR PROGRAMA
 //300 CON A KER - HANDSHAKE DE LA CONSOLA
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //500 CPU A KER - HANDSHAKE DEL CPU
@@ -35,7 +38,7 @@ t_queue* cola_terminados;
 t_queue* cola_cpu;
 int numerador_pcb = 1000;
 int skt_memoria;
-//TODO crear estructura de socket cpu
+
 int skt_cpu;
 
 int main(int argc, char **argv) {
@@ -226,10 +229,6 @@ void* manejo_filesystem(void *args) {
 	while (1) {
 	}
 
-	/* POR ALGUNA RAZON NO QUEDA BLOQUEADO... SE DESBLOQUEA (MENSAJE REPLICADO AL FILESYSTEM?)
-	char * message;
-	int result = recv(socketFS, message, sizeof(message), 0);
-	*/
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -254,10 +253,6 @@ void* manejo_memoria(void *args) {
 	while (1) {
 	}
 
-	/* POR ALGUNA RAZON NO QUEDA BLOQUEADO... SE DESBLOQUEA (MENSAJE REPLICADO A LA MEMORIA?)
-	char * message;
-	int result = recv(socketMemoria, message, sizeof(message), 0);
-	*/
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -266,68 +261,138 @@ void* manejo_memoria(void *args) {
 
 void * hilo_conexiones_consola(void *args) {
 
-	int socketKernelConsola;
 	struct sockaddr_in direccionKernel;
-	int socketClienteConsola;
-	struct sockaddr_in direccionConsola;
-	socklen_t length = sizeof direccionConsola;
+	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , sd;
+	int max_sd;
+	struct sockaddr_in address;
 
-	creoSocket(&socketKernelConsola, &direccionKernel, INADDR_ANY, configuracion->puerto_programa);
-	bindSocket(&socketKernelConsola, &direccionKernel);
-	listen(socketKernelConsola, MAXCON);
+	char buffer[1025];  //data buffer of 1K
 
-	while ((socketClienteConsola = accept(socketKernelConsola, (struct sockaddr *) &direccionConsola, (socklen_t*) &length))) {
-		pthread_t thread_proceso_consola;
+	//set of socket descriptors
+	fd_set readfds;
 
-		printf("%s:%d conectado\n", inet_ntoa(direccionConsola.sin_addr), ntohs(direccionConsola.sin_port));
-		creoThread(&thread_proceso_consola, handler_conexion_consola, (void *) socketClienteConsola);
-
+	//initialise all client_socket[] to 0 so not checked
+	for (i = 0; i < max_clients; i++) {
+		client_socket[i] = 0;
 	}
 
-	shutdown(socketClienteConsola, 0);
-	close(socketClienteConsola);
+	//create a master socket
+	creoSocket(&master_socket, &direccionKernel, INADDR_ANY, configuracion->puerto_programa);
 
-	return EXIT_SUCCESS;
-}
+	//bind the socket to localhost port 8888
+	bindSocket(&master_socket, &direccionKernel);
 
-void * handler_conexion_consola(void * sock) {
-	char message[MAXBUF];
-	handShakeListen((int *) &sock, "300", "101", "199", "Consola");
+	listen(master_socket, MAXCON);
 
-	int * socketCliente = (int *) &sock;
+	//accept the incoming connection
+	addrlen = sizeof(address);
 
-	int result = recv(* socketCliente, message, sizeof(message), 0);
+	while(1) {
+		//clear the socket set
+		FD_ZERO(&readfds);
 
-	while (result) {
-		printf("%s", message);
+		//add master socket to set
+		FD_SET(master_socket, &readfds);
+		max_sd = master_socket;
 
-		enviarMensaje(&skt_memoria, message);
+		//add child sockets to set
+		for ( i = 0 ; i < max_clients ; i++) {
+			//socket descriptor
+			sd = client_socket[i];
 
-		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
-		queue_push(cola_listos, new_pcb);
+			//if valid socket descriptor then add to read list
+			if(sd > 0){
+				FD_SET( sd , &readfds);
+			}
 
-		//TODO - VALIDACION DE ESPACIO EN MEMORIA
-
-		char* info_pid = string_new();
-		char* respuestaAConsola = string_new();
-		string_append(&info_pid, "103");
-		string_append(&info_pid, ",");
-		string_append(&info_pid, string_itoa(new_pcb->pid));
-		string_append(&respuestaAConsola, info_pid);
-		enviarMensaje(socketCliente, respuestaAConsola);
-
-		if(queue_size(cola_cpu) != 0){
-			//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
-			char* mensajeACPU = serializar_pcb(new_pcb);
-			enviarMensaje(&skt_cpu, mensajeACPU);
-			//FIN CODIGO DE SERIALIZACION DEL PCB
+			//highest file descriptor number, need it for the select function
+			if(sd > max_sd){
+				max_sd = sd;
+			}
 		}
 
-		result = recv(* socketCliente, message, sizeof(message), 0);
-	}
+		//wait for an activity on one of the sockets , timeout is NULL , so wait indefinitely
+		activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);
 
-	if (result <= 0) {
-		printf("Se desconecto una Consola\n");
+		if ((activity < 0) && (errno!=EINTR)){
+			printf("select error");
+		}
+
+		//If something happened on the master socket , then its an incoming connection
+		if (FD_ISSET(master_socket, &readfds)){
+			if ((new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)
+			{
+				exit(EXIT_FAILURE);
+			}
+
+			//send new connection greeting message
+			handShakeListen(&new_socket, "300", "101", "199", "Consola");
+
+			//add new socket to array of sockets
+			for (i = 0; i < max_clients; i++){
+				//if position is empty
+				if( client_socket[i] == 0 ){
+					client_socket[i] = new_socket;
+					break;
+				}
+			}
+		}
+
+		//else its some IO operation on some other socket :)
+		for (i = 0; i < max_clients; i++){
+			sd = client_socket[i];
+
+			if (FD_ISSET( sd , &readfds)){
+				//Check if it was for closing , and also read the incoming message
+				if ((valread = read( sd , buffer, 1024)) == 0){
+					//Somebody disconnected
+					puts("Se desconectó una consola");
+					//Close the socket and mark as 0 in list for reuse
+					close( sd );
+					client_socket[i] = 0;
+				}else{
+					//set the string terminating NULL byte on the end of the data read
+					buffer[valread] = '\0';
+
+					//validacion de nivel de multiprogramacion
+					if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
+						char message[MAXBUF];
+						strcpy(message, "198;");
+						enviarMensaje(&sd, message);
+					}else{
+						char message[MAXBUF];
+						printf("%s", buffer);
+						enviarMensaje(&skt_memoria, buffer);
+
+						recv(skt_memoria, message, sizeof(message), 0);
+						//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
+						if(atoi(message) == 298){
+							char message2[MAXBUF];
+							strcpy(message2, "197;");
+							enviarMensaje(&sd, message2);
+						}else{
+							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+							queue_push(cola_listos, new_pcb);
+
+							char* info_pid = string_new();
+							char* respuestaAConsola = string_new();
+							string_append(&info_pid, "103");
+							string_append(&info_pid, ",");
+							string_append(&info_pid, string_itoa(new_pcb->pid));
+							string_append(&respuestaAConsola, info_pid);
+							enviarMensaje(&sd, respuestaAConsola);
+
+							if(queue_size(cola_cpu) != 0){
+								//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
+								char* mensajeACPU = serializar_pcb(new_pcb);
+								enviarMensaje(&skt_cpu, mensajeACPU);
+								//FIN CODIGO DE SERIALIZACION DEL PCB
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	return EXIT_SUCCESS;
@@ -367,12 +432,6 @@ void * hilo_conexiones_cpu(void *args) {
 		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
 		creoThread(&thread_proceso_cpu, handler_conexion_cpu, (void *) socketClienteCPU);
 
-		/*
-		if (socketClienteCPU < 0) {
-			perror("Fallo en el manejo del hilo CPU");
-			return EXIT_FAILURE;
-		}
-		*/
 	}
 
 	shutdown(socketClienteCPU, 0);
@@ -404,8 +463,6 @@ void * handler_conexion_cpu(void * sock) {
 	if (result <= 0) {
 		printf("Se desconecto un CPU\n");
 	}
-
-	//while (1) {}
 
 	return EXIT_SUCCESS;
 }
@@ -440,7 +497,7 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_pop(origen);
 	queue_push(fin, element);
 }
-
+/*
 void planificar(int q){
 	while (1){
 		int corte = queue_size(cola_cpu);
@@ -461,5 +518,5 @@ void planificar(int q){
 		};
 	}
 	}
-	}
 
+}*/

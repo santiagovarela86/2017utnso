@@ -190,13 +190,13 @@ void * escuchar_Kernel(void * args){
 
 				queue_push(cola_programas, program);
 
-			}else if(atoi(respuesta_kernel[0]) == 104){
-				printf("El programa no puedo iniciarse\n");
+			}else if(atoi(respuesta_kernel[0]) == 197){
+				printf("El programa no pudo iniciarse por falta de memoria\n");
+			}else if(atoi(respuesta_kernel[0]) == 198){
+				printf("El programa no pudo iniciarse por limite de multiprogramacion\n");
 			}else{
 				printf("Mensaje de programa: %s\n", *respuesta_kernel);
 			}
-		} else {
-			printf("Error al recibir datos del Kernel");
 		}
 	}
 
