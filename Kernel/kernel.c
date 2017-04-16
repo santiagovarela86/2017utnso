@@ -514,16 +514,16 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 void planificar(int q){
 	while (1){
 		int corte = queue_size(cola_cpu);
-		int i;
-
-		//recorre
-		for(i = 1 ;i<corte;i++){
+		int i = 0;
+		int encontrado = 0;
+		//recorre cpus
+		while (i <= corte && encontrado == 0){
 			estruct_cpu* pcbtemporalCpu = malloc(sizeof(estruct_cpu));
 			pcbtemporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
 
 			if(!(pcbtemporalCpu->pid_asignado == -1)){
 				queue_push(cola_cpu, pcbtemporalCpu);
-			}else{
+				encontrado = 1;
 				if(!queue_is_empty(cola_listos)){
 					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
 
