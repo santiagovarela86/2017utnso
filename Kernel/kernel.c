@@ -353,43 +353,56 @@ void * hilo_conexiones_consola(void *args) {
 				}else{
 					//set the string terminating NULL byte on the end of the data read
 					buffer[valread] = '\0';
-
-					//validacion de nivel de multiprogramacion
-					if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
-						char message[MAXBUF];
-						strcpy(message, "198;");
-						enviarMensaje(&sd, message);
-					}else{
-						char message[MAXBUF];
-						printf("%s", buffer);
-						enviarMensaje(&skt_memoria, buffer);
-
-						recv(skt_memoria, message, sizeof(message), 0);
-						//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
-						if(atoi(message) == 298){
-							char message2[MAXBUF];
-							strcpy(message2, "197;");
-							enviarMensaje(&sd, message2);
+					char** respuesta_a_kernel = string_split(buffer, ";");
+					if(atoi(respuesta_a_kernel[0]) == 303){
+						//validacion de nivel de multiprogramacion
+						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
+							char message[MAXBUF];
+							strcpy(message, "198;");
+							enviarMensaje(&sd, message);
 						}else{
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
-							queue_push(cola_listos, new_pcb);
+							char message[MAXBUF];
+							printf("%s", buffer);
+							enviarMensaje(&skt_memoria, buffer);
 
-							char* info_pid = string_new();
-							char* respuestaAConsola = string_new();
-							string_append(&info_pid, "103");
-							string_append(&info_pid, ",");
-							string_append(&info_pid, string_itoa(new_pcb->pid));
-							string_append(&respuestaAConsola, info_pid);
-							enviarMensaje(&sd, respuestaAConsola);
+							recv(skt_memoria, message, sizeof(message), 0);
+							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
+							if(atoi(message) == 298){
+								//Se rechaza programa por falta de espacio en memoria
+								char message2[MAXBUF];
+								strcpy(message2, "197;");
+								enviarMensaje(&sd, message2);
+							}else{
+								//Se crea programa nuevo
+								t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+								queue_push(cola_listos, new_pcb);
 
-							if(queue_size(cola_cpu) != 0){
-								//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
-								char* mensajeACPU = serializar_pcb(new_pcb);
-								enviarMensaje(&skt_cpu, mensajeACPU);
-								//FIN CODIGO DE SERIALIZACION DEL PCB
+								char* info_pid = string_new();
+								char* respuestaAConsola = string_new();
+								string_append(&info_pid, "103");
+								string_append(&info_pid, ",");
+								string_append(&info_pid, string_itoa(new_pcb->pid));
+								string_append(&respuestaAConsola, info_pid);
+								enviarMensaje(&sd, respuestaAConsola);
+
+								if(queue_size(cola_cpu) != 0){
+									//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
+									char* mensajeACPU = serializar_pcb(new_pcb);
+									enviarMensaje(&skt_cpu, mensajeACPU);
+									//FIN CODIGO DE SERIALIZACION DEL PCB
+								}
 							}
 						}
+					}else if(atoi(respuesta_a_kernel[0]) == 398){
+						//TODO - Leer el resto del mensaje donde se revise el pid del proceso. Buscarlo en las
+						//colas de listos, bloqueados o en ejecucion y matarlo.
+						puts("Se debe matar al proceso del mensaje - FALTA IMPLEMENTAR");
+					}if(atoi(respuesta_a_kernel[0]) == 399){
+						//TODO - Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
+						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
+						puts("Se debe matar a todos procesos de la consola que envio el mensaje - FALTA IMPLEMENTAR");
 					}
+
 				}
 			}
 		}

@@ -134,14 +134,14 @@ void terminar_proceso(int* socket_kernel){
 	puts(" ");
 	puts("Ingrese PID del proceso a terminar");
 
-	char* pid_ingresado = 0;
+	char pid_ingresado = 0;
 
-	scanf("%s", pid_ingresado);
+	scanf("%s", &pid_ingresado);
 
 	char message[MAXBUF];
 
 	strcpy(message, "398;");
-	strcat(message, pid_ingresado);
+	strcat(message, &pid_ingresado);
 
 	enviarMensaje(socket_kernel, message);
 
@@ -217,7 +217,11 @@ void iniciar_programa(int* socket_kernel){
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 
-	enviarMensaje(socket_kernel, pmap_script);
+	char* respuestaConsola = string_new();
+	string_append(&respuestaConsola, "303");
+	string_append(&respuestaConsola, pmap_script);
+
+	enviarMensaje(socket_kernel, respuestaConsola);
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
