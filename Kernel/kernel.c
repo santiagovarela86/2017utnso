@@ -31,6 +31,7 @@ int conexionesConsola = 0;
 Kernel_Config* configuracion;
 int grado_multiprogramacion;
 pthread_mutex_t mutex_grado_multiprog;
+pthread_mutex_t mutex_numerador_pcb;
 t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
@@ -49,6 +50,7 @@ int main(int argc, char **argv) {
 	}
 
 	pthread_mutex_init(&mutex_grado_multiprog, NULL);
+	pthread_mutex_init(&mutex_numerador_pcb, NULL);
 
 	cola_cpu = crear_cola_pcb();
 	pthread_t thread_id_filesystem;
@@ -364,26 +366,43 @@ void * hilo_conexiones_consola(void *args) {
 							strcpy(message, "198;");
 							enviarMensaje(&sd, message);
 						}else{
-							char message[MAXBUF];
+							//Se crea programa nuevo
+							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+
 							printf("%s", buffer);
-							enviarMensaje(&skt_memoria, buffer);
+							char message[MAXBUF];
+							char* mensajeInicioPrograma = string_new();
+							string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
+							string_append(&mensajeInicioPrograma, ";");
+							string_append(&mensajeInicioPrograma, respuesta_a_kernel[1]);
+							enviarMensaje(&skt_memoria, mensajeInicioPrograma);
 
 							recv(skt_memoria, message, sizeof(message), 0);
 							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
-							if(atoi(message) == 298){
-								//Se rechaza programa por falta de espacio en memoria
+							puts("Llega aca despues de alocar");
+							char** respuesta_Memoria = string_split(message, ";");
+
+							if(atoi(respuesta_Memoria[0]) == 298){
+								puts("Se rechaza programa por falta de espacio en memoria");
+
+								//Decremento el numero de pid global del kernel
+								pthread_mutex_lock(&mutex_numerador_pcb);
+								numerador_pcb--;
+								pthread_mutex_unlock(&mutex_numerador_pcb);
+
 								char message2[MAXBUF];
 								strcpy(message2, "197;");
 								enviarMensaje(&sd, message2);
 							}else{
-								//Se crea programa nuevo
-								t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+								//Si hay espacio suficiente en la memoria
+								//Agrego el programa a la cola de listos
+								printf("pagina: %s\n", respuesta_Memoria[1]);
 								queue_push(cola_listos, new_pcb);
 
 								char* info_pid = string_new();
 								char* respuestaAConsola = string_new();
 								string_append(&info_pid, "103");
-								string_append(&info_pid, ",");
+								string_append(&info_pid, ";");
 								string_append(&info_pid, string_itoa(new_pcb->pid));
 								string_append(&respuestaAConsola, info_pid);
 								enviarMensaje(&sd, respuestaAConsola);
@@ -417,13 +436,13 @@ void * hilo_conexiones_consola(void *args) {
 char* serializar_pcb(t_pcb* pcb){
 	char* mensajeACPU = string_new();
 	string_append(&mensajeACPU, string_itoa(pcb->pid));
-	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->program_counter));
-	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
-	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
-	string_append(&mensajeACPU, ",");
+	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
 	return mensajeACPU;
 }
@@ -491,7 +510,9 @@ t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, i
 	new->pos_stack = pos_stack;
 	new->socket_cpu = socket_cpu;
 	new->exit_code = exit_code;
+	pthread_mutex_lock(&mutex_numerador_pcb);
 	numerador_pcb++;
+	pthread_mutex_unlock(&mutex_numerador_pcb);
 	return new;
 }
 

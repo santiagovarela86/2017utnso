@@ -19,10 +19,8 @@ pthread_mutex_t mutex_tiempo_retardo;
 int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
-
-void * hilo_conexiones_kernel(void * args);
-void * hilo_conexiones_cpu(void * args);
-void * handler_conexiones_cpu(void * args);
+char* bloque_memoria;
+int indice_bloque_memoria;
 
 int main(int argc, char **argv) {
 
@@ -33,6 +31,7 @@ int main(int argc, char **argv) {
 
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 
+	bloque_memoria = string_new();
 	Memoria_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
@@ -96,7 +95,14 @@ void * hilo_conexiones_kernel(void * args){
 		int result = recv(socketCliente, message, sizeof(message), 0);
 
 		while (result) {
-			printf("%s", message);
+
+			char**mensajeDelKernel = string_split(message, ";");
+			int pid = atoi(mensajeDelKernel[0]);
+			char* codigo_programa = mensajeDelKernel[1];
+
+			iniciar_programa(pid, codigo_programa, socketCliente);
+
+
 			result = recv(socketCliente, message, sizeof(message), 0);
 		}
 
@@ -180,6 +186,7 @@ void * hilo_conexiones_cpu(void * args){
 
 	return EXIT_SUCCESS;
 }
+
 
 void * handler_conexiones_cpu(void * socketCliente) {
 
@@ -300,7 +307,8 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
-	int* bloque_memoria = calloc(config->marcos, config->marco_size);
+	indice_bloque_memoria = 0;
+	bloque_memoria = calloc(config->marcos, config->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
@@ -308,6 +316,42 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	tabla_paginas = list_create();
 	memoria_cache = crear_cola_cache();
 }
+
+void iniciar_programa(int pid, char* codigo, int socket_kernel){
+
+	char* respuestaAKernel = string_new();
+
+	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
+		puts("tiene espacio en bloque");
+		string_append(&bloque_memoria, codigo);
+		t_pagina_invertida* pagina = crear_nueva_pagina(pid, 1, 1, indice_bloque_memoria, string_length(codigo));
+		list_add(tabla_paginas, pagina);
+		puts("agrego la pagina a la tabla de paginas");
+		printf("bloque de memoria: %s\n", bloque_memoria);
+		string_append(&respuestaAKernel, "203;");
+		string_append(&respuestaAKernel, string_itoa(pagina->inicio));
+		enviarMensaje(&socket_kernel, respuestaAKernel);
+	}
+	else {
+		puts("NO tiene espacio en bloque");
+		//Si el codigo del programa supera el tamanio del bloque
+		//Le aviso al Kernel que no puede reservar el espacio para el programa
+		string_append(&respuestaAKernel, "298;");
+		enviarMensaje(&socket_kernel, respuestaAKernel);
+	}
+}
+
+
+t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
+	t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
+	nueva_pagina->pid = pid;
+	nueva_pagina->nro_marco = marco;
+	nueva_pagina->nro_pagina = pagina;
+	nueva_pagina->inicio = inicio;
+	nueva_pagina->offset = offset;
+	return nueva_pagina;
+}
+
 
 void log_cache_in_disk(t_queue* cache) {
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);

@@ -30,6 +30,8 @@ typedef struct {
 	int nro_marco;
 	int pid;
 	int nro_pagina;
+	int inicio;
+	int offset;
 } t_pagina_invertida;
 
 void* inicializar_consola(void*);
@@ -39,5 +41,10 @@ void log_cache_in_disk(t_queue*);
 void log_estructuras_memoria_in_disk(t_list*);
 void log_contenido_memoria_in_disk(t_list*);
 void limpiar_memoria_cache();
+void * hilo_conexiones_kernel(void * args);
+void * hilo_conexiones_cpu(void * args);
+void * handler_conexiones_cpu(void * args);
+t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset);
+void iniciar_programa(int pid, char* codigo, int skt);
 
 #endif /* MEMORIA_H_ */

@@ -176,7 +176,7 @@ void * escuchar_Kernel(void * args){
 		int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
 
 		if (result > 0){
-			char** respuesta_kernel = string_split(buffer, ",");
+			char** respuesta_kernel = string_split(buffer, ";");
 
 			programa* program = malloc(sizeof(program));
 
@@ -219,6 +219,7 @@ void iniciar_programa(int* socket_kernel){
 
 	char* respuestaConsola = string_new();
 	string_append(&respuestaConsola, "303");
+	string_append(&respuestaConsola, ";");
 	string_append(&respuestaConsola, pmap_script);
 
 	enviarMensaje(socket_kernel, respuestaConsola);

@@ -63,7 +63,7 @@ void* manejo_kernel(void *args) {
 	int result = recv(socketKernel, message, sizeof(message), 0);
 
 	//INICIO CODIGO DE DESERIALIZACION DEL PCB
-	char** msg_kernel_pcb = string_split(message, ",");
+	char** msg_kernel_pcb = string_split(message, ";");
 	printf("BUFFER: %s\n", message);
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(msg_kernel_pcb[0]));
