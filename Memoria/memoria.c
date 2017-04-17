@@ -201,7 +201,11 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int result = recv(socketCliente, message, sizeof(message), 0);
 
 			while (result) {
-				printf("%s", message);
+				char**mensajeDesdeCPU = string_split(message, ";");
+				int pid = atoi(mensajeDesdeCPU[0]);
+				int inicio_bloque = atoi(mensajeDesdeCPU[1]);
+				int offset = atoi(mensajeDesdeCPU[2]);
+
 				result = recv(socketCliente, message, sizeof(message), 0);
 			}
 
