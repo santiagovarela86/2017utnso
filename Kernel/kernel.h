@@ -16,6 +16,8 @@ typedef struct {
 	int tabla_archivos;
 	int pos_stack;
 	int* socket_cpu;
+	int inicio_lectura_bloque;
+	int offset;
 	int exit_code;
 } t_pcb;
 

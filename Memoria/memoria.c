@@ -330,6 +330,8 @@ void iniciar_programa(int pid, char* codigo, int socket_kernel){
 		printf("bloque de memoria: %s\n", bloque_memoria);
 		string_append(&respuestaAKernel, "203;");
 		string_append(&respuestaAKernel, string_itoa(pagina->inicio));
+		string_append(&respuestaAKernel, ";");
+		string_append(&respuestaAKernel, string_itoa(pagina->offset));
 		enviarMensaje(&socket_kernel, respuestaAKernel);
 	}
 	else {

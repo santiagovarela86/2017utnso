@@ -21,6 +21,7 @@ void* manejo_memoria();
 void* manejo_kernel();
 
 CPU_Config* configuracion;
+int socketMemoria;
 
 int main(int argc , char **argv){
 
@@ -68,7 +69,24 @@ void* manejo_kernel(void *args) {
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(msg_kernel_pcb[0]));
 	printf("PC: %d\n", atoi(msg_kernel_pcb[1]));
+	printf("INDICE INICIO BLOQUE MEMORIA: %d \n", atoi(msg_kernel_pcb[4]));
+	printf("OFFSET: %d \n", atoi(msg_kernel_pcb[5]));
 	//FIN CODIGO DE DESERIALIZACION DEL PCB
+
+	int pid = atoi(msg_kernel_pcb[0]);
+	int inicio_bloque_codigo = atoi(msg_kernel_pcb[4]);
+	int offset = atoi(msg_kernel_pcb[5]);
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, string_itoa(pid));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(inicio_bloque_codigo));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(offset));
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+
+	recv(socketMemoria, message, sizeof(message), 0);
+
 
 	procesoLineas(message);
 
@@ -85,7 +103,6 @@ void* manejo_kernel(void *args) {
 }
 
 void* manejo_memoria(void * args){
-	int socketMemoria;
 	struct sockaddr_in direccionMemoria;
 
 	creoSocket(&socketMemoria, &direccionMemoria, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);

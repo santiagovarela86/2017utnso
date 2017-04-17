@@ -379,7 +379,6 @@ void * hilo_conexiones_consola(void *args) {
 
 							recv(skt_memoria, message, sizeof(message), 0);
 							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
-							puts("Llega aca despues de alocar");
 							char** respuesta_Memoria = string_split(message, ";");
 
 							if(atoi(respuesta_Memoria[0]) == 298){
@@ -396,7 +395,11 @@ void * hilo_conexiones_consola(void *args) {
 							}else{
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
-								printf("pagina: %s\n", respuesta_Memoria[1]);
+								int indice_inicio = atoi(respuesta_Memoria[1]);
+								int offset = atoi(respuesta_Memoria[2]);
+								new_pcb->inicio_lectura_bloque = indice_inicio;
+								new_pcb->offset = offset;
+
 								queue_push(cola_listos, new_pcb);
 
 								char* info_pid = string_new();
@@ -442,6 +445,10 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
+	string_append(&mensajeACPU, ";");
+	string_append(&mensajeACPU, string_itoa(pcb->inicio_lectura_bloque));
+	string_append(&mensajeACPU, ";");
+	string_append(&mensajeACPU, string_itoa(pcb->offset));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
 	return mensajeACPU;
