@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
 	pthread_t thread_proceso_consola;
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
-	//pthread_t thread_planificador;
+	pthread_t thread_planificador;
 
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
@@ -75,14 +75,14 @@ int main(int argc, char **argv) {
 	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
 	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
-	//creoThread(&thread_planificador, planificar, NULL);
+	creoThread(&thread_planificador, planificar, NULL);
 
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
 	pthread_join(thread_proceso_consola, NULL);
 	pthread_join(thread_proceso_cpu, NULL);
 	pthread_join(thread_consola_kernel, NULL);
-	//pthread_join(thread_planificador, NULL);
+	pthread_join(thread_planificador, NULL);
 
 	free(configuracion);
 
@@ -542,7 +542,7 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_push(fin, element);
 }
 
-void * planificar(int q){
+void planificar(int q){
 	while (1){
 		int corte = queue_size(cola_cpu);
 		int i = 0;
@@ -562,10 +562,14 @@ void * planificar(int q){
 					pcbtemporalListos->pid = pcbtemporalCpu->socket;
 					pcbtemporalCpu->pid_asignado = pcbtemporalListos->pid;
 
+					t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+					char* mensajeACPUPlan = serializar_pcb(new_pcb);
+					enviarMensaje(&skt_cpu, mensajeACPUPlan);
+
 					queue_push(cola_ejecucion, pcbtemporalListos);
 				}
 			}
 		}
 	}
-	return EXIT_SUCCESS;
+
 }

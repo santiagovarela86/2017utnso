@@ -36,6 +36,8 @@ void* inicializar_consola(void* args);
 void log_console_in_disk(char*);
 void eliminar_pcb(t_pcb*);
 void flush_cola_pcb(t_queue*);
+void planificar(int);
+
 t_queue* crear_cola_pcb();
 t_pcb* nuevo_pcb(int, int, int*, int, int*, int);
 char* serializar_pcb(t_pcb* pcb);
