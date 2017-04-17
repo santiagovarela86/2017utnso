@@ -71,6 +71,7 @@ void* manejo_kernel(void *args) {
 	printf("PC: %d\n", atoi(msg_kernel_pcb[1]));
 	printf("INDICE INICIO BLOQUE MEMORIA: %d \n", atoi(msg_kernel_pcb[4]));
 	printf("OFFSET: %d \n", atoi(msg_kernel_pcb[5]));
+	printf("QUANTUM: %d \n", atoi(msg_kernel_pcb[7]));
 	//FIN CODIGO DE DESERIALIZACION DEL PCB
 
 	int pid = atoi(msg_kernel_pcb[0]);

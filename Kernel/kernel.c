@@ -410,12 +410,6 @@ void * hilo_conexiones_consola(void *args) {
 								string_append(&respuestaAConsola, info_pid);
 								enviarMensaje(&sd, respuestaAConsola);
 
-								if(queue_size(cola_cpu) != 0){
-									//SERIALIZACION DEL PCB PARA ENVIARLO A LA CPU
-									char* mensajeACPU = serializar_pcb(new_pcb);
-									enviarMensaje(&skt_cpu, mensajeACPU);
-									//FIN CODIGO DE SERIALIZACION DEL PCB
-								}
 							}
 						}
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
@@ -451,6 +445,8 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->offset));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
+	string_append(&mensajeACPU, ";");
+	string_append(&mensajeACPU, string_itoa(configuracion->quantum));
 	return mensajeACPU;
 }
 
@@ -503,6 +499,24 @@ void * handler_conexion_cpu(void * sock) {
 	}
 
 	if (result <= 0) {
+		int corte, i, encontrado;
+
+		corte = queue_size(cola_cpu);
+		i = 0;
+		encontrado = 0;
+
+		estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+		while (i <= corte && encontrado == 0){
+			temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+
+			if(temporalCpu->socket == *socketCliente){
+				encontrado = 1;
+			}else{
+				queue_push(cola_cpu, temporalCpu);
+				i++;
+			}
+		}
 		printf("Se desconecto un CPU\n");
 	}
 
@@ -542,34 +556,46 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_push(fin, element);
 }
 
-void planificar(int q){
+void planificar(){
+	int corte, i, encontrado;
+
 	while (1){
-		int corte = queue_size(cola_cpu);
-		int i = 0;
-		int encontrado = 0;
-		//recorre cpus
-		while (i <= corte && encontrado == 0){
-			estruct_cpu* pcbtemporalCpu = malloc(sizeof(estruct_cpu));
-			pcbtemporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		usleep(configuracion->quantum_sleep);
 
-			if(!(pcbtemporalCpu->pid_asignado == -1)){
-				queue_push(cola_cpu, pcbtemporalCpu);
-				encontrado = 1;
-				if(!queue_is_empty(cola_listos)){
+		corte = queue_size(cola_cpu);
+		i = 0;
+		encontrado = 0;
+
+		if(!(queue_is_empty(cola_cpu))){
+			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+			while (i <= corte && encontrado == 0){
+				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+
+				if(temporalCpu->pid_asignado == -1){
+
+					encontrado = 1;
+				}else{
+					i++;
+				}
+				queue_push(cola_cpu, temporalCpu);
+			}
+
+			if(encontrado == 1){
+				if(!(queue_is_empty(cola_listos))){
+
 					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
-
 					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
-					pcbtemporalListos->pid = pcbtemporalCpu->socket;
-					pcbtemporalCpu->pid_asignado = pcbtemporalListos->pid;
 
-					t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
-					char* mensajeACPUPlan = serializar_pcb(new_pcb);
-					enviarMensaje(&skt_cpu, mensajeACPUPlan);
+					temporalCpu->pid_asignado = pcbtemporalListos->pid;
+					pcbtemporalListos->socket_cpu = &temporalCpu->socket;
 
+					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
+					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
 					queue_push(cola_ejecucion, pcbtemporalListos);
 				}
 			}
 		}
 	}
-
 }
+
