@@ -200,7 +200,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int result = recv(socketCliente, message, sizeof(message), 0);
 
-			//while (result) {
 			if (result > 0){
 				char**mensajeDesdeCPU = string_split(message, ";");
 				int pid = atoi(mensajeDesdeCPU[0]);
@@ -209,10 +208,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				char* respuestaACPU = string_new();
 				string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
-				printf("RESPUESTA A CPU: %s\n", respuestaACPU);
 				enviarMensaje(sock, respuestaACPU);
-
-				//result = recv(socketCliente, message, sizeof(message), 0);
 			}
 
 			if (result <= 0) {
@@ -284,6 +280,7 @@ void * inicializar_consola(void* args){
 					flush_cola_cache(memoria_cache);
 					break;
 				case 6:
+					accion_correcta = 1;
 					puts("***********************************************************");
 					puts("TAMANIO DE LA MEMORIA");
 					printf("CANTIDAD TOTAL DE MARCOS: %d \n", configuracion->marcos);
@@ -292,11 +289,13 @@ void * inicializar_consola(void* args){
 					puts("***********************************************************");
 					break;
 				case 7:
+					accion_correcta = 1;
 					printf("Ingrese PID de proceso: ");
 					scanf("%d", &pid_buscado);
 					printf("El tamanio total del proceso %d es: %d", pid_buscado, tamanio_proceso_buscado);
 					break;
 				default:
+					accion_correcta = 0;
 					puts("Comando invalido. A continuacion se detallan las acciones:");
 					puts("1) Retardo");
 					puts("2) Dump Cache");
@@ -332,12 +331,9 @@ void iniciar_programa(int pid, char* codigo, int socket_kernel){
 	char* respuestaAKernel = string_new();
 
 	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
-		puts("tiene espacio en bloque");
 		string_append(&bloque_memoria, codigo);
 		t_pagina_invertida* pagina = crear_nueva_pagina(pid, 1, 1, indice_bloque_memoria, string_length(codigo));
 		list_add(tabla_paginas, pagina);
-		puts("agrego la pagina a la tabla de paginas");
-		printf("bloque de memoria: %s\n", bloque_memoria);
 		string_append(&respuestaAKernel, "203;");
 		string_append(&respuestaAKernel, string_itoa(pagina->inicio));
 		string_append(&respuestaAKernel, ";");
@@ -345,7 +341,6 @@ void iniciar_programa(int pid, char* codigo, int socket_kernel){
 		enviarMensaje(&socket_kernel, respuestaAKernel);
 	}
 	else {
-		puts("NO tiene espacio en bloque");
 		//Si el codigo del programa supera el tamanio del bloque
 		//Le aviso al Kernel que no puede reservar el espacio para el programa
 		string_append(&respuestaAKernel, "298;");
@@ -376,8 +371,6 @@ void log_cache_in_disk(t_queue* cache) {
     log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");
 
     log_destroy(logger);
-
-    printf("cache.log generado con exito! \n");
 }
 
 void log_estructuras_memoria_in_disk(t_list* tabla_paginas) {
@@ -387,17 +380,33 @@ void log_estructuras_memoria_in_disk(t_list* tabla_paginas) {
 	log_info(logger, "LOGUEO DE INFO DE ESTRUCTURAS DE MEMORIA %s", "INFO");
 
     log_destroy(logger);
-
-    printf("estructura_memoria.log generado con exito! \n");
 }
 
 void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
 
 	t_log* logger = log_create("contenido_memoria.log", "contenido_memoria", true, LOG_LEVEL_INFO);
-	log_info(logger, "LOGUEO DE INFO DE CONTENIDO DE MEMORIA %s", "INFO");
-    log_destroy(logger);
 
-    printf("contenido_memoria.log generado con exito! \n");
+	char* dump_memoria = string_new();
+
+	void agregar_registro_dump(t_pagina_invertida* pagina){
+		string_append(&dump_memoria, "PID: ");
+		string_append(&dump_memoria, string_itoa(pagina->pid));
+		string_append(&dump_memoria, " ");
+		string_append(&dump_memoria, "MARCO: ");
+		string_append(&dump_memoria, string_itoa(pagina->nro_marco));
+		string_append(&dump_memoria, " ");
+		string_append(&dump_memoria, "PAGINA: ");
+		string_append(&dump_memoria, string_itoa(pagina->nro_pagina));
+		string_append(&dump_memoria, " ");
+		string_append(&dump_memoria, "CODIGO: ");
+		string_append(&dump_memoria, string_substring(bloque_memoria, pagina->inicio, pagina->offset));
+	}
+
+	list_iterate(tabla_paginas, (void*) agregar_registro_dump);
+
+	log_info(logger, dump_memoria, "INFO");
+
+    log_destroy(logger);
 }
 
 /* FUNCION DE HASH */

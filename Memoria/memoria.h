@@ -47,5 +47,6 @@ void * handler_conexiones_cpu(void * args);
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset);
 void iniciar_programa(int pid, char* codigo, int skt);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
+void agregar_registro_dump(t_pagina_invertida*);
 
 #endif /* MEMORIA_H_ */
