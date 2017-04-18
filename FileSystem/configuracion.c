@@ -30,10 +30,11 @@ metadata_Config* leerMetaData(char* mnt){
 	}
 
 	char* directorio = string_new();
-	//directorio = string_substring(mnt,1,string_length(mnt));
-	directorio = string_substring(mnt,0,string_length(mnt));
+	directorio = string_substring(mnt,1,string_length(mnt));
 
 	string_append(&directorio,"Metadata/Metadata.bin");
+
+	printf("DIR: %s\n", directorio);
 
 	t_config* metadata = config_create(directorio);
 
@@ -57,8 +58,7 @@ void imprimirMetadata(metadata_Config* meta) {
 
 t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	char* directorio = string_new();
-	//directorio = string_substring(mnt,1,string_length(mnt));
-	directorio = string_substring(mnt,0,string_length(mnt));
+	directorio = string_substring(mnt,1,string_length(mnt));
 
 	string_append(&directorio,"Metadata/Bitmap.bin");
 
