@@ -108,6 +108,7 @@ void * hilo_conexiones_kernel(void * args){
 
 		if (result <= 0) {
 			printf("Se desconecto el Kernel\n");
+			exit(errno);
 		}
 	} else {
 		perror("Fallo en el manejo del hilo Kernel");
