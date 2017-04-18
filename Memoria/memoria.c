@@ -190,23 +190,28 @@ void * hilo_conexiones_cpu(void * args){
 
 void * handler_conexiones_cpu(void * socketCliente) {
 
-
-	//socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
-
 		if (socketCliente > 0) {
+
+			int * sock = (int *) &socketCliente;
 
 			handShakeListen(&socketCliente, "500", "202", "299", "CPU");
 			char message[MAXBUF];
 
 			int result = recv(socketCliente, message, sizeof(message), 0);
 
-			while (result) {
+			//while (result) {
+			if (result > 0){
 				char**mensajeDesdeCPU = string_split(message, ";");
 				int pid = atoi(mensajeDesdeCPU[0]);
 				int inicio_bloque = atoi(mensajeDesdeCPU[1]);
 				int offset = atoi(mensajeDesdeCPU[2]);
 
-				result = recv(socketCliente, message, sizeof(message), 0);
+				char* respuestaACPU = string_new();
+				string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
+				printf("RESPUESTA A CPU: %s\n", respuestaACPU);
+				enviarMensaje(sock, respuestaACPU);
+
+				//result = recv(socketCliente, message, sizeof(message), 0);
 			}
 
 			if (result <= 0) {
@@ -347,6 +352,11 @@ void iniciar_programa(int pid, char* codigo, int socket_kernel){
 	}
 }
 
+char* leer_codigo_programa(int pid, int inicio, int offset){
+	char* codigo_programa = string_new();
+	codigo_programa = string_substring(bloque_memoria, inicio, offset);
+	return codigo_programa;
+}
 
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
 	t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));

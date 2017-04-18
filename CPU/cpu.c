@@ -88,7 +88,6 @@ void* manejo_kernel(void *args) {
 
 	recv(socketMemoria, message, sizeof(message), 0);
 
-
 	procesoLineas(message);
 
 	if (result <= 0) {
