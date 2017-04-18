@@ -88,7 +88,11 @@ void* manejo_kernel(void *args) {
 
 	recv(socketMemoria, message, sizeof(message), 0);
 
-	procesoLineas(message);
+	t_metadata_program* programa = malloc(sizeof(t_metadata_program));
+	programa = metadata_desde_literal(message);
+
+	//TODO AQUI ITERAR (PREGUNTANDO POR QUANTUM)
+	//LLAMANDO A LA FUNCION analizadorLinea CON CADA INSTRUCCION Y LOS CONJUSTOS DE FUNCIONES
 
 	if (result <= 0) {
 		printf("Se desconecto el Kernel\n");
