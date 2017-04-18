@@ -330,6 +330,8 @@ void * hilo_conexiones_consola(void *args) {
 				exit(EXIT_FAILURE);
 			}
 
+			printf("%s:%d conectado\n", inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
 			//send new connection greeting message
 			handShakeListen(&new_socket, "300", "101", "199", "Consola");
 
