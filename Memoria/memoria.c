@@ -5,6 +5,7 @@
 //298 MER A KER - ESPACIO INSUFICIENTE PARA ALMACENAR PROGRAMA
 //299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
 //100 KER A MEM - HANDSHAKE DE KERNEL
+//510 CPU A MEM - SOLICITUD SCRIPT
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -170,13 +171,6 @@ void * hilo_conexiones_cpu(void * args){
 	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)){
 		pthread_t thread_cpu;
 
-		/*
-		if (socketCliente < 0) {
-			perror("Fallo en el manejo del hilo CPU");
-			return EXIT_FAILURE;
-		}
-		*/
-
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 
 		creoThread(&thread_cpu, handler_conexiones_cpu, (void *) socketCliente);
@@ -188,7 +182,6 @@ void * hilo_conexiones_cpu(void * args){
 	return EXIT_SUCCESS;
 }
 
-
 void * handler_conexiones_cpu(void * socketCliente) {
 
 		if (socketCliente > 0) {
@@ -199,18 +192,27 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			char message[MAXBUF];
 
 			int result = recv(socketCliente, message, sizeof(message), 0);
+			char**mensajeDesdeCPU = string_split(message, ";");
+			int codigo = atoi(mensajeDesdeCPU[0]);
 
-			if (result > 0){
-				char**mensajeDesdeCPU = string_split(message, ";");
-				int pid = atoi(mensajeDesdeCPU[0]);
-				int inicio_bloque = atoi(mensajeDesdeCPU[1]);
-				int offset = atoi(mensajeDesdeCPU[2]);
+			while(result > 0){
 
-				char* respuestaACPU = string_new();
-				string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
-				enviarMensaje(sock, respuestaACPU);
+				if (codigo == 510){
+					int pid = atoi(mensajeDesdeCPU[1]);
+					int inicio_bloque = atoi(mensajeDesdeCPU[2]);
+					int offset = atoi(mensajeDesdeCPU[3]);
+
+					char* respuestaACPU = string_new();
+					string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
+					enviarMensaje(sock, respuestaACPU);
+
+				}else if(codigo == 511){
+					int direccion = atoi(mensajeDesdeCPU[1]);
+					int valor = atoi(mensajeDesdeCPU[2]);
+				}
+
+				result = recv(socketCliente, message, sizeof(message), 0);
 			}
-
 			if (result <= 0) {
 				printf("Se desconecto un CPU\n");
 			}
@@ -218,12 +220,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			perror("Fallo en el manejo del hilo CPU");
 			return EXIT_FAILURE;
 		}
-
-
-
-
-
-	//handShakeListen(&socketCliente, "500", "202", "299", "CPU");
 
 	return EXIT_SUCCESS;
 }
@@ -354,6 +350,12 @@ char* leer_codigo_programa(int pid, int inicio, int offset){
 	return codigo_programa;
 }
 
+char* leer_memoria(int inicio, int offset){
+	char* codigo_programa = string_new();
+	codigo_programa = string_substring(bloque_memoria, inicio, offset);
+	return codigo_programa;
+}
+
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
 	t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
 	nueva_pagina->pid = pid;
@@ -363,7 +365,6 @@ t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inici
 	nueva_pagina->offset = offset;
 	return nueva_pagina;
 }
-
 
 void log_cache_in_disk(t_queue* cache) {
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
@@ -409,7 +410,6 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
     log_destroy(logger);
 }
 
-/* FUNCION DE HASH */
 uint32_t f_hash(const void *buf, size_t buflength) {
      const uint8_t *buffer = (const uint8_t*)buf;
 

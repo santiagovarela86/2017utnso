@@ -1,8 +1,10 @@
 //CODIGOS
 //500 CPU A KER - HANDSHAKE
 //500 CPU A MEM - HANDSHAKE
+//510 CPU A MEM - SOLICITUD SCRIPT
 //102 KER A CPU - RESPUESTA HANDSHAKE DE CPU
 //202 MEM A CPU - RESPUESTA HANDSHAKE
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,6 +80,8 @@ void* manejo_kernel(void *args) {
 	int inicio_bloque_codigo = atoi(msg_kernel_pcb[4]);
 	int offset = atoi(msg_kernel_pcb[5]);
 	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "510");
+	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(pid));
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(inicio_bloque_codigo));
@@ -124,4 +128,16 @@ void* manejo_memoria(void * args){
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
 	return EXIT_SUCCESS;
+}
+
+void AnSISOP_asignar(int direccion, int valor){
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "511");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(direccion));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(valor));
+	string_append(&mensajeAMemoria, ";");
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
 }
