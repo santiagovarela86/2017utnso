@@ -37,6 +37,8 @@ t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
 t_queue* cola_terminados;
 t_queue* cola_cpu;
+t_list* lista_variables_globales;
+t_list* lista_semaforos;
 int numerador_pcb = 1000;
 int skt_memoria;
 int skt_cpu;
@@ -63,6 +65,10 @@ int main(int argc, char **argv) {
 	imprimirConfiguracion(configuracion);
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
+
+	//inicializacion de variables globales y semaforos
+	inicializar_variables_globales();
+	inicializar_semaforos();
 
 	cola_listos = crear_cola_pcb();
 	cola_bloqueados = crear_cola_pcb();
@@ -208,6 +214,30 @@ void * inicializar_consola(void* args){
 				break;
 			}
 		}
+	}
+}
+
+void inicializar_variables_globales(){
+	lista_variables_globales = list_create();
+	int i = 0;
+	while (configuracion->shared_vars[i] != NULL){
+		t_var_global* var_global = malloc(sizeof(t_var_global));
+		var_global->id = configuracion->shared_vars[i];
+		var_global->valor = 0;
+		list_add(lista_variables_globales, var_global);
+		i++;
+	}
+}
+
+void inicializar_semaforos(){
+	lista_semaforos = list_create();
+	int i = 0;
+	while(configuracion->sem_ids[i] != NULL){
+		t_semaforo* semaforo = malloc(sizeof(t_semaforo));
+		semaforo->id = configuracion->sem_ids[i];
+		semaforo->valor = atoi(configuracion->sem_init[i]);
+		list_add(lista_semaforos, semaforo);
+		i++;
 	}
 }
 

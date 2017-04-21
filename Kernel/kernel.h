@@ -40,6 +40,16 @@ typedef struct{
 	int pid_asignado;
 } estruct_cpu;
 
+typedef struct{
+	char* id;
+	int valor;
+} t_var_global;
+
+typedef struct {
+	char* id;
+	int valor;
+} t_semaforo;
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);
@@ -55,6 +65,8 @@ void planificar();
 t_queue* crear_cola_pcb();
 t_pcb* nuevo_pcb(int, int, int*, int, int*, int);
 char* serializar_pcb(t_pcb* pcb);
+void inicializar_variables_globales();
+void inicializar_semaforos();
 
 
 #endif /* KERNEL_H_ */
