@@ -23,6 +23,8 @@ t_queue* memoria_cache;
 char* bloque_memoria;
 int indice_bloque_memoria;
 
+void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
+
 int main(int argc, char **argv) {
 
 	if (argc != 2) {
@@ -112,7 +114,7 @@ void * hilo_conexiones_kernel(void * args){
 			exit(errno);
 		}
 	} else {
-		perror("Fallo en el manejo del hilo Kernel");
+		perror("Fallo en el manejo del hilo Kernel\n");
 		return EXIT_FAILURE;
 	}
 
@@ -176,6 +178,12 @@ void * hilo_conexiones_cpu(void * args){
 		creoThread(&thread_cpu, handler_conexiones_cpu, (void *) socketCliente);
 	}
 
+	if (socketCliente <= 0){
+		printf("Error al aceptar conexiones de CPU\n");
+		exit(errno);
+	}
+
+	//LLEGA ALGUNA VEZ A ESTO?
 	shutdown(socketCliente, 0);
 	close(socketCliente);
 
@@ -183,67 +191,84 @@ void * hilo_conexiones_cpu(void * args){
 }
 
 void * handler_conexiones_cpu(void * socketCliente) {
+	int sock = (int *) socketCliente;
 
-		if (socketCliente > 0) {
+	//NO HACE FALTA VERIFICAR ESTO, PORQUE A ESTA FUNCION SE LA LLAMA DENTRO DE UN WHILE ACCEPT Y EL SOCKET SIEMPRE ES POSITIVO
+	//if (socketCliente > 0) {
 
-			int * sock = (int *) &socketCliente;
+	handShakeListen(&sock, "500", "202", "299", "CPU");
 
-			handShakeListen(&socketCliente, "500", "202", "299", "CPU");
-			char message[MAXBUF];
+	char message[MAXBUF];
+	int result = recv(sock, message, sizeof(message), 0);
 
-			int result = recv(socketCliente, message, sizeof(message), 0);
-			char**mensajeDesdeCPU = string_split(message, ";");
-			int codigo = atoi(mensajeDesdeCPU[0]);
+	while (result){
+		char**mensajeDesdeCPU = string_split(message, ";");
+		int codigo = atoi(mensajeDesdeCPU[0]);
 
-			while(result > 0){
+		if (codigo == 510) {
 
-				if (codigo == 510){
-					int pid = atoi(mensajeDesdeCPU[1]);
-					int inicio_bloque = atoi(mensajeDesdeCPU[2]);
-					int offset = atoi(mensajeDesdeCPU[3]);
+			enviarScriptACPU(&sock, mensajeDesdeCPU);
 
-					char* respuestaACPU = string_new();
-					string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
-					enviarMensaje(sock, respuestaACPU);
+			/*
 
-				}else if(codigo == 511){
-					int direccion = atoi(mensajeDesdeCPU[1]);
-					int valor = atoi(mensajeDesdeCPU[2]);
+			 int pid = atoi(mensajeDesdeCPU[1]);
+			 int inicio_bloque = atoi(mensajeDesdeCPU[2]);
+			 int offset = atoi(mensajeDesdeCPU[3]);
 
+			 char* respuestaACPU = string_new();
+			 string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
+			 enviarMensaje(socketCliente, respuestaACPU);
 
-				}else if(codigo == 512){
-					char identificador_variable = * mensajeDesdeCPU[1];
-					int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
-					int inicio = string_length(bloque_memoria);
+			 */
 
+		} else if (codigo == 511) {
 
-					 //ver que haya espacio en memo
-					//lenght > tmaximio de mem
+			//ABSTRACTAMENTE QUE HACE ESTO?
 
-					//antes de grabar calcular la dire con func?
-					string_append(&bloque_memoria,"0000");
-//enviar direccion al cpu
-					/*char* mensajeAMemoria = string_new();
-					string_append(&mensajeAMemoria, "512");
-					string_append(&mensajeAMemoria, ";");
-					string_append(&mensajeAMemoria, &identificador_variable);
-					string_append(&mensajeAMemoria, ";");
-					string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
-					string_append(&mensajeAMemoria, ";");
-						enviarMensaje(&socketMemoria, mensajeAMemoria);
-					*/
-				}
-				result = recv(socketCliente, message, sizeof(message), 0);
-			}
-			if (result <= 0) {
-				printf("Se desconecto un CPU\n");
-			}
-		} else {
-			perror("Fallo en el manejo del hilo CPU");
-			return EXIT_FAILURE;
+			int direccion = atoi(mensajeDesdeCPU[1]);
+			int valor = atoi(mensajeDesdeCPU[2]);
+
+		} else if (codigo == 512) {
+
+			//ABSTRACTAMENTE QUE HACE ESTO?
+
+			char identificador_variable = *mensajeDesdeCPU[1];
+			int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
+			int inicio = string_length(bloque_memoria);
+
+			//ver que haya espacio en memo
+			//lenght > tmaximio de mem
+
+			//antes de grabar calcular la dire con func?
+			string_append(&bloque_memoria, "0000");
+			//enviar direccion al cpu
+			/*char* mensajeAMemoria = string_new();
+			 string_append(&mensajeAMemoria, "512");
+			 string_append(&mensajeAMemoria, ";");
+			 string_append(&mensajeAMemoria, &identificador_variable);
+			 string_append(&mensajeAMemoria, ";");
+			 string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
+			 string_append(&mensajeAMemoria, ";");
+			 enviarMensaje(&socketMemoria, mensajeAMemoria);
+			 */
 		}
 
+		int result = recv(sock, message, sizeof(message), 0);
+	}
+
+	printf("Se desconecto un CPU\n");
+
 	return EXIT_SUCCESS;
+}
+
+void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU){
+	int pid = atoi(mensajeDesdeCPU[1]);
+	int inicio_bloque = atoi(mensajeDesdeCPU[2]);
+	int offset = atoi(mensajeDesdeCPU[3]);
+
+	char* respuestaACPU = string_new();
+	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
+	enviarMensaje(socketCliente, respuestaACPU);
 }
 
 void * inicializar_consola(void* args){
