@@ -209,8 +209,28 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				}else if(codigo == 511){
 					int direccion = atoi(mensajeDesdeCPU[1]);
 					int valor = atoi(mensajeDesdeCPU[2]);
-				}
 
+				}else if(codigo == 512){
+					char identificador_variable = * mensajeDesdeCPU[1];
+					int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
+					int inicio = string_length(bloque_memoria);
+
+					 //ver que haya espacio en memo
+					//lenght > tmaximio de mem
+
+					//antes de grabar calcular la dire con func?
+					string_append(&bloque_memoria,"0000");
+//enviar direccion al cpu
+					/*char* mensajeAMemoria = string_new();
+					string_append(&mensajeAMemoria, "512");
+					string_append(&mensajeAMemoria, ";");
+					string_append(&mensajeAMemoria, &identificador_variable);
+					string_append(&mensajeAMemoria, ";");
+					string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
+					string_append(&mensajeAMemoria, ";");
+						enviarMensaje(&socketMemoria, mensajeAMemoria);
+					*/
+				}
 				result = recv(socketCliente, message, sizeof(message), 0);
 			}
 			if (result <= 0) {
