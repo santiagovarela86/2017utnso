@@ -25,6 +25,8 @@ void* manejo_kernel();
 CPU_Config* configuracion;
 int socketMemoria;
 
+int programa_ejecutando;
+
 int main(int argc , char **argv){
 
 	if (argc != 2){
@@ -75,6 +77,9 @@ void* manejo_kernel(void *args) {
 	printf("OFFSET: %d \n", atoi(msg_kernel_pcb[5]));
 	printf("QUANTUM: %d \n", atoi(msg_kernel_pcb[7]));
 	//FIN CODIGO DE DESERIALIZACION DEL PCB
+
+	programa_ejecutando=  atoi(msg_kernel_pcb[0]);
+
 
 	int pid = atoi(msg_kernel_pcb[0]);
 	int inicio_bloque_codigo = atoi(msg_kernel_pcb[4]);
@@ -148,6 +153,19 @@ char * AnSISOP_obtenerPosicionVariable(t_nombre_variable identificador_variable)
 
 	//recibir del pcb
 
-
 }
+
+char * AnSISOP_definirVariable(t_nombre_variable identificador_variable){
+
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "512");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, &identificador_variable);
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
+	string_append(&mensajeAMemoria, ";");
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+}
+
 
