@@ -215,6 +215,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
 					int inicio = string_length(bloque_memoria);
 
+
 					 //ver que haya espacio en memo
 					//lenght > tmaximio de mem
 
