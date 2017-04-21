@@ -124,9 +124,14 @@ void* manejo_kernel(void *args) {
 	 }
 	 */
 
+	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
+	pause();
+
+	/*
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
+	*/
 
 	shutdown(socketKernel, 0);
 	close(socketKernel);
@@ -204,9 +209,14 @@ void* manejo_memoria(void * args){
 
 	handShakeSend(&socketMemoria, "500", "202", "Memoria");
 
+	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
+	pause();
+
+	/*
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
+	*/
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
