@@ -57,6 +57,11 @@ typedef struct {
 
 typedef struct {
 	t_metadata_heap metadata;
+	char* data;
+} t_bloque_heap;
+
+typedef struct {
+	t_bloque_heap** bloques;
 	int pid;
 	int nro_pagina;
 	int tamanio_disponible;
