@@ -10,11 +10,25 @@
 
 #include <commons/collections/queue.h>
 
+
+typedef struct {
+	int pagina;
+	int offset;
+	int size;
+} t_Direccion;
+
+
+typedef struct {
+	t_Direccion direccion;
+	char nombre_variable;
+} t_Stack;
+
 typedef struct {
 	int pid;
 	int program_counter;
 	int tabla_archivos;
 	int pos_stack;
+	//t_list pos_stack;
 	int* socket_cpu;
 	int inicio_lectura_bloque;
 	int offset;
