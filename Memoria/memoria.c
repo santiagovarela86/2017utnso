@@ -210,6 +210,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					int direccion = atoi(mensajeDesdeCPU[1]);
 					int valor = atoi(mensajeDesdeCPU[2]);
 
+
 				}else if(codigo == 512){
 					char identificador_variable = * mensajeDesdeCPU[1];
 					int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
