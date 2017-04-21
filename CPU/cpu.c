@@ -162,7 +162,7 @@ char * solicitoScript(int * socketMemoria, char ** pcb){
 	if (result){
 		return message;
 	}else{
-		printf("Error al solicitar Script a la Memoria");
+		printf("Error al solicitar Script a la Memoria\n");
 		exit(errno);
 	}
 }
@@ -191,7 +191,7 @@ char ** reciboPCB(int * socketKernel) {
 		//MUESTRO EL BUFFER DEL PCB
 		printf("BUFFER: %s\n", message);
 	} else {
-		printf("Error al recibir PCB");
+		printf("Error al recibir PCB\n");
 		exit(errno);
 	}
 
