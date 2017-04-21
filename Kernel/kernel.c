@@ -39,7 +39,6 @@ t_queue* cola_terminados;
 t_queue* cola_cpu;
 int numerador_pcb = 1000;
 int skt_memoria;
-
 int skt_cpu;
 
 int main(int argc, char **argv) {
@@ -230,10 +229,14 @@ void* manejo_filesystem(void *args) {
 
 	handShakeSend(&socketFS, "100", "401", "File System");
 
+	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
+	pause();
+
+	/*
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
-
+	*/
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -254,10 +257,14 @@ void* manejo_memoria(void *args) {
 
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
+	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
+	pause();
+
+	/*
 	//Loop para seguir comunicado con el servidor
 	while (1) {
 	}
-
+	*/
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
