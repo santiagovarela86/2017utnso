@@ -50,6 +50,18 @@ typedef struct {
 	int valor;
 } t_semaforo;
 
+typedef struct {
+	uint32_t size;
+	bool isFree;
+} t_metadata_heap;
+
+typedef struct {
+	t_metadata_heap metadata;
+	int pid;
+	int nro_pagina;
+	int tamanio_disponible;
+} t_pagina_heap;
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);
