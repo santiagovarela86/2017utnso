@@ -159,7 +159,7 @@ char * solicitoScript(int * socketMemoria, char ** pcb){
 
 	int result = recv((int) * socketMemoria, message, sizeof(message), 0);
 
-	if (result){
+	if (result > 0){
 		return message;
 	}else{
 		printf("Error al solicitar Script a la Memoria\n");
@@ -183,7 +183,7 @@ char ** reciboPCB(int * socketKernel) {
 	int result = recv(*socketKernel, message, sizeof(message), 0);
 
 	//Se agrega manejo de error al recibir el PCB
-	if (result) {
+	if (result > 0) {
 		//INICIO CODIGO DE DESERIALIZACION DEL PCB
 		pcb = string_split(message, ";");
 		//FIN CODIGO DE DESERIALIZACION DEL PCB

@@ -481,6 +481,12 @@ void * hilo_conexiones_cpu(void *args) {
 
 	}
 
+	if (socketClienteCPU <= 0){
+		printf("Error al aceptar conexiones de CPU\n");
+		exit(errno);
+	}
+
+	//LLEGA ALGUNA VEZ A ESTO?
 	shutdown(socketClienteCPU, 0);
 	close(socketClienteCPU);
 	return EXIT_SUCCESS;
@@ -501,7 +507,7 @@ void * handler_conexion_cpu(void * sock) {
 
 	int result = recv(* socketCliente, message, sizeof(message), 0);
 
-	while (result) {
+	while (result > 0) {
 		printf("%s", message);
 
 		result = recv(* socketCliente, message, sizeof(message), 0);

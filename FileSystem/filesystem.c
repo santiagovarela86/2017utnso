@@ -78,14 +78,14 @@ void * hilo_conexiones_kernel(void * args){
 
 	socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
 
-	if (socketCliente) {
+	if (socketCliente > 0) {
 		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
 		handShakeListen(&socketCliente, "100", "401", "499", "Kernel");
 		char message[MAXBUF];
 
 		int result = recv(socketCliente, message, sizeof(message), 0);
 
-		while (result) {
+		while (result > 0) {
 			printf("%s", message);
 			result = recv(socketCliente, message, sizeof(message), 0);
 		}
