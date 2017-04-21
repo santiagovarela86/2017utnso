@@ -67,6 +67,7 @@ t_pcb* nuevo_pcb(int, int, int*, int, int*, int);
 char* serializar_pcb(t_pcb* pcb);
 void inicializar_variables_globales();
 void inicializar_semaforos();
+void liberar_estructuras();
 
 
 #endif /* KERNEL_H_ */

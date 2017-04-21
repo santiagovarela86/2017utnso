@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 	pthread_join(thread_consola_kernel, NULL);
 	pthread_join(thread_planificador, NULL);
 
-	free(configuracion);
+	liberar_estructuras();
 
 	return EXIT_SUCCESS;
 }
@@ -227,6 +227,12 @@ void inicializar_variables_globales(){
 		list_add(lista_variables_globales, var_global);
 		i++;
 	}
+}
+
+void liberar_estructuras(){
+	free(configuracion);
+	free(lista_variables_globales);
+	free(lista_semaforos);
 }
 
 void inicializar_semaforos(){
