@@ -141,3 +141,13 @@ void AnSISOP_asignar(int direccion, int valor){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 }
+//69
+
+
+char * AnSISOP_obtenerPosicionVariable(t_nombre_variable identificador_variable){
+
+	//recibir del pcb
+
+
+}
+
