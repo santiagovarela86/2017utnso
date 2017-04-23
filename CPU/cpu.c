@@ -74,64 +74,14 @@ void* manejo_kernel(void *args) {
 	//SOLICITO SCRIPT A MEMORIA
 	char * script = solicitoScript(&socketMemoria, pcb);
 
-	/*
-	 char message[MAXBUF];
-
-	 int result = recv(socketKernel, message, sizeof(message), 0);
-
-	 //INICIO CODIGO DE DESERIALIZACION DEL PCB
-	 char** msg_kernel_pcb = string_split(message, ";");
-	 printf("BUFFER: %s\n", message);
-	 printf("PCB del proceso \n");
-	 printf("PID: %d\n", atoi(msg_kernel_pcb[0]));
-	 printf("PC: %d\n", atoi(msg_kernel_pcb[1]));
-	 printf("INDICE INICIO BLOQUE MEMORIA: %d \n", atoi(msg_kernel_pcb[4]));
-	 printf("OFFSET: %d \n", atoi(msg_kernel_pcb[5]));
-	 printf("QUANTUM: %d \n", atoi(msg_kernel_pcb[7]));
-	 //FIN CODIGO DE DESERIALIZACION DEL PCB
-
-	 */
-
-	/*
-	 int pid = atoi(msg_kernel_pcb[0]);
-	 int inicio_bloque_codigo = atoi(msg_kernel_pcb[4]);
-	 int offset = atoi(msg_kernel_pcb[5]);
-	 char* mensajeAMemoria = string_new();
-	 string_append(&mensajeAMemoria, "510");
-	 string_append(&mensajeAMemoria, ";");
-	 string_append(&mensajeAMemoria, string_itoa(pid));
-	 string_append(&mensajeAMemoria, ";");
-	 string_append(&mensajeAMemoria, string_itoa(inicio_bloque_codigo));
-	 string_append(&mensajeAMemoria, ";");
-	 string_append(&mensajeAMemoria, string_itoa(offset));
-
-
-	 enviarMensaje(&socketMemoria, mensajeAMemoria);
-
-	 recv(socketMemoria, message, sizeof(message), 0);
-
-	 */
-
 	t_metadata_program* programa = malloc(sizeof(t_metadata_program));
 	programa = metadata_desde_literal(script);
 
 	//TODO AQUI ITERAR (PREGUNTANDO POR QUANTUM)
 	//LLAMANDO A LA FUNCION analizadorLinea CON CADA INSTRUCCION Y LOS CONJUSTOS DE FUNCIONES
 
-	/*
-	 if (result <= 0) {
-	 printf("Se desconecto el Kernel\n");
-	 }
-	 */
-
 	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
-
-	/*
-	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
-	*/
 
 	free(programa);
 	free(script);

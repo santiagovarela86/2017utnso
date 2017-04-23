@@ -187,9 +187,6 @@ void * escuchar_Kernel(void * args){
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ";");
 
-			//programa* program = malloc(sizeof(program));
-			//Solo reservo si hace falta
-
 			if(atoi(respuesta_kernel[0]) == 103){
 				programa* program = malloc(sizeof(program));
 
@@ -210,7 +207,7 @@ void * escuchar_Kernel(void * args){
 				printf("Mensaje de programa: %s\n", *respuesta_kernel);
 			}
 
-			free(respuesta_kernel);
+			//free(respuesta_kernel);
 		}
 	}
 

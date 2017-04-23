@@ -23,6 +23,13 @@
 #include "helperFunctions.h"
 
 typedef struct {
+	int pid;
+	int inicio_pagina;
+	int numero_pagina;
+} struct_program;
+
+
+typedef struct {
 	int socket_consola;
 } estructura_socket;
 

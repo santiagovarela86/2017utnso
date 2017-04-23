@@ -119,45 +119,6 @@ void * hilo_conexiones_kernel(void * args){
 		return EXIT_FAILURE;
 	}
 
-	/*
-	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)) {
-		semaforo = 1;
-
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-		handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
-
-		char message[MAXBUF];
-		int result = recv(socketCliente, message, sizeof(message), 0);
-
-		if (result) {
-			printf("%s", message);
-		} else {
-			printf("Se desconecto el Kernel\n");
-		}
-	}
-
-	if (socketCliente < 0) {
-		perror("Fallo en el manejo del hilo Kernel");
-		return EXIT_FAILURE;
-	}
-	*/
-
-	/*
-	socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
-
-	semaforo = 1;
-
-	printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-
-	handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
-
-	char message[MAXBUF];
-
-	recv(socketCliente, message, sizeof(message), 0);
-	printf("%s", message);
-	//re recv(socketCliente, message, sizeof(message), 0); con el len
-	*/
-
 	shutdown(socketCliente, 0);
 	close(socketCliente);
 
@@ -210,28 +171,12 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			enviarScriptACPU(&sock, mensajeDesdeCPU);
 
-			/*
-
-			 int pid = atoi(mensajeDesdeCPU[1]);
-			 int inicio_bloque = atoi(mensajeDesdeCPU[2]);
-			 int offset = atoi(mensajeDesdeCPU[3]);
-
-			 char* respuestaACPU = string_new();
-			 string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
-			 enviarMensaje(socketCliente, respuestaACPU);
-
-			 */
-
 		} else if (codigo == 511) {
-
-			//ABSTRACTAMENTE QUE HACE ESTO?
 
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
 		} else if (codigo == 512) {
-
-			//ABSTRACTAMENTE QUE HACE ESTO?
 
 			char identificador_variable = *mensajeDesdeCPU[1];
 			int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
