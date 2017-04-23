@@ -116,11 +116,11 @@ void * inicializar_consola(void* args){
 		int accion_correcta = 0;
 		int nuevo_grado_multiprog = 0;
 		int pid_buscado;
-		char* mensaje = string_new();
+		//char* mensaje = string_new();
 
 		while (accion_correcta == 0){
 
-			mensaje = string_new();
+			char * mensaje = string_new();
 			scanf("%d", &accion);
 
 			switch(accion){
@@ -213,6 +213,8 @@ void * inicializar_consola(void* args){
 				puts("10) Detener la Planificacion");
 				break;
 			}
+
+			free(mensaje);
 		}
 	}
 }
@@ -230,9 +232,16 @@ void inicializar_variables_globales(){
 }
 
 void liberar_estructuras(){
+	//YA QUE VA A HABER UN LIBERAR ESTRUCTURAS
+	//PODRIAMOS ARMAR UN INICIALIZAR ESTRUCTURAS Y QUE INICIALICE LAS MISMAS
 	free(configuracion);
 	free(lista_variables_globales);
 	free(lista_semaforos);
+	free(cola_cpu);
+	free(cola_listos);
+	free(cola_bloqueados);
+	free(cola_ejecucion);
+	free(cola_terminados);
 }
 
 void inicializar_semaforos(){
@@ -455,7 +464,13 @@ void * hilo_conexiones_consola(void *args) {
 								string_append(&respuestaAConsola, info_pid);
 								enviarMensaje(&sd, respuestaAConsola);
 
+								free(info_pid);
+								free(respuestaAConsola);
+
 							}
+
+							free(respuesta_Memoria);
+							free(mensajeInicioPrograma);
 						}
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
 						//TODO - Leer el resto del mensaje donde se revise el pid del proceso. Buscarlo en las
@@ -467,6 +482,7 @@ void * hilo_conexiones_consola(void *args) {
 						puts("Se debe matar a todos procesos de la consola que envio el mensaje - FALTA IMPLEMENTAR");
 					}
 
+					free(respuesta_a_kernel);
 				}
 			}
 		}
@@ -644,6 +660,7 @@ void planificar(){
 					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
 					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
 					queue_push(cola_ejecucion, pcbtemporalListos);
+					free(mensajeACPUPlan);
 				}
 			}
 		}
