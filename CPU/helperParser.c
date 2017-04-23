@@ -43,14 +43,6 @@
  * @return	Valor que se encuentra en esa posicion
  */
 
-t_valor_variable dereferenciar(t_puntero direccion_variable) {
-	t_valor_variable ret = 0;
-
-	printf("Desreferencio la direccion %d\n", direccion_variable);
-
-	return ret;
-}
-
 /*
  * ASIGNAR
  *

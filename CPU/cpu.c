@@ -88,6 +88,7 @@ void* manejo_kernel(void *args) {
 
 	analizadorLinea("x = 3", funciones, kernel);
 
+	analizadorLinea("x = x + 3", funciones, kernel);
 	//TODO AQUI ITERAR (PREGUNTANDO POR QUANTUM)
 	//LLAMANDO A LA FUNCION analizadorLinea CON CADA INSTRUCCION Y LOS CONJUSTOS DE FUNCIONES
 
@@ -199,6 +200,33 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
+	return 0;
+}
+
+t_valor_variable dereferenciar(t_puntero direccion_variable){
+
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "513");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(direccion_variable));
+	string_append(&mensajeAMemoria, ";");
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
+
+	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
+
+	if(result > 0){
+		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+		int valor = atoi(mensajeDesdeCPU[0]);
+
+		printf("El valor es: %d \n", valor);
+
+		free(mensajeAMemoria);
+
+		return valor;
+	}
+
 	return 0;
 }
 

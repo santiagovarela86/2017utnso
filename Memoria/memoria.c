@@ -201,6 +201,18 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			string_append(&mensajeACpu, ";");
 
 			enviarMensaje(&sock, mensajeACpu);
+		} else if (codigo == 513) {
+
+			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
+			char* valor_variable  = string_new();
+
+			valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
+
+			char* mensajeACpu = string_new();
+			string_append(&mensajeACpu, valor_variable);
+			string_append(&mensajeACpu, ";");
+
+			enviarMensaje(&sock, mensajeACpu);
 		}
 
 		free(mensajeDesdeCPU);

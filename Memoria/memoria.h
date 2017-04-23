@@ -22,6 +22,9 @@
 
 #include "helperFunctions.h"
 
+
+#define OFFSET_VAR 4
+
 typedef struct {
 	int pid;
 	int inicio_pagina;
@@ -55,7 +58,7 @@ t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inici
 void iniciar_programa(int pid, char* codigo, int paginas, int skt);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
-
+char* leer_memoria(int posicion_de_la_Variable, int off);
 void grabar_valor(int direccion, int valor);
 void definir_varaible(int posicion_donde_guardo, char identificador_variable, int pid);
 
