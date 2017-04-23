@@ -90,6 +90,7 @@ int main(int argc, char **argv) {
 	pthread_join(thread_planificador, NULL);
 
 	liberar_estructuras();
+	free(configuracion);
 
 	return EXIT_SUCCESS;
 }
@@ -232,8 +233,8 @@ void inicializar_variables_globales(){
 }
 
 void liberar_estructuras(){
-	//YA QUE VA A HABER UN LIBERAR ESTRUCTURAS
-	//PODRIAMOS ARMAR UN INICIALIZAR ESTRUCTURAS Y QUE INICIALICE LAS MISMAS
+	//YA QUE HAY UN LIBERAR ESTRUCTURAS
+	//PODRIAMOS ARMAR UN INICIALIZAR ESTRUCTURAS
 	free(configuracion);
 	free(lista_variables_globales);
 	free(lista_semaforos);
