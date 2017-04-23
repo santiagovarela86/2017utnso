@@ -23,6 +23,7 @@ Memoria_Config * leerConfiguracion(char* path) {
 		memoria->puerto = config_get_int_value(metadata, "PUERTO");
 		memoria->reemplazo_cache = config_get_string_value(metadata, "REEMPLAZO_CACHE");
 		memoria->retardo_memoria = config_get_int_value(metadata, "RETARDO_MEMORIA");
+		free(metadata);
 		return memoria;
 	}
 	else {

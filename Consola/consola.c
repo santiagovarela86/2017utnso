@@ -178,9 +178,12 @@ void * escuchar_Kernel(void * args){
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ";");
 
-			programa* program = malloc(sizeof(program));
+			//programa* program = malloc(sizeof(program));
+			//Solo reservo si hace falta
 
 			if(atoi(respuesta_kernel[0]) == 103){
+				programa* program = malloc(sizeof(program));
+
 				program->pid = atoi(respuesta_kernel[1]);
 				program->duracion = 0;
 				program->fin = 0;
