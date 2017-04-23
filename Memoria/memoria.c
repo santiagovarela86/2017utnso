@@ -161,9 +161,6 @@ void * hilo_conexiones_cpu(void * args){
 void * handler_conexiones_cpu(void * socketCliente) {
 	int sock = (int *) socketCliente;
 
-	//NO HACE FALTA VERIFICAR ESTO, PORQUE A ESTA FUNCION SE LA LLAMA DENTRO DE UN WHILE ACCEPT Y EL SOCKET SIEMPRE ES POSITIVO
-	//if (socketCliente > 0) {
-
 	handShakeListen(&sock, "500", "202", "299", "CPU");
 
 	char message[MAXBUF];
@@ -178,7 +175,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			enviarScriptACPU(&sock, mensajeDesdeCPU);
 
 		} else if (codigo == 511) {
-
+			puts("siiiiiii");
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
@@ -201,6 +198,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			string_append(&mensajeACpu, ";");
 
 			enviarMensaje(&sock, mensajeACpu);
+
 		} else if (codigo == 513) {
 
 			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
@@ -480,7 +478,6 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
 	}else{
 		int unidad = valor % 10;
-		printf("Grabe el valor = %d \n", unidad);
 		bloque_memoria[direccion] = '0';
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = '0';

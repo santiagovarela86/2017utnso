@@ -85,14 +85,16 @@ void* manejo_kernel(void *args) {
 	t_metadata_program* programa = malloc(sizeof(t_metadata_program));
 	programa = metadata_desde_literal(script);
 
-	analizadorLinea("variables x", funciones, kernel);
+	int quantum = atoi(pcb[7]);
+	int iterador = 0;
 
-	analizadorLinea("x = 3", funciones, kernel);
+	while( iterador <= programa->instrucciones_size && quantum != 0){
+		analizadorLinea(string_substring(script, programa->instrucciones_serializado[iterador].start, programa->instrucciones_serializado[iterador].offset), funciones, kernel);
+		iterador++;
+		quantum--;
+	}
 
-	analizadorLinea("x = x + 3", funciones, kernel);
-	//TODO AQUI ITERAR (PREGUNTANDO POR QUANTUM)
-	//LLAMANDO A LA FUNCION analizadorLinea CON CADA INSTRUCCION Y LOS CONJUSTOS DE FUNCIONES
-
+	//TODO AQUI PREGUNTAR SI SALIO DEL WHILE POR FIN DE QUEANTUM O POR FIN DE PROGRAMA
 	pause();
 
 	free(programa);
@@ -230,7 +232,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	return 0;
 }
 
-//
 t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");
@@ -255,7 +256,7 @@ t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
 
 		return valor;
 
-				//TODO de esta falta hacer la parte de la memoria;
+		//TODO de esta falta hacer la parte de la memoria;
 	}
 
 	return 0;
