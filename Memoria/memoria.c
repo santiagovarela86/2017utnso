@@ -22,6 +22,7 @@ t_list* tabla_paginas;
 t_queue* memoria_cache;
 char* bloque_memoria;
 int indice_bloque_memoria;
+Memoria_Config* configuracion;
 
 void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
@@ -35,7 +36,6 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 
 	bloque_memoria = string_new();
-	Memoria_Config * configuracion;
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
@@ -104,8 +104,11 @@ void * hilo_conexiones_kernel(void * args){
 			int pid = atoi(mensajeDelKernel[0]);
 			char* codigo_programa = mensajeDelKernel[1];
 
-			iniciar_programa(pid, codigo_programa, socketCliente);
+			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
+			if (cant_paginas == 0)
+				cant_paginas++;
 
+			iniciar_programa(pid, codigo_programa, cant_paginas, socketCliente);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
 		}
@@ -318,7 +321,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	memoria_cache = crear_cola_cache();
 }
 
-void iniciar_programa(int pid, char* codigo, int socket_kernel){
+void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel){
 
 	char* respuestaAKernel = string_new();
 
