@@ -22,14 +22,6 @@
  * @return	Puntero a la variable recien asignada
  */
 
-t_puntero definirVariable(t_nombre_variable identificador_variable) {
-	t_puntero ret = 0;
-
-	printf("Defino la variable %c\n", identificador_variable);
-
-	return ret;
-}
-
 /*
  * OBTENER POSICION de una VARIABLE
  *
@@ -40,14 +32,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
  * @param	identificador_variable 		Nombre de la variable a buscar (De ser un parametro, se invocara sin el '$')
  * @return	Donde se encuentre la variable buscada
  */
-
-t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
-	t_puntero ret = 0;
-
-	printf("Obtengo la posicion de la variable %c\n", identificador_variable);
-
-	return ret;
-}
 
 /*
  * DEREFERENCIAR
@@ -77,10 +61,6 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
  * @param	valor	Valor a insertar
  * @return	void
  */
-
-void asignar(t_puntero direccion_variable, t_valor_variable valor) {
-	printf("Asigno valor %d a la direccion %d\n", valor, direccion_variable);
-}
 
 /*
  * OBTENER VALOR de una variable COMPARTIDA
@@ -477,4 +457,31 @@ char * leerArchivo(char * path){
 	fclose(fp);
 
 	return buffer;
+}
+
+void inicializar_funciones(AnSISOP_funciones* funciones, AnSISOP_kernel* kernel){
+
+	funciones->AnSISOP_asignar = asignar;
+	funciones->AnSISOP_asignarValorCompartida = asignarValorCompartida;
+	funciones->AnSISOP_definirVariable = definirVariable;
+	funciones->AnSISOP_dereferenciar = dereferenciar;
+	funciones->AnSISOP_finalizar = finalizar;
+	funciones->AnSISOP_irAlLabel = irAlLabel;
+	funciones->AnSISOP_llamarConRetorno = llamarConRetorno;
+	funciones->AnSISOP_llamarSinRetorno = llamarSinRetorno;
+	funciones->AnSISOP_obtenerPosicionVariable = obtenerPosicionVariable;
+	funciones->AnSISOP_obtenerValorCompartida = obtenerValorCompartida;
+	funciones->AnSISOP_retornar = retornar;
+	kernel->AnSISOP_abrir = abrir;
+	kernel->AnSISOP_borrar = borrar;
+	kernel->AnSISOP_cerrar = cerrar;
+	kernel->AnSISOP_escribir = escribir;
+	kernel->AnSISOP_leer = leer;
+	kernel->AnSISOP_liberar = liberar;
+	kernel->AnSISOP_signal = signal;
+	kernel->AnSISOP_wait = wait;
+	kernel->AnSISOP_moverCursor = moverCursor;
+	kernel->AnSISOP_reservar = reservar;
+
+	return;
 }

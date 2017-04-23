@@ -48,5 +48,6 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 void escribir(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio);
 void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio);
 
+void inicializar_funciones(AnSISOP_funciones* funciones, AnSISOP_kernel* kernel);
 
 #endif /* HELPERPARSER_H_ */

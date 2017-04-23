@@ -74,13 +74,23 @@ void* manejo_kernel(void *args) {
 	//SOLICITO SCRIPT A MEMORIA
 	char * script = solicitoScript(&socketMemoria, pcb);
 
+	AnSISOP_funciones *funciones = NULL;
+	AnSISOP_kernel *kernel = NULL;
+    funciones = malloc(sizeof(AnSISOP_funciones));
+    kernel = malloc(sizeof(AnSISOP_kernel));
+
+    inicializar_funciones(funciones, kernel);
+
 	t_metadata_program* programa = malloc(sizeof(t_metadata_program));
 	programa = metadata_desde_literal(script);
+
+	analizadorLinea("variables x", funciones, kernel);
+
+	analizadorLinea("x = 3", funciones, kernel);
 
 	//TODO AQUI ITERAR (PREGUNTANDO POR QUANTUM)
 	//LLAMANDO A LA FUNCION analizadorLinea CON CADA INSTRUCCION Y LOS CONJUSTOS DE FUNCIONES
 
-	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
 
 	free(programa);
@@ -167,18 +177,13 @@ void* manejo_memoria(void * args){
 	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
 
-	/*
-	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
-	*/
-
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
 	return EXIT_SUCCESS;
 }
 
-void AnSISOP_asignar(int direccion, int valor){
+void asignar(t_puntero direccion, t_valor_variable valor){
+
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -189,15 +194,15 @@ void AnSISOP_asignar(int direccion, int valor){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 	free(mensajeAMemoria);
+
+	return;
 }
 
-char * AnSISOP_obtenerPosicionVariable(t_nombre_variable identificador_variable){
-
-	//recibir del pcb
-
+t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
+	return 0;
 }
 
-char * AnSISOP_definirVariable(t_nombre_variable identificador_variable){
+t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "512");
@@ -208,5 +213,20 @@ char * AnSISOP_definirVariable(t_nombre_variable identificador_variable){
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
-	free(mensajeAMemoria);
+
+	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
+
+	if(result > 0){
+		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+		int posicion = atoi(mensajeDesdeCPU[0]);
+
+		printf("La variable se guardo en la pos: %d \n", posicion);
+
+		free(mensajeAMemoria);
+
+		return posicion;
+	}
+
+	return -1;
+
 }

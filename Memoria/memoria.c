@@ -182,27 +182,25 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
+			grabar_valor(direccion, valor);
+
 		} else if (codigo == 512) {
 
 			char identificador_variable = *mensajeDesdeCPU[1];
 			int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
-			int inicio = string_length(bloque_memoria);
 
-			//ver que haya espacio en memo
-			//lenght > tmaximio de mem
+			//TODO Cambiar este calculo de posicion por el acceso a la
+			//estructura de programas buscando el identificador del primer bloque
+			//donde se indica la primera direccion libre de la pagina
+			int posicion_donde_guardo = string_length(bloque_memoria);
 
-			//antes de grabar calcular la dire con func?
-			string_append(&bloque_memoria, "0000");
-			//enviar direccion al cpu
-			/*char* mensajeAMemoria = string_new();
-			 string_append(&mensajeAMemoria, "512");
-			 string_append(&mensajeAMemoria, ";");
-			 string_append(&mensajeAMemoria, &identificador_variable);
-			 string_append(&mensajeAMemoria, ";");
-			 string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
-			 string_append(&mensajeAMemoria, ";");
-			 enviarMensaje(&socketMemoria, mensajeAMemoria);
-			 */
+			definir_varaible(posicion_donde_guardo, identificador_variable, programa_ejecutando);
+
+			char* mensajeACpu = string_new();
+			string_append(&mensajeACpu, string_itoa(posicion_donde_guardo));
+			string_append(&mensajeACpu, ";");
+
+			enviarMensaje(&sock, mensajeACpu);
 		}
 
 		free(mensajeDesdeCPU);
@@ -425,6 +423,60 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
 	free(dump_memoria);
 
     log_destroy(logger);
+}
+
+void definir_varaible(int posicion_donde_guardo, char identificador_variable, int pid){
+
+	//TODO Verificar espacio suficiente en memoriA
+	bloque_memoria[posicion_donde_guardo] = '0';
+	bloque_memoria[posicion_donde_guardo + 1] = '0';
+	bloque_memoria[posicion_donde_guardo + 2] = '0';
+	bloque_memoria[posicion_donde_guardo + 3] = '0';
+
+	//TODO En la estructura de programas, almacenar la variable con la posicion
+	//donde se encuentra y el pid del programa al que pertenece
+	printf("La variable %c se guardo en la pos: %d \n",identificador_variable, posicion_donde_guardo);
+
+	return;
+}
+
+void grabar_valor(int direccion, int valor){
+
+	if(valor > 999){
+		int milesima = valor / 1000;
+		int centena = (valor % 1000) / 100;
+		int decena = (valor % 100) / 10;
+		int unidad = valor % 10;
+		bloque_memoria[direccion] = (char) (milesima + 48);
+		bloque_memoria[direccion + 1] = (char) (centena + 48);
+		bloque_memoria[direccion + 2] = (char) (decena + 48);
+		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+	}else if(valor > 99){
+		int centena = (valor % 1000) / 100;
+		int decena = (valor % 100) / 10;
+		int unidad = valor % 10;
+		bloque_memoria[direccion] = '0';
+		bloque_memoria[direccion + 1] = (char) (centena + 48);
+		bloque_memoria[direccion + 2] = (char) (decena + 48);
+		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+	}else if(valor > 9){
+		int decena = (valor % 100) / 10;
+		int unidad = valor % 10;
+		bloque_memoria[direccion] = '0';
+		bloque_memoria[direccion + 1] = '0';
+		bloque_memoria[direccion + 2] = (char) (decena + 48);
+		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+	}else{
+		int unidad = valor % 10;
+		printf("Grabe el valor = %d \n", unidad);
+		bloque_memoria[direccion] = '0';
+		bloque_memoria[direccion + 1] = '0';
+		bloque_memoria[direccion + 2] = '0';
+		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+	}
+
+return;
+
 }
 
 uint32_t f_hash(const void *buf, size_t buflength) {
