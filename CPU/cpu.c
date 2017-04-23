@@ -200,6 +200,30 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "514");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, &identificador_variable);
+	string_append(&mensajeAMemoria, ";");
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
+
+	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
+
+	if(result > 0){
+		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+		int direccion = atoi(mensajeDesdeCPU[0]);
+
+		printf("El valor de la direccion es: %d \n", direccion);
+
+		free(mensajeAMemoria);
+
+		return direccion;
+
+				//TODO de esta falta hacer la parte de la memoria;
+	}
+
 	return 0;
 }
 
