@@ -22,7 +22,9 @@ t_list* tabla_paginas;
 t_queue* memoria_cache;
 char* bloque_memoria;
 int indice_bloque_memoria;
+int indice_estructuras_administrativas;
 Memoria_Config* configuracion;
+t_max_cantidad_paginas* tamanio_maximo;
 
 void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
@@ -72,6 +74,7 @@ int main(int argc, char **argv) {
 	pthread_join(thread_cpu, NULL);
 
 	free(configuracion);
+	free(tamanio_maximo);
 	free(threadSocketInfoMemoria);
 	free(bloque_memoria);
 
@@ -311,11 +314,15 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
-	indice_bloque_memoria = 0;
 	bloque_memoria = calloc(config->marcos, config->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
+
+	tamanio_maximo = obtenerMaximaCantidadDePaginas(config, sizeof(t_pagina_invertida));
+
+	printf("CANT. PAGINAS DE ADMINISTRACION %d\n", tamanio_maximo->maxima_cant_paginas_administracion);
+	printf("CANT. PAGINAS DE PROCESOS %d\n", tamanio_maximo->maxima_cant_paginas_procesos);
 
 	tabla_paginas = list_create();
 	memoria_cache = crear_cola_cache();
@@ -355,6 +362,13 @@ char* leer_memoria(int inicio, int offset){
 	char* codigo_programa = string_new();
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
 	return codigo_programa;
+}
+
+void asignar_paginas_a_proceso(int pid, int paginas_requeridas){
+	int i = 0;
+	for(i = 0; i < paginas_requeridas; i++){
+
+	}
 }
 
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
