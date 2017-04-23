@@ -26,7 +26,8 @@ Memoria_Config * leerConfiguracion(char* path) {
 		free(metadata);
 		return memoria;
 	}
-	else {
+	else{
+		free(metadata);
 		exit(errno);
 	}
 }

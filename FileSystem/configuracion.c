@@ -15,6 +15,8 @@ FileSystem_Config* leerConfiguracion(char* path) {
 
 	//imprimir_config(fs_config);
 
+	free(metadata);
+
 	return fileSystem;
 }
 
@@ -45,6 +47,7 @@ metadata_Config* leerMetaData(char* mnt){
 	fileSystem_metadata->magic_number = config_get_string_value(metadata, "MAGIC_NUMBER");
 
 	free(directorio);
+	free(metadata);
 	return fileSystem_metadata;
 }
 
@@ -75,7 +78,10 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	}
 
 	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
+
+	fclose(ptr_fich1);
 	free(directorio);
+
 	return bitmap;
 }
 
