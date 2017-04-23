@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
 
 	free(configuracion);
 	free(threadSocketInfoMemoria);
+	free(bloque_memoria);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -253,6 +254,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			 */
 		}
 
+		free(mensajeDesdeCPU);
+
 		result = recv(sock, message, sizeof(message), 0);
 	}
 
@@ -269,6 +272,7 @@ void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	char* respuestaACPU = string_new();
 	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
 	enviarMensaje(socketCliente, respuestaACPU);
+	free(respuestaACPU);
 }
 
 void * inicializar_consola(void* args){
@@ -389,6 +393,8 @@ void iniciar_programa(int pid, char* codigo, int socket_kernel){
 		string_append(&respuestaAKernel, "298;");
 		enviarMensaje(&socket_kernel, respuestaAKernel);
 	}
+
+	free(respuestaAKernel);
 }
 
 char* leer_codigo_programa(int pid, int inicio, int offset){
@@ -453,6 +459,8 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
 	list_iterate(tabla_paginas, (void*) agregar_registro_dump);
 
 	log_info(logger, dump_memoria, "INFO");
+
+	free(dump_memoria);
 
     log_destroy(logger);
 }
