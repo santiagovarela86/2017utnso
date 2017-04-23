@@ -25,12 +25,16 @@
 #include <pthread.h>
 #include "helperFunctions.h"
 #include "consola.h"
+#include <signal.h>
 
 t_queue* cola_programas;
 
 Consola_Config* configuracion;
 
 InfoConsola infoConsola;
+
+pthread_t threadKernel;
+pthread_t threadConsola;
 
 int main(int argc , char **argv)
 {
@@ -58,8 +62,8 @@ int main(int argc , char **argv)
 	conectarSocket(&socketKernel, &direccionKernel);
 	puts("Conectado al Kernel\n");
 
-    pthread_t threadConsola;
-    pthread_t threadKernel;
+    //pthread_t threadConsola;
+    //pthread_t threadKernel;
 
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
@@ -72,6 +76,7 @@ int main(int argc , char **argv)
 
 	destruirEstado(&infoConsola);
 	free(configuracion);
+	free(cola_programas);
 
     return EXIT_SUCCESS;
 }
@@ -156,7 +161,11 @@ void desconectar_consola(int* socket_kernel){
 
 	enviarMensaje(socket_kernel, message);
 
-	exit(-1);
+	//exit(-1);
+	//PUSE ESTO CON LA ESPERANZA DE QUE EL MAIN
+	//LLEGUE AL PTHREAD_JOIN Y LIBERE LOS RECURSOS
+	pthread_kill(threadConsola, SIGTERM);
+	pthread_kill(threadKernel, SIGTERM);
 
 	return;
 }
@@ -167,7 +176,7 @@ void limpiar_mensajes(){
 }
 
 void * escuchar_Kernel(void * args){
-	char buffer[1000 + 1];
+	char buffer[MAXBUF];
 
 	int * socketKernel = (int *) args;
 
@@ -200,6 +209,8 @@ void * escuchar_Kernel(void * args){
 			}else{
 				printf("Mensaje de programa: %s\n", *respuesta_kernel);
 			}
+
+			free(respuesta_kernel);
 		}
 	}
 
@@ -226,6 +237,7 @@ void iniciar_programa(int* socket_kernel){
 	string_append(&respuestaConsola, pmap_script);
 
 	enviarMensaje(socket_kernel, respuestaConsola);
+	free(respuestaConsola);
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
@@ -257,7 +269,8 @@ void inicializarEstado(InfoConsola * infoConsola){
 void socketDestroyer(void * socket){
 	int * skt = (int *) socket;
 	shutdown(*skt, 0);
-
+	//VA ESTO?
+	close(*skt);
 }
 
 void destruirEstado(InfoConsola * infoConsola){

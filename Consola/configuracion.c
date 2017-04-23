@@ -12,6 +12,7 @@ Consola_Config* leerConfiguracion(char* path) {
 	consola->ip_kernel = config_get_string_value(metadata, "IP_KERNEL");
 	consola->puerto_kernel = config_get_int_value(metadata, "PUERTO_KERNEL");
 
+	free(metadata);
 	return consola;
 }
 
