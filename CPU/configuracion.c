@@ -15,6 +15,7 @@ CPU_Config* leerConfiguracion(char* path) {
 	cpu->puerto_memoria = config_get_int_value(metadata, "PUERTO_MEMORIA");
 
 	//imprimirConfiguracion(cpu);
+	free(metadata);
 
 	return cpu;
 }

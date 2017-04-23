@@ -133,6 +133,10 @@ void* manejo_kernel(void *args) {
 	}
 	*/
 
+	free(programa);
+	free(script);
+	free(pcb);
+
 	shutdown(socketKernel, 0);
 	close(socketKernel);
 	return EXIT_SUCCESS;
@@ -156,6 +160,7 @@ char * solicitoScript(int * socketMemoria, char ** pcb){
 	string_append(&mensajeAMemoria, string_itoa(offset));
 
 	enviarMensaje(socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
 
 	int result = recv((int) * socketMemoria, message, sizeof(message), 0);
 
@@ -233,6 +238,7 @@ void AnSISOP_asignar(int direccion, int valor){
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
 }
 
 char * AnSISOP_obtenerPosicionVariable(t_nombre_variable identificador_variable){
@@ -252,4 +258,5 @@ char * AnSISOP_definirVariable(t_nombre_variable identificador_variable){
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
 }

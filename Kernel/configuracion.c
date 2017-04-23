@@ -35,9 +35,12 @@ Kernel_Config* leerConfiguracion(char* path) {
 		if(kernel->algoritmo == "FF"){
 			kernel->quantum = 999;
 		}
+
+		free(metadata);
 		return kernel;
 	}
 	else {
+		free(metadata);
 		exit(errno);
 	}
 }
