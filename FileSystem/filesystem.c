@@ -62,6 +62,9 @@ int main(int argc, char** argv) {
 
 	free(configuracion);
 	free(threadSocketInfoKernel);
+	free(montaje);
+	free(metadata);
+	free(bitmap);
 
 	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
