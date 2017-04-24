@@ -18,13 +18,17 @@ int conexionesCPU = 0;
 int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 int semaforo = 0;
+t_list* tabla_marcos;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
+
 char* bloque_memoria;
-int indice_bloque_memoria;
-int indice_estructuras_administrativas;
+int indice_bloque_procesos;
+int indice_bloque_estructuras_administrativas;
+
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
+t_list* tabla_programas;
 
 void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
@@ -189,9 +193,15 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//TODO Cambiar este calculo de posicion por el acceso a la
 			//estructura de programas buscando el identificador del primer bloque
 			//donde se indica la primera direccion libre de la pagina
+
+			//TODO En la estructura de programas, almacenar la variable con la posicion
+			//donde se encuentra y el pid del programa al que pertenece
+			//Si es la primera, es la pagina asignada * marco_size
+			//Si no es la primera, es la pagina asignada * marco_size + (cant.variables de ese proceso * 4)
+
 			int posicion_donde_guardo = string_length(bloque_memoria);
 
-			definir_varaible(posicion_donde_guardo, identificador_variable, programa_ejecutando);
+			definir_variable(posicion_donde_guardo, identificador_variable, programa_ejecutando);
 
 			char* mensajeACpu = string_new();
 			string_append(&mensajeACpu, string_itoa(posicion_donde_guardo));
@@ -322,18 +332,41 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
+
 	bloque_memoria = calloc(config->marcos, config->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
 
-	tamanio_maximo = obtenerMaximaCantidadDePaginas(config, sizeof(t_pagina_invertida));
-
-	printf("CANT. PAGINAS DE ADMINISTRACION %d\n", tamanio_maximo->maxima_cant_paginas_administracion);
-	printf("CANT. PAGINAS DE PROCESOS %d\n", tamanio_maximo->maxima_cant_paginas_procesos);
+	inicializar_lista_marcos(config);
 
 	tabla_paginas = list_create();
 	memoria_cache = crear_cola_cache();
+	tabla_programas = list_create();
+}
+
+void inicializar_lista_marcos(Memoria_Config* config){
+
+	tabla_marcos = list_create();
+	int i = 0;
+	for(i = 0; i < config->marcos; i++){
+		t_marco* nuevo_marco = malloc(sizeof(t_marco));
+		nuevo_marco->nro_marco = i;
+		if (i == 0)
+			nuevo_marco->inicio = i * config->marco_size;
+		else
+			nuevo_marco->inicio = i * config->marco_size + 1;
+
+		nuevo_marco->final = nuevo_marco->inicio + config->marco_size;
+
+		//Del 0 al 38 van a estar las estructuras administrativas
+		//Se marcan como ocupadas para que ningun proceso pueda escribir en ellas
+		if (i < 39)
+			nuevo_marco->ocupado = 1;
+		else
+			nuevo_marco->ocupado = 0;
+		list_add(tabla_marcos, nuevo_marco);
+	}
 }
 
 void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel){
@@ -341,20 +374,20 @@ void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel
 	char* respuestaAKernel = string_new();
 
 	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
-		string_append(&bloque_memoria, codigo);
-		t_pagina_invertida* pagina = crear_nueva_pagina(pid, 1, 1, indice_bloque_memoria, string_length(codigo));
-		list_add(tabla_paginas, pagina);
-		string_append(&respuestaAKernel, "203;");
-		string_append(&respuestaAKernel, string_itoa(pagina->inicio));
-		string_append(&respuestaAKernel, ";");
-		string_append(&respuestaAKernel, string_itoa(pagina->offset));
-		enviarMensaje(&socket_kernel, respuestaAKernel);
-	}
-	else {
-		//Si el codigo del programa supera el tamanio del bloque
-		//Le aviso al Kernel que no puede reservar el espacio para el programa
-		string_append(&respuestaAKernel, "298;");
-		enviarMensaje(&socket_kernel, respuestaAKernel);
+		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, codigo);
+		if (pagina != NULL){
+			string_append(&respuestaAKernel, "203;");
+			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
+			string_append(&respuestaAKernel, ";");
+			string_append(&respuestaAKernel, string_itoa(pagina->offset));
+			enviarMensaje(&socket_kernel, respuestaAKernel);
+		}
+		else {
+			//Si el codigo del programa supera el tamanio del bloque
+			//Le aviso al Kernel que no puede reservar el espacio para el programa
+			string_append(&respuestaAKernel, "298;");
+			enviarMensaje(&socket_kernel, respuestaAKernel);
+		}
 	}
 
 	free(respuestaAKernel);
@@ -372,13 +405,6 @@ char* leer_memoria(int inicio, int offset){
 	return codigo_programa;
 }
 
-void asignar_paginas_a_proceso(int pid, int paginas_requeridas){
-	int i = 0;
-	for(i = 0; i < paginas_requeridas; i++){
-
-	}
-}
-
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
 	t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
 	nueva_pagina->pid = pid;
@@ -387,6 +413,47 @@ t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inici
 	nueva_pagina->inicio = inicio;
 	nueva_pagina->offset = offset;
 	return nueva_pagina;
+}
+
+t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int pagina){
+	t_manejo_programa* nuevo_manejo_programa = malloc(sizeof(t_manejo_programa));
+	nuevo_manejo_programa->pid = pid;
+	nuevo_manejo_programa->variable = variable;
+	nuevo_manejo_programa->numero_pagina = pagina;
+
+	return nuevo_manejo_programa;
+}
+
+t_manejo_programa* get_manejo_programa(int pid, int pagina){
+
+	int esLaPaginaBuscada(t_manejo_programa *p) {
+		return p->pid == pid && p->numero_pagina == pagina;
+	}
+
+	return list_find(tabla_programas, (void*) esLaPaginaBuscada);
+}
+
+t_marco* get_marco_libre(bool esDescendente){
+	int _marcoLibre(t_marco* marco){
+		return marco->ocupado == 0;
+	}
+
+    bool _nro_marco_descendente(t_marco *marco1, t_marco *marco2) {
+        return marco1->nro_marco > marco2->nro_marco;
+    }
+
+    if (esDescendente) {
+    	list_sort(tabla_marcos, (void*)_nro_marco_descendente);
+    	return list_find(tabla_marcos, (void*) _marcoLibre);
+    }
+
+	return list_find(tabla_marcos, (void*) _marcoLibre);
+}
+
+void actualizar_marco_ocupado(int indice){
+	t_marco* marco = list_get(tabla_marcos, indice);
+	marco->ocupado = 1;
+	list_replace(tabla_marcos,indice, marco);
 }
 
 void log_cache_in_disk(t_queue* cache) {
@@ -435,7 +502,7 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
     log_destroy(logger);
 }
 
-void definir_varaible(int posicion_donde_guardo, char identificador_variable, int pid){
+void definir_variable(int posicion_donde_guardo, char identificador_variable, int pid){
 
 	//TODO Verificar espacio suficiente en memoriA
 	bloque_memoria[posicion_donde_guardo] = '0';
@@ -487,6 +554,42 @@ void grabar_valor(int direccion, int valor){
 return;
 
 }
+
+t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo){
+
+	t_pagina_invertida* pagina_invertida = NULL;
+
+	int i = 0, j = 0;
+	int marcosAOcupar = cantidad_paginas;
+
+	if (marcosAOcupar == 0) //El contenido del programa es menor al tamanio del marco le asigno un marco como minimo
+		marcosAOcupar = 1;
+
+	for(i = 0; i < marcosAOcupar; i++){
+		int nro_pagina = 0;
+		t_marco* marco = get_marco_libre(false);
+
+		if (marco == NULL){
+			break;
+		}
+		int indice_bloque = marco->inicio;
+		while(codigo[j] != NULL && indice_bloque < marco->final){
+			printf("CARACTER: %c\n", codigo[j]);
+			bloque_memoria[indice_bloque] = codigo[j];
+			indice_bloque++;
+			j++;
+		}
+		//Actualizo el marco como ocupado
+		actualizar_marco_ocupado(marco->nro_marco);
+		//Agrego la pagina con el marco a la lista de paginas
+		pagina_invertida = crear_nueva_pagina(pid, marco->nro_marco, nro_pagina, marco->inicio, string_length(codigo));
+		list_add(tabla_paginas, pagina_invertida);
+		nro_pagina++;
+	}
+
+	return pagina_invertida;
+}
+
 
 uint32_t f_hash(const void *buf, size_t buflength) {
      const uint8_t *buffer = (const uint8_t*)buf;

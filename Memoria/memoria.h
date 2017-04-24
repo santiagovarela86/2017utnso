@@ -27,10 +27,9 @@
 
 typedef struct {
 	int pid;
-	int inicio_pagina;
+	char variable;
 	int numero_pagina;
-} struct_program;
-
+} t_manejo_programa;
 
 typedef struct {
 	int socket_consola;
@@ -43,6 +42,13 @@ typedef struct {
 	int inicio;
 	int offset;
 } t_pagina_invertida;
+
+typedef struct {
+	int nro_marco;
+	int ocupado;
+	int inicio;
+	int final;
+} t_marco;
 
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
@@ -60,6 +66,12 @@ char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
 char* leer_memoria(int posicion_de_la_Variable, int off);
 void grabar_valor(int direccion, int valor);
-void definir_varaible(int posicion_donde_guardo, char identificador_variable, int pid);
+void definir_variable(int posicion_donde_guardo, char identificador_variable, int pid);
+
+void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
+void inicializar_lista_marcos(Memoria_Config* config);
+t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
+t_marco* get_marco_libre(bool esDescendente);
+
 
 #endif /* MEMORIA_H_ */
