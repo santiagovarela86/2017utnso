@@ -290,7 +290,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	return -1;
 
 }
-t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
+t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");
 	string_append(&mensajeAKernel, ";");
@@ -320,7 +320,7 @@ t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
 	return 0;
 }
 
-t_valor_variable asignarvalorCompartida(t_nombre_compartida variable){
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "515");
 	string_append(&mensajeAKernel, ";");
