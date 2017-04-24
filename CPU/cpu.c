@@ -232,35 +232,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	return 0;
 }
 
-t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "514");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, &variable);
-	string_append(&mensajeAKernel, ";");
-
-
-	enviarMensaje(&socketKernel, mensajeAKernel);
-	free(mensajeAKernel);
-
-	int result = recv(socketKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
-
-	if(result > 0){
-		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
-
-		int valor = atoi(mensajeDesdeKernel[0]);
-
-		printf("El valor de la compartida es: %d \n", valor);
-
-		free(mensajeAKernel);
-
-		return valor;
-
-		//TODO de esta falta hacer la parte de la memoria;
-	}
-
-	return 0;
-}
 
 
 
@@ -318,4 +289,65 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 	return -1;
 
+}
+t_valor_variable obtenervalorCompartida(t_nombre_compartida variable){
+	char* mensajeAKernel = string_new();
+	string_append(&mensajeAKernel, "514");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, &variable);
+	string_append(&mensajeAKernel, ";");
+
+
+	enviarMensaje(&socketKernel, mensajeAKernel);
+	free(mensajeAKernel);
+
+	int result = recv(socketKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
+	if(result > 0){
+		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
+
+		int valor = atoi(mensajeDesdeKernel[0]);
+
+		printf("El valor de la compartida es: %d \n", valor);
+
+		free(mensajeAKernel);
+
+		return valor;
+
+		//TODO de esta falta hacer la parte de la memoria;
+	}
+
+	return 0;
+}
+
+t_valor_variable asignarvalorCompartida(t_nombre_compartida variable){
+	char* mensajeAKernel = string_new();
+	string_append(&mensajeAKernel, "515");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, &variable);
+	string_append(&mensajeAKernel, ";");
+
+
+	enviarMensaje(&socketKernel, mensajeAKernel);
+	free(mensajeAKernel);
+
+		//TODO de esta falta hacer la parte de la memoria;
+
+	return 0;
+}
+
+void irAlLabel(t_nombre_etiqueta identificador_variable){
+/*
+ * a quien le manda este pedido?
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "516");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(identificador_variable));
+	string_append(&mensajeAMemoria, ";");
+
+
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	free(mensajeAMemoria);
+*/
+	return;
 }

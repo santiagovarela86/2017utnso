@@ -64,13 +64,7 @@
  * @return	El valor de la variable compartida
  */
 
-t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
-	t_valor_variable ret = 0;
 
-	printf("Obtengo el valor de la variable que esta ubicada en %c\n", variable);
-
-	return ret;
-}
 
 /*
  * ASIGNAR VALOR a variable COMPARTIDA
@@ -84,13 +78,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
  * @return	Valor que se asigno
  */
 
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {
-	t_valor_variable ret = 0;
 
-	printf("Asigno Valor Compartida\n");
-
-	return ret;
-}
 
 /*
  * IR a la ETIQUETA
@@ -102,11 +90,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
  * @return	void
  */
 
-void irAlLabel(t_nombre_etiqueta t_nombre_etiqueta) {
 
-	printf("Voy al Label\n");
-
-}
 
 /*
  * LLAMAR SIN RETORNO
