@@ -105,8 +105,7 @@
  * @return	void
  */
 
-void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
-	printf("Llamo sin Retorno\n");
+
 }
 
 /*
@@ -123,9 +122,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
  * @return	void
  */
 
-void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
-	printf("Llamo con Retorno\n");
-}
+
 
 /*
  * FINALIZAR
@@ -138,9 +135,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
  * @return	void
  */
 
-void finalizar(void) {
-	printf("Finalizo\n");
-}
+
 
 /*
  * RETORNAR
@@ -152,9 +147,7 @@ void finalizar(void) {
  * @return	void
  */
 
-void retornar(t_valor_variable retorno) {
-	printf("Retorno\n");
-}
+
 
 /*
  * WAIT
@@ -167,9 +160,6 @@ void retornar(t_valor_variable retorno) {
  * @return	void
  */
 
-void wait(t_nombre_semaforo identificador_semaforo) {
-	printf("Wait\n");
-}
 
 /*
  * SIGNAL
@@ -181,9 +171,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
  * @param	identificador_semaforo	Semaforo a aplicar SIGNAL
  * @return	void
  */
-void signal(t_nombre_semaforo identificador_semaforo) {
-	printf("Signal\n");
-}
+
 
 /*
  * RESERVAR
@@ -194,13 +182,7 @@ void signal(t_nombre_semaforo identificador_semaforo) {
  * @param	valor_variable Cantidad de espacio
  * @return	puntero a donde esta reservada la memoria
  */
-t_puntero alocar(t_valor_variable espacio) {
-	t_puntero ret = 0;
 
-	printf("Aloco memoria\n");
-
-	return ret;
-}
 
 /*
  * LIBERAR
@@ -212,9 +194,7 @@ t_puntero alocar(t_valor_variable espacio) {
  * @param	puntero Inicio de espacio de memoria a liberar (previamente retornado por RESERVAR)
  * @return	void
  */
-void liberar(t_puntero puntero) {
-	printf("Libero Memoria\n");
-}
+
 
 /*
  * RESERVAR MEMORIA
@@ -226,9 +206,7 @@ void liberar(t_puntero puntero) {
  * @param	valor_variable Cantidad de espacio
  * @return	puntero a donde esta reservada la memoria
  */
-t_puntero reservar(t_valor_variable espacio){
 
-}
 
 /*
  * ABRIR ARCHIVO
@@ -240,9 +218,7 @@ t_puntero reservar(t_valor_variable espacio){
  * @param	banderas		String que contiene los permisos con los que se abre el archivo
  * @return	El valor del descriptor de archivo abierto por el sistema
  */
-t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 
-}
 
 /*
  * BORRAR ARCHIVO
@@ -253,9 +229,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
  * @param	direccion		Ruta al archivo a abrir
  * @return	void
  */
-void borrar(t_descriptor_archivo direccion){
 
-}
 
 /*
  * CERRAR ARCHIVO
@@ -267,9 +241,6 @@ void borrar(t_descriptor_archivo direccion){
  * @return	void
  */
 
-void cerrar(t_descriptor_archivo descriptor_archivo){
-
-}
 
 /*
  * MOVER CURSOR DE ARCHIVO
@@ -281,9 +252,7 @@ void cerrar(t_descriptor_archivo descriptor_archivo){
  * @param	posicion			Posicion a donde mover el cursor
  * @return	void
  */
-void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
 
-}
 
 /*
  * ESCRIBIR ARCHIVO
@@ -298,9 +267,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
  * @param	tamanio				Tamanio de la informacion a enviar
  * @return	void
  */
-void escribir(t_descriptor_archivo descriptor_archivo, void* informacion, t_valor_variable tamanio){
 
-}
 
 /*
  * LEER ARCHIVO
@@ -315,9 +282,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void* informacion, t_valo
  * @param	tamanio				Tamanio de la informacion a leer
  * @return	void
  */
-void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
 
-}
 
 void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines ???
 	AnSISOP_funciones * funciones = NULL;

@@ -337,17 +337,75 @@ t_valor_variable asignarvalorCompartida(t_nombre_compartida variable){
 }
 
 void irAlLabel(t_nombre_etiqueta identificador_variable){
-/*
- * a quien le manda este pedido?
-	char* mensajeAMemoria = string_new();
-	string_append(&mensajeAMemoria, "516");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(identificador_variable));
-	string_append(&mensajeAMemoria, ";");
 
-
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
-	free(mensajeAMemoria);
-*/
 	return;
 }
+
+void llamarSinRetorno(t_nombre_etiqueta etiqueta){
+
+	return;
+}
+
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
+
+	return;
+}
+
+void finalizar(void){
+
+	return;
+}
+
+void retornar(t_valor_variable retorno){
+
+	return;
+}
+
+void wait(t_nombre_semaforo identificador_semaforo){
+
+	return;
+}
+
+void signal(t_nombre_semaforo identificador_semaforo){
+
+	return;
+}
+
+t_puntero reservar(t_valor_variable espacio){
+
+	return 0;
+}
+
+void liberar(t_puntero puntero){
+
+	return;
+}
+
+t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
+
+	return 0;
+}
+
+void borrar(t_descriptor_archivo direccion){
+
+	return;
+}
+void cerrar(t_descriptor_archivo descriptor){
+
+	return;
+}
+
+void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
+
+	return;
+}
+void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio){
+
+	return;
+}
+
+void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
+
+	return;
+}
+
