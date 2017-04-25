@@ -307,6 +307,14 @@ void * inicializar_consola(void* args){
 		int accion_correcta = 0;
 		int nuevo_tiempo_retardo = 0, pid_buscado = 0, tamanio_proceso_buscado = 0;
 
+		bool _marco_disponible(void *marco) {
+		    return ((t_marco *)marco)->asignado == 0;
+		}
+
+		bool _marco_ocupado(void *marco){
+			return ((t_marco *)marco)->asignado == 1;
+		}
+
 		while(accion_correcta == 0){
 
 			scanf("%d", &accion);
@@ -342,8 +350,8 @@ void * inicializar_consola(void* args){
 					puts("***********************************************************");
 					puts("TAMANIO DE LA MEMORIA");
 					printf("CANTIDAD TOTAL DE MARCOS: %d \n", configuracion->marcos);
-					printf("CANTIDAD DE MARCOS OCUPADOS: %d \n", 0);
-					printf("CANTIDAD DE MARCOS LIBRES: %d \n", 0);
+					printf("CANTIDAD DE MARCOS OCUPADOS: %d \n", list_count_satisfying(tabla_marcos, _marco_ocupado));
+					printf("CANTIDAD DE MARCOS LIBRES: %d \n", list_count_satisfying(tabla_marcos, _marco_disponible));
 					puts("***********************************************************");
 					break;
 				case 7:
