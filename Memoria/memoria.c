@@ -217,16 +217,20 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				//Obtengo el marco asignado
 				t_marco* marco_asignado = list_get(tabla_marcos, manejo_programa->nro_marco);
 				posicion = marco_asignado->disponible;
-				//Empieza a escribir en el primer byte disponible de ese bloque
-				definir_variable(posicion, identificador_variable, pid);
-				//Agrego un nuevo manejador del programa para la variable
-				manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, marco_asignado->nro_marco, 0);
-				actualizar_marco(marco_asignado->nro_marco, 1, marco_asignado->disponible - 1);
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(posicion));
-				string_append(&mensajeACpu, ";");
 
-				enviarMensaje(&sock, mensajeACpu);
+				//Valido que no este escribiendo fuera del marco
+				if (posicion < marco_asignado->final){
+					//Empieza a escribir en el primer byte disponible de ese bloque
+					definir_variable(posicion, identificador_variable, pid);
+					//Agrego un nuevo manejador del programa para la variable
+					manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, marco_asignado->nro_marco, 0);
+					actualizar_marco(marco_asignado->nro_marco, 1, marco_asignado->disponible - 1);
+					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, string_itoa(posicion));
+					string_append(&mensajeACpu, ";");
+
+					enviarMensaje(&sock, mensajeACpu);
+				}
 			}
 
 		} else if (codigo == 513) {
@@ -564,8 +568,6 @@ void definir_variable(int posicion_donde_guardo, char identificador_variable, in
 	bloque_memoria[posicion_donde_guardo + 2] = '0';
 	bloque_memoria[posicion_donde_guardo + 3] = '0';
 
-	//TODO En la estructura de programas, almacenar la variable con la posicion
-	//donde se encuentra y el pid del programa al que pertenece
 	printf("La variable %c se guardo en la pos: %d \n",identificador_variable, posicion_donde_guardo);
 
 	return;
