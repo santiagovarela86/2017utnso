@@ -188,26 +188,46 @@ void * handler_conexiones_cpu(void * socketCliente) {
 		} else if (codigo == 512) {
 
 			char identificador_variable = *mensajeDesdeCPU[1];
-			int programa_ejecutando = atoi(mensajeDesdeCPU[2]);
+			int pid = atoi(mensajeDesdeCPU[2]);
 
-			//TODO Cambiar este calculo de posicion por el acceso a la
-			//estructura de programas buscando el identificador del primer bloque
-			//donde se indica la primera direccion libre de la pagina
+			t_manejo_programa* manejo_programa = get_manejo_programa(pid);
+			int posicion = 0;
 
-			//TODO En la estructura de programas, almacenar la variable con la posicion
-			//donde se encuentra y el pid del programa al que pertenece
-			//Si es la primera, es la pagina asignada * marco_size
-			//Si no es la primera, es la pagina asignada * marco_size + (cant.variables de ese proceso * 4)
+			if (manejo_programa == NULL){
+				//Si es la primera asigno el proximo marco disponible para stack desde el final
+				t_marco* nuevo_marco = get_marco_libre(true);
+				if (nuevo_marco != NULL){
 
-			int posicion_donde_guardo = string_length(bloque_memoria);
+					//Agrego un nuevo manejador del programa para la variable
+					manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, nuevo_marco->nro_marco, 0);
+					list_add(tabla_programas, manejo_programa);
 
-			definir_variable(posicion_donde_guardo, identificador_variable, programa_ejecutando);
+					posicion = nuevo_marco->inicio;
 
-			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, string_itoa(posicion_donde_guardo));
-			string_append(&mensajeACpu, ";");
+					definir_variable(posicion, identificador_variable, pid);
+					actualizar_marco_ocupado(nuevo_marco->nro_marco, nuevo_marco->disponible + 1);
+					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, string_itoa(posicion));
+					string_append(&mensajeACpu, ";");
 
-			enviarMensaje(&sock, mensajeACpu);
+					enviarMensaje(&sock, mensajeACpu);
+				}
+			}
+			else {
+				//Obtengo el marco asignado
+				t_marco* marco_asignado = list_get(tabla_marcos, manejo_programa->nro_marco);
+				posicion = marco_asignado->disponible;
+				//Empieza a escribir en el primer byte disponible de ese bloque
+				definir_variable(posicion, identificador_variable, pid);
+				//Agrego un nuevo manejador del programa para la variable
+				manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, marco_asignado->nro_marco, 0);
+				actualizar_marco_ocupado(marco_asignado->nro_marco, marco_asignado->disponible - 1);
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(posicion));
+				string_append(&mensajeACpu, ";");
+
+				enviarMensaje(&sock, mensajeACpu);
+			}
 
 		} else if (codigo == 513) {
 
@@ -352,19 +372,22 @@ void inicializar_lista_marcos(Memoria_Config* config){
 	for(i = 0; i < config->marcos; i++){
 		t_marco* nuevo_marco = malloc(sizeof(t_marco));
 		nuevo_marco->nro_marco = i;
-		if (i == 0)
+		if (i == 0){
 			nuevo_marco->inicio = i * config->marco_size;
-		else
+			nuevo_marco->final = nuevo_marco->inicio + config->marco_size;
+		}
+		else {
 			nuevo_marco->inicio = i * config->marco_size + 1;
-
-		nuevo_marco->final = nuevo_marco->inicio + config->marco_size;
+			nuevo_marco->final = nuevo_marco->inicio + config->marco_size + 1;
+		}
+		nuevo_marco->disponible = nuevo_marco->inicio;
 
 		//Del 0 al 38 van a estar las estructuras administrativas
 		//Se marcan como ocupadas para que ningun proceso pueda escribir en ellas
 		if (i < 39)
-			nuevo_marco->ocupado = 1;
+			nuevo_marco->asignado = 1;
 		else
-			nuevo_marco->ocupado = 0;
+			nuevo_marco->asignado = 0;
 		list_add(tabla_marcos, nuevo_marco);
 	}
 }
@@ -415,44 +438,57 @@ t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inici
 	return nueva_pagina;
 }
 
-t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int pagina){
+t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina){
 	t_manejo_programa* nuevo_manejo_programa = malloc(sizeof(t_manejo_programa));
 	nuevo_manejo_programa->pid = pid;
 	nuevo_manejo_programa->variable = variable;
+	nuevo_manejo_programa->nro_marco = marco;
 	nuevo_manejo_programa->numero_pagina = pagina;
 
 	return nuevo_manejo_programa;
 }
 
-t_manejo_programa* get_manejo_programa(int pid, int pagina){
+t_manejo_programa* get_manejo_programa(int pid){
 
-	int esLaPaginaBuscada(t_manejo_programa *p) {
-		return p->pid == pid && p->numero_pagina == pagina;
+	int esElProgramaBuscado(t_manejo_programa *p) {
+		return p->pid == pid;
 	}
 
-	return list_find(tabla_programas, (void*) esLaPaginaBuscada);
+	return list_find(tabla_programas, (void*) esElProgramaBuscado);
 }
 
 t_marco* get_marco_libre(bool esDescendente){
-	int _marcoLibre(t_marco* marco){
-		return marco->ocupado == 0;
+
+	t_marco* marco_encontrado = NULL;
+
+	int _marcoAsignado(t_marco* marco){
+		return marco->asignado == 0;
 	}
 
     bool _nro_marco_descendente(t_marco *marco1, t_marco *marco2) {
         return marco1->nro_marco > marco2->nro_marco;
     }
 
-    if (esDescendente) {
-    	list_sort(tabla_marcos, (void*)_nro_marco_descendente);
-    	return list_find(tabla_marcos, (void*) _marcoLibre);
+    bool _nro_marco_ascendente(t_marco *marco1, t_marco *marco2) {
+        return marco1->nro_marco < marco2->nro_marco;
     }
 
-	return list_find(tabla_marcos, (void*) _marcoLibre);
+    if (esDescendente) {
+    	list_sort(tabla_marcos, (void*)_nro_marco_descendente);
+    	marco_encontrado = list_find(tabla_marcos, (void*) _marcoAsignado);
+    	//Ordeno de vuelta la estructura porque es global
+    	list_sort(tabla_marcos, (void*)_nro_marco_ascendente);
+    	return marco_encontrado;
+    }
+
+	return list_find(tabla_marcos, (void*) _marcoAsignado);
 }
 
-void actualizar_marco_ocupado(int indice){
+void actualizar_marco_ocupado(int indice, int disponible){
+
 	t_marco* marco = list_get(tabla_marcos, indice);
-	marco->ocupado = 1;
+	marco->asignado = 1;
+	marco->disponible = disponible;
 	list_replace(tabla_marcos,indice, marco);
 }
 
@@ -574,14 +610,18 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		}
 		int indice_bloque = marco->inicio;
 		while(codigo[j] != NULL && indice_bloque < marco->final){
-			printf("CARACTER: %c\n", codigo[j]);
+			//printf("CARACTER: %c\n", codigo[j]);
 			bloque_memoria[indice_bloque] = codigo[j];
 			indice_bloque++;
 			j++;
 		}
+
 		//Actualizo el marco como ocupado
-		actualizar_marco_ocupado(marco->nro_marco);
-		//Agrego la pagina con el marco a la lista de paginas
+		int espacio_disponible = marco->inicio + indice_bloque;
+
+		actualizar_marco_ocupado(marco->nro_marco, espacio_disponible);
+
+		//Agrego la pagina con el codigo a la lista de paginas
 		pagina_invertida = crear_nueva_pagina(pid, marco->nro_marco, nro_pagina, marco->inicio, string_length(codigo));
 		list_add(tabla_paginas, pagina_invertida);
 		nro_pagina++;

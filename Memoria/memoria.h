@@ -28,6 +28,7 @@
 typedef struct {
 	int pid;
 	char variable;
+	int nro_marco;
 	int numero_pagina;
 } t_manejo_programa;
 
@@ -45,8 +46,9 @@ typedef struct {
 
 typedef struct {
 	int nro_marco;
-	int ocupado;
+	int asignado;
 	int inicio;
+	int disponible;
 	int final;
 } t_marco;
 
@@ -72,6 +74,8 @@ void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_lista_marcos(Memoria_Config* config);
 t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
 t_marco* get_marco_libre(bool esDescendente);
+t_manejo_programa* get_manejo_programa(int pid);
+t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina);
 
 
 #endif /* MEMORIA_H_ */
