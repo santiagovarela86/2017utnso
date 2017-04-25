@@ -76,6 +76,9 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 t_marco* get_marco_libre(bool esDescendente);
 t_manejo_programa* get_manejo_programa(int pid);
 t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina);
+void actualizar_marco(int indice, int asignado, int disponible);
+void destruir_pagina(t_pagina_invertida* pagina);
+
 
 
 #endif /* MEMORIA_H_ */

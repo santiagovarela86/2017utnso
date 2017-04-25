@@ -205,7 +205,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					posicion = nuevo_marco->inicio;
 
 					definir_variable(posicion, identificador_variable, pid);
-					actualizar_marco_ocupado(nuevo_marco->nro_marco, nuevo_marco->disponible + 1);
+					actualizar_marco(nuevo_marco->nro_marco, 1, nuevo_marco->disponible + 1);
 					char* mensajeACpu = string_new();
 					string_append(&mensajeACpu, string_itoa(posicion));
 					string_append(&mensajeACpu, ";");
@@ -221,7 +221,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				definir_variable(posicion, identificador_variable, pid);
 				//Agrego un nuevo manejador del programa para la variable
 				manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, marco_asignado->nro_marco, 0);
-				actualizar_marco_ocupado(marco_asignado->nro_marco, marco_asignado->disponible - 1);
+				actualizar_marco(marco_asignado->nro_marco, 1, marco_asignado->disponible - 1);
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(posicion));
 				string_append(&mensajeACpu, ";");
@@ -262,6 +262,24 @@ void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
 	enviarMensaje(socketCliente, respuestaACPU);
 	free(respuestaACPU);
+}
+
+void finalizar_programa(int pid){
+
+	int _obtenerPaginaProceso(t_pagina_invertida *p) {
+		return p->pid == pid;
+	}
+
+	t_pagina_invertida* paginaProceso = NULL;
+	while((paginaProceso = list_remove_by_condition(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
+		t_marco* marco_asignado = list_get(tabla_marcos, paginaProceso->nro_marco);
+		actualizar_marco(marco_asignado->nro_marco, 0, marco_asignado->final);
+		destruir_pagina(paginaProceso);
+	}
+}
+
+void destruir_pagina(t_pagina_invertida* pagina){
+	free(pagina);
 }
 
 void * inicializar_consola(void* args){
@@ -484,10 +502,10 @@ t_marco* get_marco_libre(bool esDescendente){
 	return list_find(tabla_marcos, (void*) _marcoAsignado);
 }
 
-void actualizar_marco_ocupado(int indice, int disponible){
+void actualizar_marco(int indice, int asignado, int disponible){
 
 	t_marco* marco = list_get(tabla_marcos, indice);
-	marco->asignado = 1;
+	marco->asignado = asignado;
 	marco->disponible = disponible;
 	list_replace(tabla_marcos,indice, marco);
 }
@@ -610,7 +628,6 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		}
 		int indice_bloque = marco->inicio;
 		while(codigo[j] != NULL && indice_bloque < marco->final){
-			//printf("CARACTER: %c\n", codigo[j]);
 			bloque_memoria[indice_bloque] = codigo[j];
 			indice_bloque++;
 			j++;
@@ -619,7 +636,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		//Actualizo el marco como ocupado
 		int espacio_disponible = marco->inicio + indice_bloque;
 
-		actualizar_marco_ocupado(marco->nro_marco, espacio_disponible);
+		actualizar_marco(marco->nro_marco, 1, espacio_disponible);
 
 		//Agrego la pagina con el codigo a la lista de paginas
 		pagina_invertida = crear_nueva_pagina(pid, marco->nro_marco, nro_pagina, marco->inicio, string_length(codigo));
