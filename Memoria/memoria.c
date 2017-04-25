@@ -17,6 +17,7 @@ int conexionesKernel = 0;
 int conexionesCPU = 0;
 int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
+pthread_mutex_t mutex_estructuras_administrativas;
 int semaforo = 0;
 t_list* tabla_marcos;
 t_list* tabla_paginas;
@@ -40,6 +41,7 @@ int main(int argc, char **argv) {
 	}
 
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
+	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 
 	bloque_memoria = string_new();
 	configuracion = leerConfiguracion(argv[1]);
@@ -187,6 +189,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 512) {
 
+			pthread_mutex_lock(&mutex_estructuras_administrativas);
+
 			char identificador_variable = *mensajeDesdeCPU[1];
 			int pid = atoi(mensajeDesdeCPU[2]);
 
@@ -232,6 +236,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					enviarMensaje(&sock, mensajeACpu);
 				}
 			}
+			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		} else if (codigo == 513) {
 
@@ -388,7 +393,9 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
 
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	inicializar_lista_marcos(config);
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 	tabla_paginas = list_create();
 	memoria_cache = crear_cola_cache();
@@ -427,7 +434,9 @@ void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel
 	char* respuestaAKernel = string_new();
 
 	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
+		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, codigo);
+		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 		if (pagina != NULL){
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
