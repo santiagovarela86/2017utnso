@@ -579,7 +579,6 @@ void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
 
 void definir_variable(int posicion_donde_guardo, char identificador_variable, int pid){
 
-	//TODO Verificar espacio suficiente en memoriA
 	bloque_memoria[posicion_donde_guardo] = '0';
 	bloque_memoria[posicion_donde_guardo + 1] = '0';
 	bloque_memoria[posicion_donde_guardo + 2] = '0';
