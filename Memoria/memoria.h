@@ -30,6 +30,7 @@ typedef struct {
 	char variable;
 	int nro_marco;
 	int numero_pagina;
+	int nro_variable;
 } t_manejo_programa;
 
 typedef struct {

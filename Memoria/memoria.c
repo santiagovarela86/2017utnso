@@ -181,7 +181,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			enviarScriptACPU(&sock, mensajeDesdeCPU);
 
 		} else if (codigo == 511) {
-			puts("siiiiiii");
+
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
@@ -247,6 +247,22 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			char* mensajeACpu = string_new();
 			string_append(&mensajeACpu, valor_variable);
+			string_append(&mensajeACpu, ";");
+
+			enviarMensaje(&sock, mensajeACpu);
+
+		} else if (codigo == 514){
+
+			int encontrar_programa(t_manejo_programa *p) {
+				return (p->variable == *(mensajeDesdeCPU[1]) && p->pid == atoi(mensajeDesdeCPU[2]));
+			}
+
+			t_manejo_programa* programa_aux = list_find(tabla_programas, (void*) encontrar_programa);
+
+			int direccion = ((programa_aux->nro_marco * configuracion->marco_size) + ((programa_aux->nro_variable - 1) * 4));
+
+			char* mensajeACpu = string_new();
+			string_append(&mensajeACpu, string_itoa(direccion));
 			string_append(&mensajeACpu, ";");
 
 			enviarMensaje(&sock, mensajeACpu);
@@ -478,11 +494,19 @@ t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inici
 }
 
 t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina){
+
+	int encontrar_pid(t_manejo_programa *p) {
+		return (p->variable == pid);
+	}
+
+	t_list* lista_aux = list_filter(tabla_programas, (void*) encontrar_pid);
+
 	t_manejo_programa* nuevo_manejo_programa = malloc(sizeof(t_manejo_programa));
 	nuevo_manejo_programa->pid = pid;
 	nuevo_manejo_programa->variable = variable;
 	nuevo_manejo_programa->nro_marco = marco;
 	nuevo_manejo_programa->numero_pagina = pagina;
+	nuevo_manejo_programa->nro_variable = list_size(lista_aux);
 
 	return nuevo_manejo_programa;
 }

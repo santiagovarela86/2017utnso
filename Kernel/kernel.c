@@ -278,12 +278,6 @@ void* manejo_filesystem(void *args) {
 	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
 
-	/*
-	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
-	*/
-
 	shutdown(socketFS, 0);
 	close(socketFS);
 	return EXIT_SUCCESS;
@@ -305,12 +299,6 @@ void* manejo_memoria(void *args) {
 
 	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
-
-	/*
-	//Loop para seguir comunicado con el servidor
-	while (1) {
-	}
-	*/
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);

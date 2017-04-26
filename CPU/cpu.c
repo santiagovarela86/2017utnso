@@ -86,7 +86,7 @@ void* manejo_kernel(void *args) {
 	programa = metadata_desde_literal(script);
 
 	int quantum = atoi(pcb[7]);
-	int iterador = 0;
+	int iterador = atoi(pcb[0]);
 
 	while( iterador <= programa->instrucciones_size && quantum != 0){
 		analizadorLinea(string_substring(script, programa->instrucciones_serializado[iterador].start, programa->instrucciones_serializado[iterador].offset), funciones, kernel);
@@ -94,7 +94,14 @@ void* manejo_kernel(void *args) {
 		quantum--;
 	}
 
-	//TODO AQUI PREGUNTAR SI SALIO DEL WHILE POR FIN DE QUEANTUM O POR FIN DE PROGRAMA
+	if(iterador == programa->instrucciones_size){
+		//TODO Enviar mensaje al Kernel con un codigo que signifique fin de programa
+		//enviandole el PCB actualizado.
+	}else{
+		//TODO Enviar mensaje al Kernel con un codigo que signifique fin de quantum
+		//enviandole el PCB actualizado.
+	}
+
 	pause();
 
 	free(programa);
@@ -231,9 +238,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 	return 0;
 }
-
-
-
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
 

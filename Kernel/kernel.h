@@ -28,7 +28,6 @@ typedef struct {
 	int program_counter;
 	int tabla_archivos;
 	int pos_stack;
-	//t_list pos_stack;
 	int* socket_cpu;
 	int inicio_lectura_bloque;
 	int offset;

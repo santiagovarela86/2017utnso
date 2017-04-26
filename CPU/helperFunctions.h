@@ -15,6 +15,17 @@ typedef struct threadSocketInfo {
 	struct sockaddr_in direccion;
 } threadSocketInfo;
 
+typedef struct {
+	int pid;
+	int program_counter;
+	int tabla_archivos;
+	int pos_stack;
+	int* socket_cpu;
+	int inicio_lectura_bloque;
+	int offset;
+	int exit_code;
+} t_pcb;
+
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto);
 void bindSocket(int * sock, struct sockaddr_in * direccion);
 void escuchoSocket(int * sock);
