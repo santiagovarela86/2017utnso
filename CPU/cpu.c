@@ -87,6 +87,7 @@ void* manejo_kernel(void *args) {
 	int iterador = atoi(pcb[1]);
 
 	analizadorLinea("variables x, a, g", funciones, kernel);
+	analizadorLinea("x = 3", funciones, kernel);
 
 	pause();
 
@@ -194,33 +195,15 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
-	char* mensajeAMemoria = string_new();
-	string_append(&mensajeAMemoria, "514");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, &identificador_variable);
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
-	string_append(&mensajeAMemoria, ";");
 
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
-	free(mensajeAMemoria);
-
-	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
-
-	if(result > 0){
-		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
-		int direccion = atoi(mensajeDesdeCPU[0]);
-
-		printf("El valor de la direccion es: %d \n", direccion);
-
-		free(mensajeAMemoria);
-
-		return direccion;
-
-				//TODO de esta falta hacer la parte de la memoria;
+	int encontrar_var(variables *var) {
+		return (var->pid == programa_ejecutando && var->variable == identificador_variable);
 	}
 
-	return 0;
+	variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
+
+	printf("Encontre la direccion %d para la variable %c \n", var_encontrada->direcion, identificador_variable);
+	return var_encontrada->direcion;
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
