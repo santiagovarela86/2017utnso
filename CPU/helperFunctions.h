@@ -26,6 +26,13 @@ typedef struct {
 	int exit_code;
 } t_pcb;
 
+typedef struct {
+	int pid;
+	char variable;
+	int direcion;
+	int nro_variable;
+} variables;
+
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto);
 void bindSocket(int * sock, struct sockaddr_in * direccion);
 void escuchoSocket(int * sock);

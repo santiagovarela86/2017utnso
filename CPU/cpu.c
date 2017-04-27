@@ -29,6 +29,7 @@ CPU_Config* configuracion;
 int socketMemoria;
 int socketKernel;
 int programa_ejecutando;
+t_list* variables_locales;
 
 int main(int argc , char **argv){
 
@@ -57,6 +58,8 @@ int main(int argc , char **argv){
 void* manejo_kernel(void *args) {
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
+	variables_locales = list_create();
+
 
 	creoSocket(&socketKernel, &direccionKernel,	inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
 	puts("Socket de conexion al Kernel creado correctamente\n");
@@ -79,8 +82,9 @@ void* manejo_kernel(void *args) {
 
     inicializar_funciones(funciones, kernel);
 
+    programa_ejecutando = atoi(pcb[0]);
 	int quantum = atoi(pcb[7]);
-	int iterador = atoi(pcb[0]);
+	int iterador = atoi(pcb[1]);
 
 	analizadorLinea("variables x, a, g", funciones, kernel);
 
@@ -265,6 +269,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	if(result > 0){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 		int posicion = atoi(mensajeDesdeCPU[0]);
+
+		variables* var = malloc(sizeof(variables));
+		var->direcion = posicion;
+		var->nro_variable = (list_size(variables_locales) + 1);
+		var->variable = identificador_variable;
+		var->pid = programa_ejecutando;
+
+		list_add(variables_locales, var);
 
 		printf("La variable %c se guardo en la pos: %d \n", identificador_variable , posicion);
 
