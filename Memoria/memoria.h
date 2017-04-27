@@ -53,6 +53,11 @@ typedef struct {
 	int final;
 } t_marco;
 
+typedef struct {
+	int inicio;
+	int offset;
+} __attribute__((packed)) t_indice_codigo;
+
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);

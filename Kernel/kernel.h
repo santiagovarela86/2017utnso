@@ -66,6 +66,11 @@ typedef struct {
 	int tamanio_disponible;
 } t_pagina_heap;
 
+typedef struct {
+	int inicio;
+	int offset;
+} __attribute__((packed)) t_indice_codigo;
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);
