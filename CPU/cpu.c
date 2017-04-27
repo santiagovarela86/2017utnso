@@ -180,6 +180,7 @@ void* manejo_memoria(void * args){
 
 void asignar(t_puntero direccion, t_valor_variable valor){
 
+	printf("Entre a asignar el valor %d en la direccion %d \n", valor, direccion);
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -271,6 +272,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	return -1;
 
 }
+
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");

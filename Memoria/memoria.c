@@ -251,21 +251,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			enviarMensaje(&sock, mensajeACpu);
 
-		} else if (codigo == 514){
-
-			int encontrar_programa(t_manejo_programa *p) {
-				return (p->variable == *(mensajeDesdeCPU[1]) && p->pid == atoi(mensajeDesdeCPU[2]));
-			}
-
-			t_manejo_programa* programa_aux = list_find(tabla_programas, (void*) encontrar_programa);
-
-			int direccion = ((programa_aux->nro_marco * configuracion->marco_size) + ((programa_aux->nro_variable - 1) * 4));
-
-			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, string_itoa(direccion));
-			string_append(&mensajeACpu, ";");
-
-			enviarMensaje(&sock, mensajeACpu);
 		}
 
 		free(mensajeDesdeCPU);
