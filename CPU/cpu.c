@@ -72,9 +72,6 @@ void* manejo_kernel(void *args) {
 	//MUESTRO LA INFO DEL PCB
 	imprimoInfoPCB(pcb);
 
-	//SOLICITO SCRIPT A MEMORIA
-	char * script = solicitoScript(&socketMemoria, pcb);
-
 	AnSISOP_funciones *funciones = NULL;
 	AnSISOP_kernel *kernel = NULL;
     funciones = malloc(sizeof(AnSISOP_funciones));
@@ -82,30 +79,13 @@ void* manejo_kernel(void *args) {
 
     inicializar_funciones(funciones, kernel);
 
-	t_metadata_program* programa = malloc(sizeof(t_metadata_program));
-	programa = metadata_desde_literal(script);
-
 	int quantum = atoi(pcb[7]);
 	int iterador = atoi(pcb[0]);
 
-	while( iterador <= programa->instrucciones_size && quantum != 0){
-		analizadorLinea(string_substring(script, programa->instrucciones_serializado[iterador].start, programa->instrucciones_serializado[iterador].offset), funciones, kernel);
-		iterador++;
-		quantum--;
-	}
-
-	if(iterador == programa->instrucciones_size){
-		//TODO Enviar mensaje al Kernel con un codigo que signifique fin de programa
-		//enviandole el PCB actualizado.
-	}else{
-		//TODO Enviar mensaje al Kernel con un codigo que signifique fin de quantum
-		//enviandole el PCB actualizado.
-	}
+	analizadorLinea("variables x, a, g", funciones, kernel);
 
 	pause();
 
-	free(programa);
-	free(script);
 	free(pcb);
 
 	shutdown(socketKernel, 0);
@@ -286,7 +266,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 		int posicion = atoi(mensajeDesdeCPU[0]);
 
-		printf("La variable se guardo en la pos: %d \n", posicion);
+		printf("La variable %c se guardo en la pos: %d \n", identificador_variable , posicion);
 
 		free(mensajeAMemoria);
 
