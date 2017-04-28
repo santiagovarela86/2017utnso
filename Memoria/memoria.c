@@ -157,7 +157,6 @@ void * hilo_conexiones_cpu(void * args){
 		exit(errno);
 	}
 
-	//LLEGA ALGUNA VEZ A ESTO?
 	shutdown(socketCliente, 0);
 	close(socketCliente);
 
@@ -191,57 +190,52 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			pthread_mutex_lock(&mutex_estructuras_administrativas);
 
-			char identificador_variable = *mensajeDesdeCPU[1];
 			int pid = atoi(mensajeDesdeCPU[2]);
 
-			t_manejo_programa* manejo_programa = get_manejo_programa(pid);
-			int posicion = 0;
-
-			if (manejo_programa == NULL){
-				//Si es la primera asigno el proximo marco disponible para stack desde el final
-				t_marco* nuevo_marco = get_marco_libre(true);
-				if (nuevo_marco != NULL){
-
-					//Agrego un nuevo manejador del programa para la variable
-					manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, nuevo_marco->nro_marco, 0);
-					list_add(tabla_programas, manejo_programa);
-
-					posicion = nuevo_marco->inicio;
-
-					definir_variable(posicion, identificador_variable, pid);
-					actualizar_marco(nuevo_marco->nro_marco, 1, nuevo_marco->disponible + 1);
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(posicion));
-					string_append(&mensajeACpu, ";");
-
-					enviarMensaje(&sock, mensajeACpu);
-				}
+			int encontrar_pag(t_pagina_invertida *pag) {
+				return (pag->pid == pid);
 			}
-			else {
-				//Obtengo el marco asignado
-				t_marco* marco_asignado = list_get(tabla_marcos, manejo_programa->nro_marco);
-				posicion = marco_asignado->disponible;
 
-				//Valido que no este escribiendo fuera del marco
-				if (posicion < marco_asignado->final){
-					//Empieza a escribir en el primer byte disponible de ese bloque
-					definir_variable(posicion, identificador_variable, pid);
-					//Agrego un nuevo manejador del programa para la variable
-					manejo_programa = crear_nuevo_manejo_programa(pid, identificador_variable, marco_asignado->nro_marco, 0);
-					actualizar_marco(marco_asignado->nro_marco, 1, marco_asignado->disponible - 1);
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(posicion));
-					string_append(&mensajeACpu, ";");
+			t_pagina_invertida* pag_encontrada = list_find(tabla_paginas, (void*) encontrar_pag);
 
-					enviarMensaje(&sock, mensajeACpu);
-				}
+			if(pag_encontrada == NULL){
+				//primera variable del programa
+				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
+
+				//TODO El hardcodeo del 400 quitarlo por una funcion que recorra el bitmap y devuelva la primera pagina libre de atras para adelante
+				pag_a_cargar->inicio = (400 * configuracion->marco_size);
+				pag_a_cargar->nro_marco = 400;
+				pag_a_cargar->nro_pagina = 0;
+				pag_a_cargar->offset = 4;
+				pag_a_cargar->pid = pid;
+
+				list_add(tabla_paginas, pag_a_cargar);
+
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(pag_a_cargar->inicio));
+				string_append(&mensajeACpu, ";");
+
+				enviarMensaje(&sock, mensajeACpu);
+
+			}else{
+				//ya existen otras variables de ese programa
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
+				string_append(&mensajeACpu, ";");
+
+				pag_encontrada->offset = pag_encontrada->offset + 4;
+
+				enviarMensaje(&sock, mensajeACpu);
 			}
+
 			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		} else if (codigo == 513) {
 
 			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
 			char* valor_variable  = string_new();
+
+			printf("Busco el valor de la posicion %d \n", posicion_de_la_Variable);
 
 			valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
 

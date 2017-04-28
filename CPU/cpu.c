@@ -88,6 +88,7 @@ void* manejo_kernel(void *args) {
 
 	analizadorLinea("variables x, a, g", funciones, kernel);
 	analizadorLinea("x = 3", funciones, kernel);
+	analizadorLinea("a = x + 3", funciones, kernel);
 
 	pause();
 
@@ -208,6 +209,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
+	printf("Busco el valor de la posicion %d \n", direccion_variable);
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "513");
@@ -216,7 +218,6 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
-	free(mensajeAMemoria);
 
 	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
 
@@ -224,7 +225,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 		int valor = atoi(mensajeDesdeCPU[0]);
 
-		printf("El valor es: %d \n", valor);
+		printf("El valor de la posicion %d es %d\n", direccion_variable, valor);
 
 		free(mensajeAMemoria);
 
