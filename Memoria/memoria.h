@@ -84,7 +84,7 @@ t_manejo_programa* get_manejo_programa(int pid);
 t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina);
 void actualizar_marco(int indice, int asignado, int disponible);
 void destruir_pagina(t_pagina_invertida* pagina);
-
+int marco_libre_para_variables();
 
 
 #endif /* MEMORIA_H_ */

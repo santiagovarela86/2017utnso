@@ -116,7 +116,7 @@ void * hilo_conexiones_kernel(void * args){
 			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
 			if (cant_paginas == 0)
 				cant_paginas++;
-
+			pid = 2;
 			iniciar_programa(pid, codigo_programa, cant_paginas, socketCliente);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
@@ -203,8 +203,10 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
 
 				//TODO El hardcodeo del 400 quitarlo por una funcion que recorra el bitmap y devuelva la primera pagina libre de atras para adelante
-				pag_a_cargar->inicio = (400 * configuracion->marco_size);
-				pag_a_cargar->nro_marco = 400;
+				pag_a_cargar->nro_marco = marco_libre_para_variables();
+				pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
+				printf("El marco libre es: %d y el tramaño por marco es: %d \n",pag_a_cargar->nro_marco , configuracion->marco_size);
+				printf("El inicio es: %d \n", pag_a_cargar->inicio);
 				pag_a_cargar->nro_pagina = 0;
 				pag_a_cargar->offset = 4;
 				pag_a_cargar->pid = pid;
@@ -217,7 +219,10 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				enviarMensaje(&sock, mensajeACpu);
 
+				free(pag_a_cargar);
+
 			}else{
+				puts("Existia una pagina con este PID");
 				//ya existen otras variables de ese programa
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
@@ -255,6 +260,32 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	printf("Se desconecto un CPU\n");
 
 	return EXIT_SUCCESS;
+}
+
+int marco_libre_para_variables(){
+
+	t_pagina_invertida* pag;
+	int i = 0;
+
+	int encontrado = 0;
+
+	while (encontrado == 0){
+		int encontrar_pag(t_pagina_invertida *pagina) {
+			return (pagina->nro_marco == configuracion->marcos - i);
+		}
+
+		pag = list_find(tabla_paginas, (void*) encontrar_pag);
+		if(pag == NULL){
+			encontrado = 1;
+		}
+		i++;
+	}
+
+	if(pag == NULL){
+		return (configuracion->marcos - i);
+	}else{
+		return -1;
+	}
 }
 
 void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU){
