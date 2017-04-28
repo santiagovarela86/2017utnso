@@ -223,6 +223,9 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 
 	if(result > 0){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+
+		printf("Lei el valor %s en la posicion %d \n", mensajeDesdeCPU[0], direccion_variable);
+
 		int valor = atoi(mensajeDesdeCPU[0]);
 
 		printf("El valor de la posicion %d es %d\n", direccion_variable, valor);

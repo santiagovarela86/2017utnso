@@ -235,12 +235,12 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
 			char* valor_variable  = string_new();
 
-			printf("Busco el valor de la posicion %d \n", posicion_de_la_Variable);
-
 			valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
 
+			int valor = atoi(valor_variable);
+
 			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, valor_variable);
+			string_append(&mensajeACpu, string_itoa(valor));
 			string_append(&mensajeACpu, ";");
 
 			enviarMensaje(&sock, mensajeACpu);
@@ -624,6 +624,7 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = '0';
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+
 	}
 
 return;
