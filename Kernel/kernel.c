@@ -443,10 +443,6 @@ void * hilo_conexiones_consola(void *args) {
 							}else{
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
-								int indice_inicio = atoi(respuesta_Memoria[1]);
-								int offset = atoi(respuesta_Memoria[2]);
-								new_pcb->inicio_lectura_bloque = indice_inicio;
-								new_pcb->offset = offset;
 
 								cargoIndiceCodigo(new_pcb, codigo);
 
@@ -488,6 +484,7 @@ void * hilo_conexiones_consola(void *args) {
 }
 
 char* serializar_pcb(t_pcb* pcb){
+	//TODO Actualizar serializacion con las nuevas estructuras
 	char* mensajeACPU = string_new();
 	string_append(&mensajeACPU, string_itoa(pcb->pid));
 	string_append(&mensajeACPU, ";");
@@ -496,10 +493,6 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
-	string_append(&mensajeACPU, ";");
-	string_append(&mensajeACPU, string_itoa(pcb->inicio_lectura_bloque));
-	string_append(&mensajeACPU, ";");
-	string_append(&mensajeACPU, string_itoa(pcb->offset));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
 	string_append(&mensajeACPU, ";");
@@ -596,6 +589,8 @@ t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	new->socket_cpu = socket_cpu;
 	new->exit_code = 0;
 	new->indiceCodigo = generoIndiceCodigo();
+	new->indiceEtiquetas = list_create();
+	new->indiceStack = list_create();
 	pthread_mutex_lock(&mutex_numerador_pcb);
 	numerador_pcb++;
 	pthread_mutex_unlock(&mutex_numerador_pcb);

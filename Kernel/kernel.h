@@ -30,13 +30,11 @@ typedef struct {
 	int program_counter;
 	int paginas;
 	t_indice_codigo indiceCodigo;
-	//? indiceEtiquetas;
-	//? indiceStack;
+	t_list* indiceEtiquetas;
+	t_list* indiceStack;
 	int tabla_archivos;
 	int pos_stack;
 	int* socket_cpu;
-	int inicio_lectura_bloque;
-	int offset;
 	int exit_code;
 } t_pcb;
 
