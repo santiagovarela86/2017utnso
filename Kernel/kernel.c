@@ -22,6 +22,7 @@
 #include "configuracion.h"
 #include "kernel.h"
 #include "helperFunctions.h"
+#include <parser/metadata_program.h>
 
 #define MAXCON 10
 #define MAXCPU 10
@@ -410,17 +411,21 @@ void * hilo_conexiones_consola(void *args) {
 							enviarMensaje(&sd, message);
 						}else{
 							//Se crea programa nuevo
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+							//t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &skt_cpu);
 
 							printf("%s", buffer);
-							char message[MAXBUF];
+
 							char* mensajeInicioPrograma = string_new();
+							char * codigo = limpioCodigo(respuesta_a_kernel[1]);
 							string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
 							string_append(&mensajeInicioPrograma, ";");
-							string_append(&mensajeInicioPrograma, respuesta_a_kernel[1]);
+							string_append(&mensajeInicioPrograma, codigo);
 							enviarMensaje(&skt_memoria, mensajeInicioPrograma);
 
+							char message[MAXBUF];
 							recv(skt_memoria, message, sizeof(message), 0);
+
 							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
 							char** respuesta_Memoria = string_split(message, ";");
 
@@ -442,6 +447,8 @@ void * hilo_conexiones_consola(void *args) {
 								int offset = atoi(respuesta_Memoria[2]);
 								new_pcb->inicio_lectura_bloque = indice_inicio;
 								new_pcb->offset = offset;
+
+								cargoIndiceCodigo(new_pcb, codigo);
 
 								queue_push(cola_listos, new_pcb);
 
@@ -579,14 +586,16 @@ void * handler_conexion_cpu(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
+//t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
+t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	t_pcb* new = malloc(sizeof(t_pcb));
 	new->pid = pid;
-	new->program_counter = program_counter;
-	new->tabla_archivos = tabla_arch;
-	new->pos_stack = pos_stack;
+	new->program_counter = 0;
+	new->tabla_archivos = 0;
+	new->pos_stack = 0;
 	new->socket_cpu = socket_cpu;
-	new->exit_code = exit_code;
+	new->exit_code = 0;
+	new->indiceCodigo = generoIndiceCodigo();
 	pthread_mutex_lock(&mutex_numerador_pcb);
 	numerador_pcb++;
 	pthread_mutex_unlock(&mutex_numerador_pcb);
@@ -656,3 +665,91 @@ void planificar(){
 	}
 }
 
+int ** generoIndiceCodigo(){
+	int ** indice;
+
+	indice = malloc(65535 * sizeof(int*));
+	int i = 0;
+
+	for (i = 0; i < 65535; i++) {
+	  indice[i] = malloc(2 * sizeof(int));
+	}
+
+	return indice;
+}
+
+void liberoIndiceCodigo(t_indice_codigo indice){
+	int i = 0;
+	for (i = 0; i < 65535; i++) {
+	  free(indice[i]);
+	}
+	free(indice);
+}
+
+bool esComentario(char* linea){
+	//return string_starts_with(linea, TEXT_COMMENT); me pincha porque esta entre comillas simples?
+	return string_starts_with(linea, "#");
+}
+
+bool esNewLine(char* linea){
+	return string_starts_with(linea, "\n");
+
+	//return string_starts_with(linea, "\n");
+}
+
+char * limpioCodigo(char * codigo){
+		char * curLine = codigo;
+		char * codigoLimpio = string_new();
+
+		   while(curLine)
+		   {
+		      char * nextLine = strchr(curLine, '\n');
+		      if (nextLine){
+		    	  *nextLine = '\0';
+		      }
+
+		      if (!esComentario(curLine) && !esNewLine(curLine)){
+		    	  	 string_append(&codigoLimpio, curLine);
+		    	  	 string_append(&codigoLimpio, "\n");
+		      }
+
+		      if (nextLine){
+		    	  *nextLine = '\n';
+		      }
+
+		      curLine = nextLine ? (nextLine+1) : NULL;
+		   }
+
+		   return codigoLimpio;
+	}
+
+void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
+	t_metadata_program * metadataProgram;
+
+	metadataProgram = metadata_desde_literal(codigo);
+
+	printf("Instruccion Inicio: %d\n", metadataProgram->instruccion_inicio);
+	printf("Cantidad de Instrucciones: %d\n", metadataProgram->instrucciones_size);
+
+	int i;
+	for (i = 0; i < metadataProgram->instrucciones_size; i++){
+		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start;
+		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset;
+
+		printf("Inicio Instruccion %i: %d\n", i, pcb->indiceCodigo[i][0]);
+		printf("Offset Instruccion %i: %d\n", i, pcb->indiceCodigo[i][1]);
+
+	}
+
+	printf("Cantidad Etiquetas: %d\n", metadataProgram->cantidad_de_etiquetas);
+	printf("Cantidad Etiquetas BIS: %d\n", metadataProgram->etiquetas_size);
+
+	for (i = 0; i < metadataProgram->etiquetas_size; i++){
+		printf("Etiqueta %i: %d\n", i, metadataProgram->etiquetas[i]);
+	}
+
+	printf("Cantidad de Funciones: %d\n", metadataProgram->cantidad_de_funciones);
+
+	metadata_destruir(metadataProgram);
+
+}

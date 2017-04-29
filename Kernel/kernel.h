@@ -10,7 +10,6 @@
 
 #include <commons/collections/queue.h>
 
-
 typedef struct {
 	int pagina;
 	int offset;
@@ -23,9 +22,16 @@ typedef struct {
 	char nombre_variable;
 } t_Stack;
 
+//Se accede de esta manera -> indice[inicio][offset]
+typedef int ** t_indice_codigo;
+
 typedef struct {
 	int pid;
 	int program_counter;
+	int paginas;
+	t_indice_codigo indiceCodigo;
+	//? indiceEtiquetas;
+	//? indiceStack;
 	int tabla_archivos;
 	int pos_stack;
 	int* socket_cpu;
@@ -66,10 +72,15 @@ typedef struct {
 	int tamanio_disponible;
 } t_pagina_heap;
 
+/*
 typedef struct {
 	int inicio;
 	int offset;
 } __attribute__((packed)) t_indice_codigo;
+*/
+
+int ** generoIndiceCodigo();
+void liberoIndiceCodigo(t_indice_codigo indice);
 
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
@@ -84,11 +95,17 @@ void flush_cola_pcb(t_queue*);
 void planificar();
 
 t_queue* crear_cola_pcb();
-t_pcb* nuevo_pcb(int, int, int*, int, int*, int);
+/*t_pcb* nuevo_pcb(int, int, int*, int, int*, int);*/
+t_pcb* nuevo_pcb(int, int *);
 char* serializar_pcb(t_pcb* pcb);
 void inicializar_variables_globales();
 void inicializar_semaforos();
 void liberar_estructuras();
 
+
+bool esComentario(char* linea);
+bool esNewLine(char* linea);
+char * limpioCodigo(char * codigo);
+void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
 
 #endif /* KERNEL_H_ */
