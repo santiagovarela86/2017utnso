@@ -83,7 +83,7 @@ void* manejo_kernel(void *args) {
     inicializar_funciones(funciones, kernel);
 
     programa_ejecutando = atoi(pcb[0]);
-	int quantum = atoi(pcb[7]);
+	int quantum = atoi(pcb[5]);
 	int iterador = atoi(pcb[1]);
 
 	analizadorLinea("variables x, a, g", funciones, kernel);
@@ -99,6 +99,7 @@ void* manejo_kernel(void *args) {
 	return EXIT_SUCCESS;
 }
 
+//TODO Cambiar esta funcion por "solicitoInstruccion"
 char * solicitoScript(int * socketMemoria, char ** pcb){
 	char message[MAXBUF];
 
@@ -133,9 +134,7 @@ void imprimoInfoPCB(char ** pcb) {
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(pcb[0]));
 	printf("PC: %d\n", atoi(pcb[1]));
-	printf("INDICE INICIO BLOQUE MEMORIA: %d \n", atoi(pcb[4]));
-	printf("OFFSET: %d \n", atoi(pcb[5]));
-	printf("QUANTUM: %d \n", atoi(pcb[7]));
+	printf("QUANTUM: %d \n", atoi(pcb[5]));
 }
 
 char ** reciboPCB(int * socketKernel) {

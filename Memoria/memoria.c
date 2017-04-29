@@ -205,8 +205,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				//TODO El hardcodeo del 400 quitarlo por una funcion que recorra el bitmap y devuelva la primera pagina libre de atras para adelante
 				pag_a_cargar->nro_marco = marco_libre_para_variables();
 				pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
-				printf("El marco libre es: %d y el tramaño por marco es: %d \n",pag_a_cargar->nro_marco , configuracion->marco_size);
-				printf("El inicio es: %d \n", pag_a_cargar->inicio);
 				pag_a_cargar->nro_pagina = 0;
 				pag_a_cargar->offset = 4;
 				pag_a_cargar->pid = pid;
