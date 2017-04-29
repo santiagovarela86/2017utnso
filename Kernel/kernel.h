@@ -32,6 +32,7 @@ typedef struct {
 	t_indice_codigo indiceCodigo;
 	t_list* indiceEtiquetas;
 	t_list* indiceStack;
+	int inicio_codigo;
 	int tabla_archivos;
 	int pos_stack;
 	int* socket_cpu;

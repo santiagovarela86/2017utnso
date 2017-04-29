@@ -83,7 +83,7 @@ void* manejo_kernel(void *args) {
     inicializar_funciones(funciones, kernel);
 
     programa_ejecutando = atoi(pcb[0]);
-	int quantum = atoi(pcb[5]);
+	int quantum = atoi(pcb[6]);
 	int iterador = atoi(pcb[1]);
 
 	analizadorLinea("variables x, a, g", funciones, kernel);
@@ -134,7 +134,7 @@ void imprimoInfoPCB(char ** pcb) {
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(pcb[0]));
 	printf("PC: %d\n", atoi(pcb[1]));
-	printf("QUANTUM: %d \n", atoi(pcb[5]));
+	printf("QUANTUM: %d \n", atoi(pcb[6]));
 }
 
 char ** reciboPCB(int * socketKernel) {

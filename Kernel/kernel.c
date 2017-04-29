@@ -443,6 +443,8 @@ void * hilo_conexiones_consola(void *args) {
 							}else{
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
+								int indice_inicio = atoi(respuesta_Memoria[1]);
+								new_pcb->inicio_codigo = indice_inicio;
 
 								cargoIndiceCodigo(new_pcb, codigo);
 
@@ -491,6 +493,8 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->program_counter));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+	string_append(&mensajeACPU, ";");
+	string_append(&mensajeACPU, string_itoa(pcb->inicio_codigo));
 	string_append(&mensajeACPU, ";");
 	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
 	string_append(&mensajeACPU, ";");
