@@ -19,7 +19,6 @@ int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 int semaforo = 0;
-t_list* tabla_marcos;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
 
@@ -305,8 +304,6 @@ void finalizar_programa(int pid){
 
 	t_pagina_invertida* paginaProceso = NULL;
 	while((paginaProceso = list_remove_by_condition(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
-		t_marco* marco_asignado = list_get(tabla_marcos, paginaProceso->nro_marco);
-		actualizar_marco(marco_asignado->nro_marco, 0, marco_asignado->final);
 		destruir_pagina(paginaProceso);
 	}
 }
@@ -336,12 +333,13 @@ void * inicializar_consola(void* args){
 		int accion_correcta = 0;
 		int nuevo_tiempo_retardo = 0, pid_buscado = 0, tamanio_proceso_buscado = 0;
 
-		bool _marco_disponible(void *marco) {
-		    return ((t_marco *)marco)->asignado == 0;
+		bool _pagina_disponible(void *pagina) {
+			//NO ESTA ASIGNADO Y NO PERTENECE A UNA ESTRUCTURA ADMINISTRATIVA
+		    return ((t_pagina_invertida*)pagina)->pid == 0 && ((t_pagina_invertida*)pagina)->pid != -1;
 		}
 
-		bool _marco_ocupado(void *marco){
-			return ((t_marco *)marco)->asignado == 1;
+		bool _pagina_ocupada(void *pagina){
+			return ((t_pagina_invertida *)pagina)->pid != 0;
 		}
 
 		while(accion_correcta == 0){
@@ -379,8 +377,8 @@ void * inicializar_consola(void* args){
 					puts("***********************************************************");
 					puts("TAMANIO DE LA MEMORIA");
 					printf("CANTIDAD TOTAL DE MARCOS: %d \n", configuracion->marcos);
-					printf("CANTIDAD DE MARCOS OCUPADOS: %d \n", list_count_satisfying(tabla_marcos, _marco_ocupado));
-					printf("CANTIDAD DE MARCOS LIBRES: %d \n", list_count_satisfying(tabla_marcos, _marco_disponible));
+					printf("CANTIDAD DE MARCOS OCUPADOS: %d \n", list_count_satisfying(tabla_paginas, _pagina_ocupada));
+					printf("CANTIDAD DE MARCOS LIBRES: %d \n", list_count_satisfying(tabla_paginas, _pagina_disponible));
 					puts("***********************************************************");
 					break;
 				case 7:
@@ -418,39 +416,57 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	}
 
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
-	inicializar_lista_marcos(config);
+	inicializar_tabla_paginas(config);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
-	tabla_paginas = list_create();
 	memoria_cache = crear_cola_cache();
 	tabla_programas = list_create();
 }
 
-void inicializar_lista_marcos(Memoria_Config* config){
+void inicializar_tabla_paginas(Memoria_Config* config){
 
-	tabla_marcos = list_create();
+	//PID -1 ESTRUCTURAS ADMINISTRATIVAS
+	//PID 0 NO ASIGNADO
+
+	t_max_cantidad_paginas * tamanio_maximo = obtenerMaximaCantidadDePaginas(config, sizeof(t_pagina_invertida));
+
+	tabla_paginas = list_create();
+
 	int i = 0;
 	for(i = 0; i < config->marcos; i++){
-		t_marco* nuevo_marco = malloc(sizeof(t_marco));
-		nuevo_marco->nro_marco = i;
+		t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
+		nueva_pagina->nro_marco = i;
 		if (i == 0){
-			nuevo_marco->inicio = i * config->marco_size;
-			nuevo_marco->final = nuevo_marco->inicio + config->marco_size;
+			nueva_pagina->inicio = i * config->marco_size;
 		}
 		else {
-			nuevo_marco->inicio = i * config->marco_size + 1;
-			nuevo_marco->final = nuevo_marco->inicio + config->marco_size + 1;
+			nueva_pagina->inicio = i * config->marco_size + 1;
 		}
-		nuevo_marco->disponible = nuevo_marco->inicio;
 
-		//Del 0 al 38 van a estar las estructuras administrativas
+		//Del 0 al tamanio_maximo->maxima_cant_paginas_administracion (calculado)
 		//Se marcan como ocupadas para que ningun proceso pueda escribir en ellas
-		if (i < 39)
-			nuevo_marco->asignado = 1;
-		else
-			nuevo_marco->asignado = 0;
-		list_add(tabla_marcos, nuevo_marco);
+		if (i < tamanio_maximo->maxima_cant_paginas_administracion){
+			nueva_pagina->pid = -1;
+		}
+		else {
+			nueva_pagina->pid = 0;
+		}
+
+		memcpy(bloque_memoria + (i * sizeof(t_pagina_invertida)), nueva_pagina, sizeof(t_pagina_invertida));
 	}
+
+	int k = 0;
+	for (k = 0; k < config->marcos; k++){
+		t_pagina_invertida *aux = memory_read(bloque_memoria, k * sizeof(t_pagina_invertida), sizeof(t_pagina_invertida));
+		list_add(tabla_paginas, aux);
+	}
+}
+
+t_pagina_invertida *memory_read(char *base, int offset, int size){
+    char *buffer;
+    buffer = malloc(size);
+    memcpy(buffer,base+offset,size);
+    return (t_pagina_invertida*)buffer;
 }
 
 void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel){
@@ -528,39 +544,31 @@ t_manejo_programa* get_manejo_programa(int pid){
 	return list_find(tabla_programas, (void*) esElProgramaBuscado);
 }
 
-t_marco* get_marco_libre(bool esDescendente){
+t_pagina_invertida* get_pagina_libre(bool esDescendente){
 
-	t_marco* marco_encontrado = NULL;
+	t_pagina_invertida* pagina_encontrada = NULL;
 
-	int _marcoAsignado(t_marco* marco){
-		return marco->asignado == 0;
+	int _paginaLibre(t_pagina_invertida* pagina){
+		return pagina->pid == 0;
 	}
 
-    bool _nro_marco_descendente(t_marco *marco1, t_marco *marco2) {
-        return marco1->nro_marco > marco2->nro_marco;
+    bool _nro_marco_descendente(t_pagina_invertida *pagina1, t_pagina_invertida *pagina2) {
+        return pagina1->nro_marco > pagina2->nro_marco;
     }
 
-    bool _nro_marco_ascendente(t_marco *marco1, t_marco *marco2) {
-        return marco1->nro_marco < marco2->nro_marco;
+    bool _nro_marco_ascendente(t_pagina_invertida *pagina1, t_pagina_invertida *pagina2) {
+        return pagina1->nro_marco < pagina2->nro_marco;
     }
 
     if (esDescendente) {
-    	list_sort(tabla_marcos, (void*)_nro_marco_descendente);
-    	marco_encontrado = list_find(tabla_marcos, (void*) _marcoAsignado);
+    	list_sort(tabla_paginas, (void*)_nro_marco_descendente);
+    	pagina_encontrada = list_find(tabla_paginas, (void*) _paginaLibre);
     	//Ordeno de vuelta la estructura porque es global
-    	list_sort(tabla_marcos, (void*)_nro_marco_ascendente);
-    	return marco_encontrado;
+    	list_sort(tabla_paginas, (void*)_nro_marco_ascendente);
+    	return pagina_encontrada;
     }
 
-	return list_find(tabla_marcos, (void*) _marcoAsignado);
-}
-
-void actualizar_marco(int indice, int asignado, int disponible){
-
-	t_marco* marco = list_get(tabla_marcos, indice);
-	marco->asignado = asignado;
-	marco->disponible = disponible;
-	list_replace(tabla_marcos,indice, marco);
+	return list_find(tabla_paginas, (void*) _paginaLibre);
 }
 
 void log_cache_in_disk(t_queue* cache) {
@@ -665,39 +673,35 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 	t_pagina_invertida* pagina_invertida = NULL;
 
 	int i = 0, j = 0;
-	int marcosAOcupar = cantidad_paginas;
 
-	if (marcosAOcupar == 0) //El contenido del programa es menor al tamanio del marco le asigno un marco como minimo
-		marcosAOcupar = 1;
+	if (cantidad_paginas == 0) //El contenido del programa es menor al tamanio del marco le asigno un marco como minimo
+		cantidad_paginas = 1;
 
-	for(i = 0; i < marcosAOcupar; i++){
+	for(i = 0; i < cantidad_paginas; i++){
 		int nro_pagina = 0;
-		t_marco* marco = get_marco_libre(false);
+		pagina_invertida = get_pagina_libre(false);
 
-		if (marco == NULL){
+		if (pagina_invertida == NULL){
 			break;
 		}
-		int indice_bloque = marco->inicio;
-		while(codigo[j] != NULL && indice_bloque < marco->final){
+
+		int indice_bloque = pagina_invertida->inicio;
+		while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
 			bloque_memoria[indice_bloque] = codigo[j];
 			indice_bloque++;
 			j++;
 		}
 
-		//Actualizo el marco como ocupado
-		int espacio_disponible = marco->inicio + indice_bloque;
+		//Actualizo la tabla de paginas
+		pagina_invertida->nro_pagina = nro_pagina;
+		pagina_invertida->pid = pid;
+		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 
-		actualizar_marco(marco->nro_marco, 1, espacio_disponible);
-
-		//Agrego la pagina con el codigo a la lista de paginas
-		pagina_invertida = crear_nueva_pagina(pid, marco->nro_marco, nro_pagina, marco->inicio, string_length(codigo));
-		list_add(tabla_paginas, pagina_invertida);
 		nro_pagina++;
 	}
 
 	return pagina_invertida;
 }
-
 
 uint32_t f_hash(const void *buf, size_t buflength) {
      const uint8_t *buffer = (const uint8_t*)buf;
