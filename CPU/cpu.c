@@ -26,8 +26,6 @@ int socketKernel;
 int programa_ejecutando;
 t_list* variables_locales;
 
-
-
 int main(int argc , char **argv){
 
 	if (argc != 2){
@@ -75,7 +73,7 @@ void* manejo_kernel(void *args) {
 	t_pcb * pcb = reciboPCB(&socketKernel);
 
 	//MUESTRO LA INFO DEL PCB
-	//imprimoInfoPCB(pcb);
+	imprimoInfoPCB(pcb);
 
     //programa_ejecutando = atoi(pcb[0]);
 //	int quantum = atoi(pcb[6]);
@@ -125,12 +123,32 @@ char * solicitoScript(int * socketMemoria, char ** pcb){
 	}
 }
 
-//HAY QUE ACTUALIZAR ESTO
-void imprimoInfoPCB(char ** pcb) {
-	printf("PCB del proceso \n");
-	printf("PID: %d\n", atoi(pcb[0]));
-	printf("PC: %d\n", atoi(pcb[1]));
-	printf("QUANTUM: %d \n", atoi(pcb[6]));
+void imprimoInfoPCB(t_pcb * pcb){
+	printf("PID: %d\n", pcb->pid);
+	printf("PC: %d\n", pcb->program_counter);
+	printf("Cantidad de Paginas: %d\n", pcb->cantidadPaginas);
+	printf("Inicio de Codigo: %d\n", pcb->inicio_codigo);
+	printf("Tabla de Archivos: %d\n", pcb->tabla_archivos);
+	printf("Posicion de Stack: %d\n", pcb->pos_stack);
+	printf("Exit Code: %d\n", pcb->exit_code);
+
+	int i;
+	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
+		elementoIndiceCodigo * elem = malloc(sizeof(elem));
+		elem = list_get(pcb->indiceCodigo, i);
+		printf("Indice de Instruccion d: Start %d, Offset %d\n", i, elem->start, elem->offset);
+	}
+
+	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
+		int * elem = list_get(pcb->indiceEtiquetas, i);
+		printf("Etiqueta %d: %d\n", i, * elem);
+	}
+
+	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+		int * elem = list_get(pcb->indiceStack, i);
+		printf("Elemento de Pila %d: %d\n", i, * elem);
+	}
+
 }
 
 t_pcb * reciboPCB(int * socketKernel) {
