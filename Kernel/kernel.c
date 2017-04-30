@@ -444,13 +444,14 @@ void * hilo_conexiones_consola(void *args) {
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
 								//ACA TENDRIA QUE VALIDAR QUE LA RESPUESTA SEA 203
-								int indice_inicio = atoi(respuesta_Memoria[1]);
-								new_pcb->inicio_codigo = indice_inicio;
-
+								new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
+								new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
 								cargoIndiceCodigo(new_pcb, codigo);
+								//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
 
 								queue_push(cola_listos, new_pcb);
 
+								// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
 								char* info_pid = string_new();
 								char* respuestaAConsola = string_new();
 								string_append(&info_pid, "103");
@@ -487,22 +488,63 @@ void * hilo_conexiones_consola(void *args) {
 }
 
 char* serializar_pcb(t_pcb* pcb){
-	//TODO Actualizar serializacion con las nuevas estructuras
+	//TODO Actualizar serializacion con las nuevas estructuras ***
 	char* mensajeACPU = string_new();
 	string_append(&mensajeACPU, string_itoa(pcb->pid));
 	string_append(&mensajeACPU, ";");
+
 	string_append(&mensajeACPU, string_itoa(pcb->program_counter));
 	string_append(&mensajeACPU, ";");
-	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+
+	string_append(&mensajeACPU, string_itoa(pcb->cantidadPaginas));
 	string_append(&mensajeACPU, ";");
+
 	string_append(&mensajeACPU, string_itoa(pcb->inicio_codigo));
 	string_append(&mensajeACPU, ";");
-	string_append(&mensajeACPU, string_itoa(*pcb->socket_cpu));
+
+	string_append(&mensajeACPU, string_itoa(pcb->tabla_archivos));
 	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+	string_append(&mensajeACPU, ";");
+
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
 	string_append(&mensajeACPU, ";");
-	string_append(&mensajeACPU, string_itoa(configuracion->quantum));
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceCodigo->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceEtiquetas->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	int i;
+	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
+		elementoIndiceCodigo * elem = malloc(sizeof(elem));
+		elem = list_get(pcb->indiceCodigo, i);
+
+		string_append(&mensajeACPU, string_itoa(elem->start));
+		string_append(&mensajeACPU, ";");
+
+		string_append(&mensajeACPU, string_itoa(elem->offset));
+		string_append(&mensajeACPU, ";");
+	}
+
+	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
+		string_append(&mensajeACPU, string_itoa((int) list_get(pcb->indiceEtiquetas, i)));
+		string_append(&mensajeACPU, ";");
+	}
+
+	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+		string_append(&mensajeACPU, string_itoa((int) list_get(pcb->indiceStack, i)));
+		string_append(&mensajeACPU, ";");
+	}
+
+	//string_append(&mensajeACPU, string_itoa(configuracion->quantum));
 	return mensajeACPU;
+
 }
 
 void * hilo_conexiones_cpu(void *args) {
@@ -587,15 +629,20 @@ void * handler_conexion_cpu(void * sock) {
 //t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
 t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	t_pcb* new = malloc(sizeof(t_pcb));
+
 	new->pid = pid;
 	new->program_counter = 0;
+	new->cantidadPaginas = 0;
+	//new->indiceCodigo = generoIndiceCodigo();
+	new->indiceCodigo = list_create();
+	new->indiceEtiquetas = list_create();
+	new->indiceStack = list_create();
+	new->inicio_codigo = 0;
 	new->tabla_archivos = 0;
 	new->pos_stack = 0;
 	new->socket_cpu = socket_cpu;
 	new->exit_code = 0;
-	new->indiceCodigo = generoIndiceCodigo();
-	new->indiceEtiquetas = list_create();
-	new->indiceStack = list_create();
+
 	pthread_mutex_lock(&mutex_numerador_pcb);
 	numerador_pcb++;
 	pthread_mutex_unlock(&mutex_numerador_pcb);
@@ -614,6 +661,7 @@ void flush_cola_pcb(t_queue* queue){
 void eliminar_pcb(t_pcb *self){
 	free(self->tabla_archivos);
 	free(self);
+
 }
 
 void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
@@ -621,7 +669,7 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_push(fin, element);
 }
 
-void planificar(){
+void * planificar(){
 	int corte, i, encontrado;
 
 	while (1){
@@ -665,6 +713,7 @@ void planificar(){
 	}
 }
 
+/*
 int ** generoIndiceCodigo(){
 	int ** indice;
 
@@ -685,6 +734,7 @@ void liberoIndiceCodigo(t_indice_codigo indice){
 	}
 	free(indice);
 }
+*/
 
 bool esComentario(char* linea){
 	//return string_starts_with(linea, TEXT_COMMENT); me pincha porque esta entre comillas simples?
@@ -733,11 +783,23 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 
 	int i;
 	for (i = 0; i < metadataProgram->instrucciones_size; i++){
-		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start + pcb->inicio_codigo;
-		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset + pcb->inicio_codigo;
+
+		elementoIndiceCodigo * elem = malloc(sizeof(elementoIndiceCodigo));
+		elem->start = metadataProgram->instrucciones_serializado[i].start;// ESTO NO VA ACA + pcb->inicio_codigo;
+		elem->offset = metadataProgram->instrucciones_serializado[i].offset;//ESTO NO VA ACA + pcb->inicio_codigo;
+		list_add(pcb->indiceCodigo, elem);
+
+		/*
+		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start;// ESTO NO VA ACA + pcb->inicio_codigo;
+		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset;//ESTO NO VA ACA + pcb->inicio_codigo;
+		pcb->cantidadInstrucciones = metadataProgram->instrucciones_size;
 
 		printf("Inicio Instruccion %i: %d\n", i, pcb->indiceCodigo[i][0]);
 		printf("Offset Instruccion %i: %d\n", i, pcb->indiceCodigo[i][1]);
+		*/
+
+		printf("Inicio Instruccion %i: %d\n", i, elem->start);
+		printf("Offset Instruccion %i: %d\n", i, elem->offset);
 
 	}
 
