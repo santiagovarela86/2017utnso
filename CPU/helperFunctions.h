@@ -15,6 +15,7 @@ typedef struct threadSocketInfo {
 	struct sockaddr_in direccion;
 } threadSocketInfo;
 
+/*
 typedef struct {
 	int pid;
 	int program_counter;
@@ -25,6 +26,7 @@ typedef struct {
 	int offset;
 	int exit_code;
 } t_pcb;
+*/
 
 typedef struct {
 	int pid;

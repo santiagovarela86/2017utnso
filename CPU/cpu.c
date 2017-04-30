@@ -18,18 +18,15 @@
 #include "configuracion.h"
 #include "helperFunctions.h"
 #include "helperParser.h"
-
-void* manejo_memoria();
-void* manejo_kernel();
-char* solicitoScript(int * socketMemoria, char ** pcb);
-void imprimoInfoPCB(char ** pcb);
-char ** reciboPCB(int * socketKernel);
+#include "cpu.h"
 
 CPU_Config* configuracion;
 int socketMemoria;
 int socketKernel;
 int programa_ejecutando;
 t_list* variables_locales;
+
+
 
 int main(int argc , char **argv){
 
@@ -43,6 +40,13 @@ int main(int argc , char **argv){
 
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
+
+	AnSISOP_funciones *funciones = NULL;
+	AnSISOP_kernel *kernel = NULL;
+    funciones = malloc(sizeof(AnSISOP_funciones));
+    kernel = malloc(sizeof(AnSISOP_kernel));
+    inicializar_funciones(funciones, kernel);
+	variables_locales = list_create();
 
 	creoThread(&thread_id_kernel, manejo_kernel, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
@@ -58,8 +62,6 @@ int main(int argc , char **argv){
 void* manejo_kernel(void *args) {
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
-	variables_locales = list_create();
-
 
 	creoSocket(&socketKernel, &direccionKernel,	inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
 	puts("Socket de conexion al Kernel creado correctamente\n");
@@ -70,25 +72,18 @@ void* manejo_kernel(void *args) {
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
 	//RECIBO EL PCB
-	char ** pcb = reciboPCB(&socketKernel);
+	t_pcb * pcb = reciboPCB(&socketKernel);
 
 	//MUESTRO LA INFO DEL PCB
-	imprimoInfoPCB(pcb);
+	//imprimoInfoPCB(pcb);
 
-	AnSISOP_funciones *funciones = NULL;
-	AnSISOP_kernel *kernel = NULL;
-    funciones = malloc(sizeof(AnSISOP_funciones));
-    kernel = malloc(sizeof(AnSISOP_kernel));
+    //programa_ejecutando = atoi(pcb[0]);
+//	int quantum = atoi(pcb[6]);
+//	int iterador = atoi(pcb[1]);
 
-    inicializar_funciones(funciones, kernel);
-
-    programa_ejecutando = atoi(pcb[0]);
-	int quantum = atoi(pcb[6]);
-	int iterador = atoi(pcb[1]);
-
-	analizadorLinea("variables x, a, g", funciones, kernel);
-	analizadorLinea("x = 3", funciones, kernel);
-	analizadorLinea("a = x + 3", funciones, kernel);
+//	analizadorLinea("variables x, a, g", funciones, kernel);
+//	analizadorLinea("x = 3", funciones, kernel);
+//	analizadorLinea("a = x + 3", funciones, kernel);
 
 	pause();
 
@@ -130,6 +125,7 @@ char * solicitoScript(int * socketMemoria, char ** pcb){
 	}
 }
 
+//HAY QUE ACTUALIZAR ESTO
 void imprimoInfoPCB(char ** pcb) {
 	printf("PCB del proceso \n");
 	printf("PID: %d\n", atoi(pcb[0]));
@@ -137,8 +133,8 @@ void imprimoInfoPCB(char ** pcb) {
 	printf("QUANTUM: %d \n", atoi(pcb[6]));
 }
 
-char ** reciboPCB(int * socketKernel) {
-	char ** pcb;
+t_pcb * reciboPCB(int * socketKernel) {
+	t_pcb * pcb;
 	char message[MAXBUF];
 
 	int result = recv(*socketKernel, message, sizeof(message), 0);
@@ -146,7 +142,7 @@ char ** reciboPCB(int * socketKernel) {
 	//Se agrega manejo de error al recibir el PCB
 	if (result > 0) {
 		//INICIO CODIGO DE DESERIALIZACION DEL PCB
-		pcb = string_split(message, ";");
+		pcb = deserializar_pcb(message);
 		//FIN CODIGO DE DESERIALIZACION DEL PCB
 
 		//MUESTRO EL BUFFER DEL PCB
@@ -154,6 +150,53 @@ char ** reciboPCB(int * socketKernel) {
 	} else {
 		printf("Error al recibir PCB\n");
 		exit(errno);
+	}
+
+	return pcb;
+}
+
+t_pcb * deserializar_pcb(char * mensajeRecibido){
+	t_pcb * pcb = malloc(sizeof(t_pcb));
+	int cantIndiceCodigo, cantIndiceEtiquetas, cantIndiceStack;
+	char ** message = string_split(mensajeRecibido, ";");
+	pcb->indiceCodigo = list_create();
+	pcb->indiceEtiquetas = list_create();
+	pcb->indiceStack = list_create();
+
+	pcb->pid = atoi(message[0]);
+	pcb->program_counter = atoi(message[1]);
+	pcb->cantidadPaginas = atoi(message[2]);
+	pcb->inicio_codigo = atoi(message[3]);
+	pcb->tabla_archivos = atoi(message[4]);
+	pcb->pos_stack = atoi(message[5]);
+	pcb->exit_code = atoi(message[6]);
+	cantIndiceCodigo = atoi(message[7]);
+	cantIndiceEtiquetas = atoi(message[8]);
+	cantIndiceStack = atoi(message[9]);
+
+	int i = 10;
+
+	while (i < 10 + cantIndiceCodigo * 2){
+		elementoIndiceCodigo * elem = malloc(sizeof(elem));
+		elem->start = atoi(message[i]);
+		i++;
+		elem->offset = atoi(message[i]);
+		i++;
+		list_add(pcb->indiceCodigo, elem);
+	}
+
+	int j = i;
+
+	while (i < j + cantIndiceEtiquetas){
+		list_add(pcb->indiceEtiquetas, message[i]);
+		i++;
+	}
+
+	int k = i;
+
+	while (i < k + cantIndiceStack){
+		list_add(pcb->indiceStack, message[i]);
+		i++;
 	}
 
 	return pcb;
