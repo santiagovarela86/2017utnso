@@ -115,7 +115,7 @@ void * hilo_conexiones_kernel(void * args){
 			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
 			if (cant_paginas == 0)
 				cant_paginas++;
-			//pid = 2;
+			//pid = 2; ***
 			iniciar_programa(pid, codigo_programa, cant_paginas, socketCliente);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
@@ -474,16 +474,23 @@ void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel
 	char* respuestaAKernel = string_new();
 
 	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
+
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, codigo);
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
 		if (pagina != NULL){
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
 			string_append(&respuestaAKernel, ";");
+			/* ESTO EL PCB NO LO NECESITA ***
 			string_append(&respuestaAKernel, string_itoa(pagina->offset));
+			string_append(&respuestaAKernel, ";");
+			*/
+			string_append(&respuestaAKernel, string_itoa(cant_paginas));
 			enviarMensaje(&socket_kernel, respuestaAKernel);
 		}
+
 		else {
 			//Si el codigo del programa supera el tamanio del bloque
 			//Le aviso al Kernel que no puede reservar el espacio para el programa
