@@ -443,6 +443,7 @@ void * hilo_conexiones_consola(void *args) {
 							}else{
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
+								//ACA TENDRIA QUE VALIDAR QUE LA RESPUESTA SEA 203
 								int indice_inicio = atoi(respuesta_Memoria[1]);
 								new_pcb->inicio_codigo = indice_inicio;
 
@@ -732,8 +733,8 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 
 	int i;
 	for (i = 0; i < metadataProgram->instrucciones_size; i++){
-		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start;
-		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset;
+		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start + pcb->inicio_codigo;
+		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset + pcb->inicio_codigo;
 
 		printf("Inicio Instruccion %i: %d\n", i, pcb->indiceCodigo[i][0]);
 		printf("Offset Instruccion %i: %d\n", i, pcb->indiceCodigo[i][1]);

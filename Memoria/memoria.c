@@ -115,7 +115,7 @@ void * hilo_conexiones_kernel(void * args){
 			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
 			if (cant_paginas == 0)
 				cant_paginas++;
-			pid = 2;
+			//pid = 2;
 			iniciar_programa(pid, codigo_programa, cant_paginas, socketCliente);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
@@ -688,6 +688,9 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		int indice_bloque = pagina_invertida->inicio;
 		while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
 			bloque_memoria[indice_bloque] = codigo[j];
+
+			printf("Bloque %d: %c\n", indice_bloque, bloque_memoria[indice_bloque]);
+
 			indice_bloque++;
 			j++;
 		}
