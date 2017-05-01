@@ -21,11 +21,6 @@ typedef struct {
 	char nombre_variable;
 } t_Stack;
 
-/*
-//Se accede de esta manera -> indice[inicio][offset]
-typedef int ** t_indice_codigo;
-*/
-
 typedef struct {
 	int start;
 	int offset;
@@ -35,8 +30,6 @@ typedef struct {
 	int pid;
 	int program_counter;
 	int cantidadPaginas;
-	//int cantidadInstrucciones;
-	//t_indice_codigo indiceCodigo;
 	t_list* indiceCodigo;
 	t_list* indiceEtiquetas;
 	t_list* indiceStack;
@@ -79,17 +72,6 @@ typedef struct {
 	int tamanio_disponible;
 } t_pagina_heap;
 
-/*
-typedef struct {
-	int inicio;
-	int offset;
-} __attribute__((packed)) t_indice_codigo;
-*/
-
-/*
-int ** generoIndiceCodigo();
-void liberoIndiceCodigo(t_indice_codigo indice);
-*/
 
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
@@ -104,7 +86,6 @@ void flush_cola_pcb(t_queue*);
 void * planificar();
 
 t_queue* crear_cola_pcb();
-/*t_pcb* nuevo_pcb(int, int, int*, int, int*, int);*/
 t_pcb* nuevo_pcb(int, int *);
 char* serializar_pcb(t_pcb* pcb);
 void inicializar_variables_globales();

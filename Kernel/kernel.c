@@ -578,7 +578,6 @@ void * hilo_conexiones_cpu(void *args) {
 		exit(errno);
 	}
 
-	//LLEGA ALGUNA VEZ A ESTO?
 	shutdown(socketClienteCPU, 0);
 	close(socketClienteCPU);
 	return EXIT_SUCCESS;

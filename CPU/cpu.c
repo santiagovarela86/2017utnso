@@ -64,23 +64,45 @@ void* manejo_kernel(void *args) {
 
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
-	//RECIBO EL PCB
-	pcb = reciboPCB(&socketKernel);
-
-	//MUESTRO LA INFO DEL PCB
-	imprimoInfoPCB(pcb);
-
 	AnSISOP_funciones *funciones = NULL;
 	AnSISOP_kernel *kernel = NULL;
     funciones = malloc(sizeof(AnSISOP_funciones));
     kernel = malloc(sizeof(AnSISOP_kernel));
     inicializar_funciones(funciones, kernel);
 
-    char* instruccion = string_new();
+    while(1){
+    	//RECIBO EL PCB
+    	pcb = reciboPCB(&socketKernel);
 
-    instruccion = solicitoInstruccion(pcb);
+    	//MUESTRO LA INFO DEL PCB
+    	imprimoInfoPCB(pcb);
 
-    analizadorLinea(instruccion, funciones, kernel);
+    	char* instruccion = string_new();
+
+    	instruccion = solicitoInstruccion(pcb);
+
+    	analizadorLinea(instruccion, funciones, kernel);
+
+    	pause();
+
+     	char* mensajeAKernel = string_new();
+
+    	if(pcb->indiceCodigo->elements_count-1 == pcb->program_counter){ //Se ejecutaron todas las instrucciones
+        	string_append(&mensajeAKernel, "531");
+        	string_append(&mensajeAKernel, ";");
+        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+        	string_append(&mensajeAKernel, ";");
+    	}else{
+        	string_append(&mensajeAKernel, "530");
+        	string_append(&mensajeAKernel, ";");
+        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+        	string_append(&mensajeAKernel, ";");
+    	}
+
+    	enviarMensaje(&socketKernel, mensajeAKernel);
+
+    	free(mensajeAKernel);
+    }
 
 	pause();
 
@@ -403,7 +425,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 }
 
 void finalizar(void){
-
+	puts("FIN DEL PROGRAMA");
 	return;
 }
 
