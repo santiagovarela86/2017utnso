@@ -34,7 +34,7 @@ typedef struct {
 
 void* manejo_memoria();
 void* manejo_kernel();
-char* solicitoScript(int * socketMemoria, char ** pcb);
+char * solicitoInstruccion(t_pcb* pcb);
 void imprimoInfoPCB(t_pcb * pcb);
 t_pcb * reciboPCB(int * socketKernel);
 t_pcb * deserializar_pcb(char * message);

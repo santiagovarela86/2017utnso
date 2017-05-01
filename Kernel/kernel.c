@@ -63,6 +63,10 @@ int main(int argc, char **argv) {
 	pthread_t thread_planificador;
 
 	configuracion = leerConfiguracion(argv[1]);
+
+	if(configuracion->algoritmo[0] != 'R'){
+		configuracion->quantum = 99;
+	}
 	imprimirConfiguracion(configuracion);
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
@@ -626,14 +630,12 @@ void * handler_conexion_cpu(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-//t_pcb *nuevo_pcb(int pid, int program_counter, int* tabla_arch, int pos_stack, int* socket_cpu, int exit_code){
 t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	t_pcb* new = malloc(sizeof(t_pcb));
 
 	new->pid = pid;
 	new->program_counter = 0;
 	new->cantidadPaginas = 0;
-	//new->indiceCodigo = generoIndiceCodigo();
 	new->indiceCodigo = list_create();
 	new->indiceEtiquetas = list_create();
 	new->indiceStack = list_create();
@@ -713,28 +715,6 @@ void * planificar(){
 	}
 }
 
-/*
-int ** generoIndiceCodigo(){
-	int ** indice;
-
-	indice = malloc(65535 * sizeof(int*));
-	int i = 0;
-
-	for (i = 0; i < 65535; i++) {
-	  indice[i] = malloc(2 * sizeof(int));
-	}
-
-	return indice;
-}
-
-void liberoIndiceCodigo(t_indice_codigo indice){
-	int i = 0;
-	for (i = 0; i < 65535; i++) {
-	  free(indice[i]);
-	}
-	free(indice);
-}
-*/
 
 bool esComentario(char* linea){
 	//return string_starts_with(linea, TEXT_COMMENT); me pincha porque esta entre comillas simples?
@@ -743,8 +723,6 @@ bool esComentario(char* linea){
 
 bool esNewLine(char* linea){
 	return string_starts_with(linea, "\n");
-
-	//return string_starts_with(linea, "\n");
 }
 
 char * limpioCodigo(char * codigo){
@@ -788,15 +766,6 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 		elem->start = metadataProgram->instrucciones_serializado[i].start;// ESTO NO VA ACA + pcb->inicio_codigo;
 		elem->offset = metadataProgram->instrucciones_serializado[i].offset;//ESTO NO VA ACA + pcb->inicio_codigo;
 		list_add(pcb->indiceCodigo, elem);
-
-		/*
-		pcb->indiceCodigo[i][0] = metadataProgram->instrucciones_serializado[i].start;// ESTO NO VA ACA + pcb->inicio_codigo;
-		pcb->indiceCodigo[i][1] = metadataProgram->instrucciones_serializado[i].offset;//ESTO NO VA ACA + pcb->inicio_codigo;
-		pcb->cantidadInstrucciones = metadataProgram->instrucciones_size;
-
-		printf("Inicio Instruccion %i: %d\n", i, pcb->indiceCodigo[i][0]);
-		printf("Offset Instruccion %i: %d\n", i, pcb->indiceCodigo[i][1]);
-		*/
 
 		printf("Inicio Instruccion %i: %d\n", i, elem->start);
 		printf("Offset Instruccion %i: %d\n", i, elem->offset);

@@ -32,7 +32,7 @@ t_list* tabla_programas;
 char* script_programa;
 int skt_kernel;
 
-void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
+void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
 int main(int argc, char **argv) {
 
@@ -182,7 +182,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		if (codigo == 510) {
 
-			enviarScriptACPU(&sock, mensajeDesdeCPU);
+			enviarInstACPU(&sock, mensajeDesdeCPU);
 
 		} else if (codigo == 511) {
 
@@ -197,33 +197,31 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
+			printf("El pid es %d \n", pid);
+
 			int encontrar_pag(t_pagina_invertida *pag) {
 				return (pag->pid == pid);
 			}
 
 			t_pagina_invertida* pag_encontrada;
 
-			t_list* lista_auxiliar = list_create();
-			lista_auxiliar = list_filter((tabla_paginas),  (void*) encontrar_pag);
+			t_list* lista_pag_auxiliar = list_create();
+			lista_pag_auxiliar = list_filter(tabla_paginas,  (void*) encontrar_pag);
 
-			if(list_size(lista_auxiliar) == 1){
-				pag_encontrada = NULL;
-			}else{
-				pag_encontrada = ((t_pagina_invertida*) list_get(lista_auxiliar, 2));
-			}
+			pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
 
 			if(pag_encontrada == NULL){
 				//primera variable del programa
+				puts("Primera variable");
 				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
 
-				//TODO El hardcodeo del 400 quitarlo por una funcion que recorra el bitmap y devuelva la primera pagina libre de atras para adelante
 				pag_a_cargar->nro_marco = marco_libre_para_variables();
 				pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
 				pag_a_cargar->nro_pagina = 0;
 				pag_a_cargar->offset = 4;
 				pag_a_cargar->pid = pid;
 
-				list_add(tabla_paginas, pag_a_cargar);
+				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(pag_a_cargar->inicio));
@@ -234,7 +232,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				free(pag_a_cargar);
 
 			}else{
-				puts("Existia una pagina con este PID");
+				puts("No Primera variable");
 				//ya existen otras variables de ese programa
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
@@ -283,30 +281,73 @@ int marco_libre_para_variables(){
 
 	while (encontrado == 0){
 		int encontrar_pag(t_pagina_invertida *pagina) {
-			return (pagina->nro_marco == configuracion->marcos - i);
+			return ((pagina->nro_marco == configuracion->marcos - i) && (pagina->pid == 0));
 		}
 
 		pag = list_find(tabla_paginas, (void*) encontrar_pag);
-		if(pag == NULL){
+		if(pag != NULL){
 			encontrado = 1;
 		}
 		i++;
 	}
 
-	if(pag == NULL){
-		return (configuracion->marcos - i);
+	if(pag != NULL){
+		printf("La marco libre para variables %d\n", pag->nro_marco);
+		return pag->nro_marco;
 	}else{
 		return -1;
 	}
 }
 
-void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU){
+t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
+
+	t_pagina_invertida* pag;
+
+	int size = list_size(lista);
+	int i;
+	int maximo = 0;
+	int igual = 1;
+
+	printf("El tama es %d \n", size);
+
+	for(i = 0; i < size; i++){
+		int num_marco = ((t_pagina_invertida*) list_get(lista, i))->nro_marco;
+
+		printf("La pagina %d se encuentra en el marco %d con y el pid es %d \n", i, num_marco,((t_pagina_invertida*) list_get(lista, i))->pid );
+
+		if(num_marco == maximo){
+			igual++;
+		}else if(num_marco > maximo){
+			maximo = num_marco;
+		}
+	}
+
+
+	if(igual == size){
+		return NULL;
+	}else{
+
+		int encontrar_pagina_maxima(t_pagina_invertida *pag) {
+			return (pag->nro_marco == maximo);
+		}
+
+		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
+		printf("El marco es %d \n", pag->nro_marco);
+		return pag;
+	}
+
+}
+
+void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int pid = atoi(mensajeDesdeCPU[1]);
-	int inicio_bloque = atoi(mensajeDesdeCPU[2]);
+	int inicio_instruccion = atoi(mensajeDesdeCPU[2]);
 	int offset = atoi(mensajeDesdeCPU[3]);
+	int inicio_bloque = atoi(mensajeDesdeCPU[4]);
+
+	int inicio = inicio_bloque + inicio_instruccion;
 
 	char* respuestaACPU = string_new();
-	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio_bloque, offset));
+	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
 	enviarMensaje(socketCliente, respuestaACPU);
 	free(respuestaACPU);
 }
@@ -715,7 +756,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 		//Actualizo la tabla de paginas
 		pagina_invertida->nro_pagina = nro_pagina;
-		pagina_invertida->pid = 0;
+		pagina_invertida->pid = pid;
 		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 
 		nro_pagina++;

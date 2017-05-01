@@ -32,10 +32,6 @@ Kernel_Config* leerConfiguracion(char* path) {
 		kernel->shared_vars = config_get_array_value(metadata, "SHARED_VARS");
 		kernel->stack_size = config_get_int_value(metadata, "STACK_SIZE");
 
-		if(kernel->algoritmo == "FF"){
-			kernel->quantum = 999;
-		}
-
 		free(metadata);
 		return kernel;
 	}

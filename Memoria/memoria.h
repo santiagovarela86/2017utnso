@@ -75,7 +75,7 @@ char* leer_memoria(int posicion_de_la_Variable, int off);
 void grabar_valor(int direccion, int valor);
 void definir_variable(int posicion_donde_guardo, char identificador_variable, int pid);
 
-void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
+void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_tabla_paginas(Memoria_Config* config);
 t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
 t_pagina_invertida* get_pagina_libre(bool esDescendente);
@@ -84,6 +84,6 @@ t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco
 void destruir_pagina(t_pagina_invertida* pagina);
 int marco_libre_para_variables();
 t_pagina_invertida *memory_read(char *base, int offset, int size);
-
+t_pagina_invertida* list_encontrar_pag_variables(t_list* lista);
 
 #endif /* MEMORIA_H_ */

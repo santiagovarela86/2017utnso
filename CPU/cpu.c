@@ -76,9 +76,11 @@ void* manejo_kernel(void *args) {
     kernel = malloc(sizeof(AnSISOP_kernel));
     inicializar_funciones(funciones, kernel);
 
-	analizadorLinea("variables x, a, g", funciones, kernel);
-	analizadorLinea("x = 3", funciones, kernel);
-	analizadorLinea("a = x + 3", funciones, kernel);
+    char* instruccion = string_new();
+
+    instruccion = solicitoInstruccion(pcb);
+
+    analizadorLinea(instruccion, funciones, kernel);
 
 	pause();
 
@@ -90,32 +92,37 @@ void* manejo_kernel(void *args) {
 }
 
 //TODO Cambiar esta funcion por "solicitoInstruccion"
-char * solicitoScript(int * socketMemoria, char ** pcb){
-	char message[MAXBUF];
+char * solicitoInstruccion(t_pcb* pcb){
 
-	int pid = atoi(pcb[0]);
-	int inicio_bloque_codigo = atoi(pcb[4]);
-	int offset = atoi(pcb[5]);
+    int inst_pointer = pcb->program_counter;
+
+    elementoIndiceCodigo* coordenadas_instruccion = ((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
+
+	char message[MAXBUF];
 
 	char* mensajeAMemoria = string_new();
 
 	string_append(&mensajeAMemoria, "510");
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pid));
+	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(inicio_bloque_codigo));
+	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->start));
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(offset));
+	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->offset));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(pcb->inicio_codigo));
+	string_append(&mensajeAMemoria, ";");
 
-	enviarMensaje(socketMemoria, mensajeAMemoria);
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+
 	free(mensajeAMemoria);
 
-	int result = recv((int) * socketMemoria, message, sizeof(message), 0);
+	int result = recv(socketMemoria, message, sizeof(message), 0);
 
 	if (result > 0){
 		return message;
 	}else{
-		printf("Error al solicitar Script a la Memoria\n");
+		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
 	}
 }
@@ -133,7 +140,7 @@ void imprimoInfoPCB(t_pcb * pcb){
 	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem = list_get(pcb->indiceCodigo, i);
-		printf("Indice de Instruccion d: Start %d, Offset %d\n", i, elem->start, elem->offset);
+		printf("Indice de Instruccion %d: Start %d, Offset %d\n", i, elem->start, elem->offset);
 	}
 
 	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
