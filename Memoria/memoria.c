@@ -189,7 +189,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
+			pthread_mutex_lock(&mutex_estructuras_administrativas);
 			grabar_valor(direccion, valor);
+			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		} else if (codigo == 512) {
 
@@ -231,6 +233,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				free(pag_a_cargar);
 
+				pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
 			}else{
 				puts("No Primera variable");
 				//ya existen otras variables de ese programa
@@ -242,8 +246,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				enviarMensaje(&sock, mensajeACpu);
 			}
-
-			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		} else if (codigo == 513) {
 
