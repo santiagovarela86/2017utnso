@@ -481,12 +481,62 @@ void * hilo_conexiones_consola(void *args) {
 							free(mensajeInicioPrograma);
 						}
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
-						//TODO - Leer el resto del mensaje donde se revise el pid del proceso. Buscarlo en las
-						//colas de listos, bloqueados o en ejecucion y matarlo.
-						puts("Se debe matar al proceso del mensaje - FALTA IMPLEMENTAR");
+//TODO PROBAR EL SESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
+
+						t_pcb * temporalN;
+						int pidABuscar = (atoi(respuesta_a_kernel[1]));
+
+						int encontre = 0;
+						int largoCola = queue_size(cola_listos);
+
+						//busco pid en cola listos
+						while(encontre == 0 && largoCola != 0){
+							temporalN = (t_pcb*) queue_pop(cola_listos);
+							largoCola--;
+							if(temporalN->pid == pidABuscar){
+							queue_push(cola_terminados, temporalN);
+							encontre = 1;
+							}
+						}
+
+						int encontreBloq = 0;
+						int largoColaBloq = queue_size(cola_bloqueados);
+
+						//busco pid en cola bloqueados
+						while(encontreBloq == 0 && largoColaBloq != 0){
+							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+							largoColaBloq--;
+							if(temporalN->pid == pidABuscar){
+							queue_push(cola_terminados, temporalN);
+							encontreBloq = 1;
+							}
+						}
+
+						int encontreEjec = 0;
+						int largoColaEjec = queue_size(cola_ejecucion);
+
+						//busco pid en cola bloqueados
+						while(encontreEjec == 0 && largoColaEjec != 0){
+							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+							largoColaEjec--;
+							if(temporalN->pid == pidABuscar){
+							queue_push(cola_terminados, temporalN);
+							encontreEjec = 1;
+							}
+						}
+
+
+			/*			void *(t_queue *self) {
+			 * 			cola_listos = crear_cola_pcb();
+						cola_bloqueados = crear_cola_pcb();
+						cola_ejecucion = crear_cola_pcb();
+						cola_terminados = crear_cola_pcb();
+						puts("Se debe matar al proceso del mensaje - FALTA IMPLEMENTAR");*/
+
 					}if(atoi(respuesta_a_kernel[0]) == 399){
 						//TODO - Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
 						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
+						int socket_a_buscar = sd;
 						puts("Se debe matar a todos procesos de la consola que envio el mensaje - FALTA IMPLEMENTAR");
 					}
 
