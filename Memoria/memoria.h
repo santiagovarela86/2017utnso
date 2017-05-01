@@ -68,7 +68,7 @@ void * hilo_conexiones_kernel(void * args);
 void * hilo_conexiones_cpu(void * args);
 void * handler_conexiones_cpu(void * args);
 t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset);
-void iniciar_programa(int pid, char* codigo, int paginas, int skt);
+void iniciar_programa(int pid, int paginas);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
 char* leer_memoria(int posicion_de_la_Variable, int off);

@@ -29,6 +29,8 @@ int indice_bloque_estructuras_administrativas;
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
 t_list* tabla_programas;
+char* script_programa;
+int skt_kernel;
 
 void enviarScriptACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
@@ -115,8 +117,12 @@ void * hilo_conexiones_kernel(void * args){
 			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
 			if (cant_paginas == 0)
 				cant_paginas++;
-			//pid = 2; ***
-			iniciar_programa(pid, codigo_programa, cant_paginas, socketCliente);
+
+
+			script_programa = codigo_programa;
+			skt_kernel = socketCliente;
+
+			iniciar_programa(pid, cant_paginas);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
 		}
@@ -195,7 +201,16 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				return (pag->pid == pid);
 			}
 
-			t_pagina_invertida* pag_encontrada = list_find(tabla_paginas, (void*) encontrar_pag);
+			t_pagina_invertida* pag_encontrada;
+
+			t_list* lista_auxiliar = list_create();
+			lista_auxiliar = list_filter((tabla_paginas),  (void*) encontrar_pag);
+
+			if(list_size(lista_auxiliar) == 1){
+				pag_encontrada = NULL;
+			}else{
+				pag_encontrada = ((t_pagina_invertida*) list_get(lista_auxiliar, 2));
+			}
 
 			if(pag_encontrada == NULL){
 				//primera variable del programa
@@ -469,33 +484,29 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
     return (t_pagina_invertida*)buffer;
 }
 
-void iniciar_programa(int pid, char* codigo, int cant_paginas, int socket_kernel){
+void iniciar_programa(int pid, int cant_paginas){
 
 	char* respuestaAKernel = string_new();
 
-	if (string_length(bloque_memoria) == 0 || string_length(codigo) <= string_length(bloque_memoria)){
+	if (string_length(bloque_memoria) == 0 || string_length(script_programa) <= string_length(bloque_memoria)){
 
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
-		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, codigo);
+		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, script_programa);
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		if (pagina != NULL){
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
 			string_append(&respuestaAKernel, ";");
-			/* ESTO EL PCB NO LO NECESITA ***
-			string_append(&respuestaAKernel, string_itoa(pagina->offset));
-			string_append(&respuestaAKernel, ";");
-			*/
 			string_append(&respuestaAKernel, string_itoa(cant_paginas));
-			enviarMensaje(&socket_kernel, respuestaAKernel);
+			enviarMensaje(&skt_kernel, respuestaAKernel);
 		}
 
 		else {
 			//Si el codigo del programa supera el tamanio del bloque
 			//Le aviso al Kernel que no puede reservar el espacio para el programa
 			string_append(&respuestaAKernel, "298;");
-			enviarMensaje(&socket_kernel, respuestaAKernel);
+			enviarMensaje(&skt_kernel, respuestaAKernel);
 		}
 	}
 
@@ -704,7 +715,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 		//Actualizo la tabla de paginas
 		pagina_invertida->nro_pagina = nro_pagina;
-		pagina_invertida->pid = pid;
+		pagina_invertida->pid = 0;
 		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 
 		nro_pagina++;

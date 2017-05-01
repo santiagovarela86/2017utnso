@@ -23,8 +23,8 @@
 CPU_Config* configuracion;
 int socketMemoria;
 int socketKernel;
-int programa_ejecutando;
 t_list* variables_locales;
+t_pcb* pcb;
 
 int main(int argc , char **argv){
 
@@ -39,11 +39,6 @@ int main(int argc , char **argv){
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
-	AnSISOP_funciones *funciones = NULL;
-	AnSISOP_kernel *kernel = NULL;
-    funciones = malloc(sizeof(AnSISOP_funciones));
-    kernel = malloc(sizeof(AnSISOP_kernel));
-    inicializar_funciones(funciones, kernel);
 	variables_locales = list_create();
 
 	creoThread(&thread_id_kernel, manejo_kernel, NULL);
@@ -70,18 +65,20 @@ void* manejo_kernel(void *args) {
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
 	//RECIBO EL PCB
-	t_pcb * pcb = reciboPCB(&socketKernel);
+	pcb = reciboPCB(&socketKernel);
 
 	//MUESTRO LA INFO DEL PCB
 	imprimoInfoPCB(pcb);
 
-    //programa_ejecutando = atoi(pcb[0]);
-//	int quantum = atoi(pcb[6]);
-//	int iterador = atoi(pcb[1]);
+	AnSISOP_funciones *funciones = NULL;
+	AnSISOP_kernel *kernel = NULL;
+    funciones = malloc(sizeof(AnSISOP_funciones));
+    kernel = malloc(sizeof(AnSISOP_kernel));
+    inicializar_funciones(funciones, kernel);
 
-//	analizadorLinea("variables x, a, g", funciones, kernel);
-//	analizadorLinea("x = 3", funciones, kernel);
-//	analizadorLinea("a = x + 3", funciones, kernel);
+	analizadorLinea("variables x, a, g", funciones, kernel);
+	analizadorLinea("x = 3", funciones, kernel);
+	analizadorLinea("a = x + 3", funciones, kernel);
 
 	pause();
 
@@ -259,7 +256,7 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 	int encontrar_var(variables *var) {
-		return (var->pid == programa_ejecutando && var->variable == identificador_variable);
+		return (var->pid == pcb->pid && var->variable == identificador_variable);
 	}
 
 	variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
@@ -305,7 +302,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, &identificador_variable);
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(programa_ejecutando));
+	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
@@ -322,7 +319,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 		var->direcion = posicion;
 		var->nro_variable = (list_size(variables_locales) + 1);
 		var->variable = identificador_variable;
-		var->pid = programa_ejecutando;
+		var->pid = pcb->pid;
 
 		list_add(variables_locales, var);
 

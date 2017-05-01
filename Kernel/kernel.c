@@ -411,7 +411,7 @@ void * hilo_conexiones_consola(void *args) {
 							enviarMensaje(&sd, message);
 						}else{
 							//Se crea programa nuevo
-							//t_pcb * new_pcb = nuevo_pcb(numerador_pcb, 0, NULL, NULL, &skt_cpu, 0);
+
 							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &skt_cpu);
 
 							printf("%s", buffer);
