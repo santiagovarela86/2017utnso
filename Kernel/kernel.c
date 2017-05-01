@@ -480,7 +480,7 @@ void * hilo_conexiones_consola(void *args) {
 							free(mensajeInicioPrograma);
 						}
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
-//TODO PROBAR EL SESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
+//TODO PROBAR EL ASESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
 
 						t_pcb * temporalN;
 						int pidABuscar = (atoi(respuesta_a_kernel[1]));
@@ -530,13 +530,55 @@ void * hilo_conexiones_consola(void *args) {
 						cola_bloqueados = crear_cola_pcb();
 						cola_ejecucion = crear_cola_pcb();
 						cola_terminados = crear_cola_pcb();
-						puts("Se debe matar al proceso del mensaje - FALTA IMPLEMENTAR");*/
+						*/
 
 					}if(atoi(respuesta_a_kernel[0]) == 399){
-						//TODO - Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
+						// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
 						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
+
+
 						int socket_a_buscar = sd;
-						puts("Se debe matar a todos procesos de la consola que envio el mensaje - FALTA IMPLEMENTAR");
+
+						t_pcb * temporalN;
+
+
+												int largoColaListos = queue_size(cola_listos);
+
+												//busco pid en cola listos
+												while(largoColaListos != 0){
+													temporalN = (t_pcb*) queue_pop(cola_listos);
+													largoColaListos--;
+													if(&temporalN->socket_consola == socket_a_buscar){
+													queue_push(cola_terminados, temporalN);
+													}
+												}
+
+
+												int largoColaBloq = queue_size(cola_bloqueados);
+
+												//busco pid en cola bloqueados
+												while(largoColaBloq != 0){
+													temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+													largoColaBloq--;
+													if(&temporalN->socket_consola == socket_a_buscar){
+													queue_push(cola_terminados, temporalN);
+
+													}
+												}
+
+
+												int largoColaEjec = queue_size(cola_ejecucion);
+
+												//busco pid en cola bloqueados
+												while(largoColaEjec != 0){
+													temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+													largoColaEjec--;
+													if(&temporalN->socket_consola == socket_a_buscar){
+													queue_push(cola_terminados, temporalN);
+
+													}
+												}
+
 					}
 
 					free(respuesta_a_kernel);
