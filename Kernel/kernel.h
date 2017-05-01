@@ -38,6 +38,7 @@ typedef struct {
 	int pos_stack;
 	int* socket_cpu;
 	int exit_code;
+	int quantum;
 } t_pcb;
 
 typedef struct{

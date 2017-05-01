@@ -15,8 +15,6 @@ typedef struct {
 	int pid;
 	int program_counter;
 	int cantidadPaginas;
-	//int cantidadInstrucciones;
-	//t_indice_codigo indiceCodigo;
 	t_list* indiceCodigo;
 	t_list* indiceEtiquetas;
 	t_list* indiceStack;
@@ -25,6 +23,7 @@ typedef struct {
 	int pos_stack;
 	int* socket_cpu;
 	int exit_code;
+	int quantum;
 } t_pcb;
 
 typedef struct {

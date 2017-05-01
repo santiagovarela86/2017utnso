@@ -79,20 +79,25 @@ void* manejo_kernel(void *args) {
 
     	char* instruccion = string_new();
 
-    	instruccion = solicitoInstruccion(pcb);
+    	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
+    		instruccion = solicitoInstruccion(pcb);
 
-    	analizadorLinea(instruccion, funciones, kernel);
+    		analizadorLinea(instruccion, funciones, kernel);
+
+    		pcb->quantum--;
+    		pcb->program_counter++;
+    	}
 
     	pause();
 
      	char* mensajeAKernel = string_new();
 
-    	if(pcb->indiceCodigo->elements_count-1 == pcb->program_counter){ //Se ejecutaron todas las instrucciones
+    	if(pcb->indiceCodigo->elements_count == pcb->program_counter){ //Se ejecutaron todas las instrucciones
         	string_append(&mensajeAKernel, "531");
         	string_append(&mensajeAKernel, ";");
         	string_append(&mensajeAKernel, string_itoa(pcb->pid));
         	string_append(&mensajeAKernel, ";");
-    	}else{
+    	}else{ //FIN DE QUANTUM
         	string_append(&mensajeAKernel, "530");
         	string_append(&mensajeAKernel, ";");
         	string_append(&mensajeAKernel, string_itoa(pcb->pid));
@@ -157,6 +162,7 @@ void imprimoInfoPCB(t_pcb * pcb){
 	printf("Tabla de Archivos: %d\n", pcb->tabla_archivos);
 	printf("Posicion de Stack: %d\n", pcb->pos_stack);
 	printf("Exit Code: %d\n", pcb->exit_code);
+	printf("Quantum: %d\n", pcb->quantum);
 
 	int i;
 	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
@@ -175,6 +181,7 @@ void imprimoInfoPCB(t_pcb * pcb){
 		printf("Elemento de Pila %d: %d\n", i, * elem);
 	}
 
+	puts("");
 }
 
 t_pcb * reciboPCB(int * socketKernel) {
@@ -217,8 +224,9 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	cantIndiceCodigo = atoi(message[7]);
 	cantIndiceEtiquetas = atoi(message[8]);
 	cantIndiceStack = atoi(message[9]);
+	pcb->quantum = atoi(message[10]);
 
-	int i = 10;
+	int i = 11;
 
 	while (i < 10 + cantIndiceCodigo * 2){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
@@ -242,6 +250,8 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		list_add(pcb->indiceStack, message[i]);
 		i++;
 	}
+
+
 
 	return pcb;
 }
@@ -290,7 +300,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 	variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
 
-	printf("Encontre la direccion %d para la variable %c \n", var_encontrada->direcion, identificador_variable);
 	return var_encontrada->direcion;
 }
 
@@ -313,8 +322,6 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 		printf("Lei el valor %s en la posicion %d \n", mensajeDesdeCPU[0], direccion_variable);
 
 		int valor = atoi(mensajeDesdeCPU[0]);
-
-		printf("El valor de la posicion %d es %d\n", direccion_variable, valor);
 
 		free(mensajeAMemoria);
 

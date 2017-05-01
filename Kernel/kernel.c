@@ -524,6 +524,9 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
 	string_append(&mensajeACPU, ";");
 
+	string_append(&mensajeACPU, string_itoa(configuracion->quantum));
+	string_append(&mensajeACPU, ";");
+
 	int i;
 	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
@@ -546,7 +549,8 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 	}
 
-	//string_append(&mensajeACPU, string_itoa(configuracion->quantum));
+
+
 	return mensajeACPU;
 
 }
