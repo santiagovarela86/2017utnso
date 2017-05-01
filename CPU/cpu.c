@@ -72,6 +72,7 @@ void* manejo_kernel(void *args) {
 
     while(1){
     	//RECIBO EL PCB
+
     	pcb = reciboPCB(&socketKernel);
 
     	//MUESTRO LA INFO DEL PCB
@@ -88,25 +89,34 @@ void* manejo_kernel(void *args) {
     		pcb->program_counter++;
     	}
 
-    	pause();
 
-     	char* mensajeAKernel = string_new();
+    	if(pcb->program_counter >= pcb->indiceCodigo->elements_count){ //Se ejecutaron todas las instrucciones
 
-    	if(pcb->indiceCodigo->elements_count == pcb->program_counter){ //Se ejecutaron todas las instrucciones
+    		char* mensajeAKernel = string_new();
+
         	string_append(&mensajeAKernel, "531");
         	string_append(&mensajeAKernel, ";");
         	string_append(&mensajeAKernel, string_itoa(pcb->pid));
         	string_append(&mensajeAKernel, ";");
+
+        	enviarMensaje(&socketKernel, mensajeAKernel);
+
+        	free(mensajeAKernel);
     	}else{ //FIN DE QUANTUM
+
+    		char* mensajeAKernel = string_new();
+
         	string_append(&mensajeAKernel, "530");
         	string_append(&mensajeAKernel, ";");
         	string_append(&mensajeAKernel, string_itoa(pcb->pid));
         	string_append(&mensajeAKernel, ";");
+
+        	enviarMensaje(&socketKernel, mensajeAKernel);
+
+        	free(mensajeAKernel);
     	}
 
-    	enviarMensaje(&socketKernel, mensajeAKernel);
 
-    	free(mensajeAKernel);
     }
 
 	pause();

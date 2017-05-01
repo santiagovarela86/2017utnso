@@ -131,7 +131,6 @@ void * inicializar_consola(void* args){
 		int accion_correcta = 0;
 		int nuevo_grado_multiprog = 0;
 		int pid_buscado;
-		//char* mensaje = string_new();
 
 		while (accion_correcta == 0){
 
@@ -289,7 +288,6 @@ void* manejo_filesystem(void *args) {
 
 	handShakeSend(&socketFS, "100", "401", "File System");
 
-	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
 
 	shutdown(socketFS, 0);
@@ -311,7 +309,6 @@ void* manejo_memoria(void *args) {
 
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
-	//PRUEBO CON EL BLOQUEO EN VEZ DE LA ESPERA ACTIVA
 	pause();
 
 	shutdown(socketMemoria, 0);
@@ -503,7 +500,7 @@ void * hilo_conexiones_consola(void *args) {
 }
 
 char* serializar_pcb(t_pcb* pcb){
-	//TODO Actualizar serializacion con las nuevas estructuras ***
+
 	char* mensajeACPU = string_new();
 	string_append(&mensajeACPU, string_itoa(pcb->pid));
 	string_append(&mensajeACPU, ";");
@@ -616,7 +613,79 @@ void * handler_conexion_cpu(void * sock) {
 	int result = recv(* socketCliente, message, sizeof(message), 0);
 
 	while (result > 0) {
-		printf("%s", message);
+
+		char**mensajeDesdeCPU = string_split(message, ";");
+		int codigo = atoi(mensajeDesdeCPU[0]);
+		int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
+
+		//TODO HACER POP DE LA COLA DE EJECUCION NO NECESARIAMENTE TRAERA EL PROGRAMA BUSCADO.
+		//SE DEBE HACER UNA FUNCION QUE DADA UNA COLA Y UN PID, BUSQUE EL PCB CORRESPONDIENTE DENTRO DE ESA COLA
+		//LO QUITE Y LO DEVUELVA.
+
+		if(codigo == 530){
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+			pcb_a_cambiar->program_counter = pcb_a_cambiar->program_counter + pcb_a_cambiar->quantum;
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_listos);
+
+			int encontrado = 0;
+
+			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
+
+				pthread_mutex_lock(&mtx_cpu);
+				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
+
+				if(temporalCpu->pid_asignado == pid_a_buscar){
+					encontrado = 1;
+				}
+
+				temporalCpu->pid_asignado = -1;
+
+				pthread_mutex_lock(&mtx_cpu);
+				queue_push(cola_cpu, temporalCpu);
+				pthread_mutex_unlock(&mtx_cpu);
+			}
+
+		}else if(codigo == 531){
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_terminados);
+
+			int encontrado = 0;
+
+			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
+
+				pthread_mutex_lock(&mtx_cpu);
+				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
+
+				if(temporalCpu->pid_asignado == pid_a_buscar){
+					encontrado = 1;
+				}
+
+				temporalCpu->pid_asignado = -1;
+
+				pthread_mutex_lock(&mtx_cpu);
+				queue_push(cola_cpu, temporalCpu);
+				pthread_mutex_unlock(&mtx_cpu);
+			}
+		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
 	}
@@ -624,7 +693,10 @@ void * handler_conexion_cpu(void * sock) {
 	if (result <= 0) {
 		int corte, i, encontrado;
 
+		pthread_mutex_lock(&mtx_cpu);
 		corte = queue_size(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
 		i = 0;
 		encontrado = 0;
 
@@ -667,6 +739,7 @@ t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	new->pos_stack = 0;
 	new->socket_cpu = socket_cpu;
 	new->exit_code = 0;
+	new->quantum = configuracion->quantum;
 
 	pthread_mutex_lock(&mutex_numerador_pcb);
 	numerador_pcb++;
@@ -700,7 +773,10 @@ void * planificar(){
 	while (1){
 		usleep(configuracion->quantum_sleep);
 
+		pthread_mutex_lock(&mtx_cpu);
 		corte = queue_size(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
 		i = 0;
 		encontrado = 0;
 
