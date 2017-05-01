@@ -47,7 +47,6 @@ t_list* lista_variables_globales;
 t_list* lista_semaforos;
 int numerador_pcb = 1000;
 int skt_memoria;
-int skt_cpu;
 
 int main(int argc, char **argv) {
 
@@ -422,7 +421,7 @@ void * hilo_conexiones_consola(void *args) {
 						}else{
 							//Se crea programa nuevo
 
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &skt_cpu);
+							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &sd);
 
 							printf("%s", buffer);
 
@@ -626,7 +625,6 @@ void * hilo_conexiones_cpu(void *args) {
 	listen(socketKernelCPU, MAXCPU);
 
 	while ((socketClienteCPU = accept(socketKernelCPU, (struct sockaddr *) &direccionCPU, (socklen_t*) &length))) {
-		skt_cpu = socketClienteCPU;
 
 		pthread_t thread_proceso_cpu;
 
@@ -775,7 +773,7 @@ void * handler_conexion_cpu(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-t_pcb *nuevo_pcb(int pid, int* socket_cpu){
+t_pcb *nuevo_pcb(int pid, int* socket_consola){
 	t_pcb* new = malloc(sizeof(t_pcb));
 
 	new->pid = pid;
@@ -787,7 +785,7 @@ t_pcb *nuevo_pcb(int pid, int* socket_cpu){
 	new->inicio_codigo = 0;
 	new->tabla_archivos = 0;
 	new->pos_stack = 0;
-	new->socket_cpu = socket_cpu;
+	new->socket_consola = socket_consola;
 	new->exit_code = 0;
 	new->quantum = configuracion->quantum;
 

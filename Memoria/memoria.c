@@ -18,6 +18,7 @@ int conexionesCPU = 0;
 int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
+pthread_mutex_t mutex_bloque_memoria;
 int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
@@ -43,6 +44,7 @@ int main(int argc, char **argv) {
 
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
+	pthread_mutex_init(&mutex_bloque_memoria, NULL);
 
 	bloque_memoria = string_new();
 	configuracion = leerConfiguracion(argv[1]);
@@ -189,9 +191,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
-			pthread_mutex_lock(&mutex_estructuras_administrativas);
 			grabar_valor(direccion, valor);
-			pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
 
 		} else if (codigo == 512) {
 
@@ -695,32 +696,39 @@ void grabar_valor(int direccion, int valor){
 		int centena = (valor % 1000) / 100;
 		int decena = (valor % 100) / 10;
 		int unidad = valor % 10;
+		pthread_mutex_lock(&mutex_bloque_memoria);
 		bloque_memoria[direccion] = (char) (milesima + 48);
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 99){
 		int centena = (valor % 1000) / 100;
 		int decena = (valor % 100) / 10;
 		int unidad = valor % 10;
+		pthread_mutex_lock(&mutex_bloque_memoria);
 		bloque_memoria[direccion] = '0';
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 9){
 		int decena = (valor % 100) / 10;
 		int unidad = valor % 10;
+		pthread_mutex_lock(&mutex_bloque_memoria);
 		bloque_memoria[direccion] = '0';
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else{
 		int unidad = valor % 10;
+		pthread_mutex_lock(&mutex_bloque_memoria);
 		bloque_memoria[direccion] = '0';
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = '0';
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-
+		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}
 
 return;
