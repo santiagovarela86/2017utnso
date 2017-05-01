@@ -231,8 +231,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				enviarMensaje(&sock, mensajeACpu);
 
-				free(pag_a_cargar);
-
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 			}else{
