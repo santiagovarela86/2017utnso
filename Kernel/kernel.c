@@ -33,6 +33,11 @@ Kernel_Config* configuracion;
 int grado_multiprogramacion;
 pthread_mutex_t mutex_grado_multiprog;
 pthread_mutex_t mutex_numerador_pcb;
+pthread_mutex_t mtx_ejecucion;
+pthread_mutex_t mtx_listos;
+pthread_mutex_t mtx_bloqueados;
+pthread_mutex_t mtx_terminados;
+pthread_mutex_t mtx_cpu;
 t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
@@ -52,7 +57,11 @@ int main(int argc, char **argv) {
 	}
 
 	pthread_mutex_init(&mutex_grado_multiprog, NULL);
-	pthread_mutex_init(&mutex_numerador_pcb, NULL);
+	pthread_mutex_init(&mtx_bloqueados, NULL);
+	pthread_mutex_init(&mtx_ejecucion, NULL);
+	pthread_mutex_init(&mtx_listos, NULL);
+	pthread_mutex_init(&mtx_terminados, NULL);
+	pthread_mutex_init(&mtx_cpu, NULL);
 
 	cola_cpu = crear_cola_pcb();
 	pthread_t thread_id_filesystem;
@@ -453,7 +462,9 @@ void * hilo_conexiones_consola(void *args) {
 								cargoIndiceCodigo(new_pcb, codigo);
 								//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
 
+								pthread_mutex_lock(&mtx_listos);
 								queue_push(cola_listos, new_pcb);
+								pthread_mutex_unlock(&mtx_listos);
 
 								// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
 								char* info_pid = string_new();
@@ -596,7 +607,9 @@ void * handler_conexion_cpu(void * sock) {
 	cpus.socket = *((int *) &sock);
 	cpus.pid_asignado = -1;
 
+	pthread_mutex_lock(&mtx_cpu);
 	queue_push(cola_cpu, &cpus);
+	pthread_mutex_unlock(&mtx_cpu);
 
 	int * socketCliente = (int *) &sock;
 
@@ -618,12 +631,19 @@ void * handler_conexion_cpu(void * sock) {
 		estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
 
 		while (i <= corte && encontrado == 0){
+
+			pthread_mutex_lock(&mtx_cpu);
 			temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+			pthread_mutex_unlock(&mtx_cpu);
 
 			if(temporalCpu->socket == *socketCliente){
 				encontrado = 1;
 			}else{
+
+				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
+				pthread_mutex_unlock(&mtx_cpu);
+
 				i++;
 			}
 		}
@@ -688,7 +708,10 @@ void * planificar(){
 			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
 
 			while (i <= corte && encontrado == 0){
+
+				pthread_mutex_lock(&mtx_cpu);
 				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
 
 				if(temporalCpu->pid_asignado == -1){
 
@@ -696,21 +719,31 @@ void * planificar(){
 				}else{
 					i++;
 				}
+
+				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
+				pthread_mutex_unlock(&mtx_cpu);
 			}
 
 			if(encontrado == 1){
 				if(!(queue_is_empty(cola_listos))){
 
 					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
+
+					pthread_mutex_lock(&mtx_listos);
 					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
+					pthread_mutex_unlock(&mtx_listos);
 
 					temporalCpu->pid_asignado = pcbtemporalListos->pid;
 					pcbtemporalListos->socket_cpu = &temporalCpu->socket;
 
 					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
 					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
+
+					pthread_mutex_lock(&mtx_ejecucion);
 					queue_push(cola_ejecucion, pcbtemporalListos);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
 					free(mensajeACPUPlan);
 				}
 			}

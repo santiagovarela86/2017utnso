@@ -343,8 +343,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
-	char*respuesta = string_new();
-
 	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
 
 	if(result > 0){
