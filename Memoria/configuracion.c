@@ -80,19 +80,15 @@ t_max_cantidad_paginas* obtenerMaximaCantidadDePaginas(Memoria_Config* config, i
 
 	//el espacio fisico es cantidad marcos * tamanio del marco = 500 * 256 = 128 KB
 	//la estructura administrativa tiene nro marco, pid y nro pagina = 20 bytes
-	printf("SIZEOF: %d\n", tamanio_estruct_administrativa);
 
 	//Para estructuras administrativas serian 500 elementos de 20 bytes c/u = 10000 bytes
 	int sizeEstructurasAdministrativas = config->marcos * tamanio_estruct_administrativa;
-	printf("SIZE ADMIN: %d\n", sizeEstructurasAdministrativas);
 
 	//La cantidad de marcos serian 10000 / 256 bytes = 39 marcos para estructuras administrativas [0, 38]
 	int cantMarcosEstructurasAdministrativas = sizeEstructurasAdministrativas / config->marco_size;
-	printf("CANT MARCOS ESTRUCTURAS ADMINISTRATIVAS: %d\n", cantMarcosEstructurasAdministrativas);
 
 	//Luego los marcos restantes 500 - 39 = 461 se asignaran a los procesos [39, 499]
 	int cantMarcosProcesos = config->marcos - cantMarcosEstructurasAdministrativas;
-	printf("CANT MARCOS PROCESOS: %d\n", cantMarcosProcesos);
 
 	t_max_cantidad_paginas* tamanio_maximo = malloc(sizeof(t_max_cantidad_paginas));
 	tamanio_maximo->maxima_cant_paginas_administracion = cantMarcosEstructurasAdministrativas;
