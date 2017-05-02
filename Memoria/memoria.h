@@ -85,5 +85,8 @@ void destruir_pagina(t_pagina_invertida* pagina);
 int marco_libre_para_variables();
 t_pagina_invertida *memory_read(char *base, int offset, int size);
 t_pagina_invertida* list_encontrar_pag_variables(t_list* lista);
+int f_hash_nene_malloc(int pid, int pagina);
+int paginaLibre(t_pagina_invertida* pagina);
+t_pagina_invertida* buscar_pagina(int pid, int pagina);
 
 #endif /* MEMORIA_H_ */

@@ -536,6 +536,15 @@ void iniciar_programa(int pid, int cant_paginas){
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, script_programa);
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
+		/*t_pagina_invertida* pagina_por_hash = buscar_pagina(1000, 0);
+
+		if (pagina_por_hash != NULL){
+			puts("PAGINA ENCONTRADA POR F. DE HASH \n");
+			printf("MARCO: %d\n", pagina_por_hash->nro_marco);
+			printf("PID: %d\n", pagina_por_hash->pid);
+		}
+		*/
+
 		if (pagina != NULL){
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
@@ -608,10 +617,6 @@ t_pagina_invertida* get_pagina_libre(bool esDescendente){
 
 	t_pagina_invertida* pagina_encontrada = NULL;
 
-	int _paginaLibre(t_pagina_invertida* pagina){
-		return pagina->pid == 0;
-	}
-
     bool _nro_marco_descendente(t_pagina_invertida *pagina1, t_pagina_invertida *pagina2) {
         return pagina1->nro_marco > pagina2->nro_marco;
     }
@@ -622,13 +627,13 @@ t_pagina_invertida* get_pagina_libre(bool esDescendente){
 
     if (esDescendente) {
     	list_sort(tabla_paginas, (void*)_nro_marco_descendente);
-    	pagina_encontrada = list_find(tabla_paginas, (void*) _paginaLibre);
+    	pagina_encontrada = list_find(tabla_paginas, (void*) paginaLibre);
     	//Ordeno de vuelta la estructura porque es global
     	list_sort(tabla_paginas, (void*)_nro_marco_ascendente);
     	return pagina_encontrada;
     }
 
-	return list_find(tabla_paginas, (void*) _paginaLibre);
+	return list_find(tabla_paginas, (void*) paginaLibre);
 }
 
 void log_cache_in_disk(t_queue* cache) {
@@ -773,17 +778,44 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 	return pagina_invertida;
 }
 
-uint32_t f_hash(const void *buf, size_t buflength) {
-     const uint8_t *buffer = (const uint8_t*)buf;
-
-     uint32_t s1 = 1;
-     uint32_t s2 = 0;
-     size_t i;
-
-     for (i = 0; i < buflength; i++) {
-        s1 = (s1 + buffer[i]) % 65521;
-        s2 = (s2 + s1) % 65521;
-     }
-     return (s2 << 16) | s1;
+int paginaLibre(t_pagina_invertida* pagina){
+	return pagina->pid == 0;
 }
+
+int f_hash_nene_malloc(int pid, int pagina) {
+	int nro_marco_insertar = 0;
+
+    void _list_elements(t_pagina_invertida *p) {
+    	nro_marco_insertar = p->nro_marco + 1;
+    	printf("NRO_MARCO_INSERTAR %d\n", nro_marco_insertar);
+    }
+
+	list_iterate(tabla_paginas, (void*) _list_elements);
+
+	nro_marco_insertar = nro_marco_insertar % configuracion->marcos;
+	//nro_marco_insertar = 39;
+
+	return nro_marco_insertar;
+}
+
+t_pagina_invertida* buscar_pagina(int pid, int pagina){
+
+	int _encontrar_entrada_tabla_paginas(t_pagina_invertida *pag, int pid, int pagina) {
+		return (pag->pid == pid && pag->nro_pagina == pagina);
+	}
+
+	int nro_marco = f_hash_nene_malloc(pid, pagina);
+	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+	if (_encontrar_entrada_tabla_paginas(pagina_encontrada, pid, pagina) != 0) {
+		return pagina_encontrada;
+	}
+	else {
+		return buscar_pagina(pid, pagina);
+	}
+}
+
+
+
+
+
 
