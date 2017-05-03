@@ -70,6 +70,7 @@ void* manejo_kernel(void *args) {
     kernel = malloc(sizeof(AnSISOP_kernel));
     inicializar_funciones(funciones, kernel);
 
+    char* instruccion = string_new();
     while(1){
     	//RECIBO EL PCB
 
@@ -78,7 +79,7 @@ void* manejo_kernel(void *args) {
     	//MUESTRO LA INFO DEL PCB
     	imprimoInfoPCB(pcb);
 
-    	char* instruccion = string_new();
+    	instruccion = "";
 
     	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
     		instruccion = solicitoInstruccion(pcb);

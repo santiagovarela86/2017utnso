@@ -714,17 +714,40 @@ void * handler_conexion_cpu(void * sock) {
 
 		if(codigo == 530){
 
-			pthread_mutex_lock(&mtx_ejecucion);
-			t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-			pthread_mutex_unlock(&mtx_ejecucion);
-
-			pcb_a_cambiar->program_counter = pcb_a_cambiar->program_counter + pcb_a_cambiar->quantum;
-
-			pthread_mutex_lock(&mtx_listos);
-			queue_push(cola_listos, pcb_a_cambiar);
-			pthread_mutex_unlock(&mtx_listos);
-
 			int encontrado = 0;
+
+			int size = queue_size(cola_ejecucion);
+
+			int iter = 0;
+
+			while(encontrado == 0 && iter < size){
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
+				if(pcb_a_cambiar->pid == pid_a_buscar){
+
+					pcb_a_cambiar->program_counter = pcb_a_cambiar->program_counter + pcb_a_cambiar->quantum;
+
+					pthread_mutex_lock(&mtx_listos);
+					queue_push(cola_listos, pcb_a_cambiar);
+					pthread_mutex_unlock(&mtx_listos);
+
+					encontrado = 1;
+
+				}else{
+
+					pthread_mutex_lock(&mtx_ejecucion);
+					queue_push(cola_ejecucion, pcb_a_cambiar);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
+				}
+
+				iter++;
+			}
+
+			encontrado = 0;
 
 			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
 
@@ -747,15 +770,34 @@ void * handler_conexion_cpu(void * sock) {
 
 		}else if(codigo == 531){
 
-			pthread_mutex_lock(&mtx_ejecucion);
-			t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-			pthread_mutex_unlock(&mtx_ejecucion);
-
-			pthread_mutex_lock(&mtx_terminados);
-			queue_push(cola_terminados, pcb_a_cambiar);
-			pthread_mutex_unlock(&mtx_terminados);
-
 			int encontrado = 0;
+
+			int size = queue_size(cola_ejecucion);
+
+			int iter = 0;
+
+			while(encontrado == 0 && iter < size){
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
+				if(pcb_a_cambiar->pid == pid_a_buscar){
+
+					encontrado = 1;
+
+				}else{
+
+					pthread_mutex_lock(&mtx_ejecucion);
+					queue_push(cola_ejecucion, pcb_a_cambiar);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
+				}
+
+				iter++;
+			}
+
+			encontrado = 0;
 
 			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
 
