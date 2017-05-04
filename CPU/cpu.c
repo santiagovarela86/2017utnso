@@ -25,8 +25,6 @@ int socketMemoria;
 int socketKernel;
 t_list* variables_locales;
 t_pcb* pcb;
-AnSISOP_funciones *funciones;
-AnSISOP_kernel *kernel;
 
 int main(int argc , char **argv){
 
@@ -66,16 +64,18 @@ void* manejo_kernel(void *args) {
 
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
-	funciones = NULL;
-	kernel = NULL;
+	AnSISOP_funciones *funciones = NULL;
+	AnSISOP_kernel *kernel = NULL;
 
     funciones = malloc(sizeof(AnSISOP_funciones));
     kernel = malloc(sizeof(AnSISOP_kernel));
 
+	inicializar_funciones(funciones, kernel);
+
     char* instruccion = string_new();
     while(1){
     	//RECIBO EL PCB
-    	inicializar_funciones(funciones, kernel);
+
     	pcb = reciboPCB(&socketKernel);
 
     	//MUESTRO LA INFO DEL PCB
@@ -461,6 +461,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 
 void finalizar(void){
 	puts("FIN DEL PROGRAMA");
+	puts("");
 	return;
 }
 
