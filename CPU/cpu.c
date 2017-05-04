@@ -25,6 +25,8 @@ int socketMemoria;
 int socketKernel;
 t_list* variables_locales;
 t_pcb* pcb;
+AnSISOP_funciones *funciones;
+AnSISOP_kernel *kernel;
 
 int main(int argc , char **argv){
 
@@ -64,16 +66,16 @@ void* manejo_kernel(void *args) {
 
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
 
-	AnSISOP_funciones *funciones = NULL;
-	AnSISOP_kernel *kernel = NULL;
+	funciones = NULL;
+	kernel = NULL;
+
     funciones = malloc(sizeof(AnSISOP_funciones));
     kernel = malloc(sizeof(AnSISOP_kernel));
-    inicializar_funciones(funciones, kernel);
 
     char* instruccion = string_new();
     while(1){
     	//RECIBO EL PCB
-
+    	inicializar_funciones(funciones, kernel);
     	pcb = reciboPCB(&socketKernel);
 
     	//MUESTRO LA INFO DEL PCB
@@ -287,6 +289,8 @@ void* manejo_memoria(void * args){
 }
 
 void asignar(t_puntero direccion, t_valor_variable valor){
+	puts("Asignar");
+	puts("");
 
 	printf("Entre a asignar el valor %d en la direccion %d \n", valor, direccion);
 	char* mensajeAMemoria = string_new();
@@ -304,6 +308,8 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
+	puts("Obtener Posicion Variable");
+	puts("");
 
 	int encontrar_var(variables *var) {
 		return (var->pid == pcb->pid && var->variable == identificador_variable);
@@ -315,7 +321,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
-	printf("Busco el valor de la posicion %d \n", direccion_variable);
+	puts("Dereferenciar");
+	puts("");
+
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "513");
@@ -343,6 +351,8 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable){
+	puts("Definir Variable");
+	puts("");
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "512");
@@ -380,6 +390,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
+	puts("Obtener Valor Compartida");
+	puts("");
+
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");
 	string_append(&mensajeAKernel, ";");
@@ -410,6 +423,9 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+	puts("Asignar Valor Compartida");
+	puts("");
+
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "515");
 	string_append(&mensajeAKernel, ";");
@@ -426,17 +442,20 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 }
 
 void irAlLabel(t_nombre_etiqueta identificador_variable){
-
+	puts("Ir a Label");
+	puts("");
 	return;
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
-
+	puts("Llamar Sin Retorno");
+	puts("");
 	return;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
-
+	puts("Llamar Con Retorno");
+	puts("");
 	return;
 }
 
@@ -446,55 +465,65 @@ void finalizar(void){
 }
 
 void retornar(t_valor_variable retorno){
-
+	puts("Retornar");
 	return;
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
-
+	puts("Wait");
+	puts("");
 	return;
 }
 
 void signal(t_nombre_semaforo identificador_semaforo){
-
+	puts("Signal");
+	puts("");
 	return;
 }
 
 t_puntero reservar(t_valor_variable espacio){
-
+	puts("Reservar");
+	puts("");
 	return 0;
 }
 
 void liberar(t_puntero puntero){
-
+	puts("Liberar");
+	puts("");
 	return;
 }
 
 t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
-
+	puts("Abrir");
+	puts("");
 	return 0;
 }
 
 void borrar(t_descriptor_archivo direccion){
-
+	puts("Borrar");
+	puts("");
 	return;
 }
 void cerrar(t_descriptor_archivo descriptor){
-
+	puts("Cerrar");
+	puts("");
 	return;
 }
 
 void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
-
+	puts("Mover Cursor");
+	puts("");
 	return;
 }
 void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio){
-
+	puts("Escribir");
+	puts("");
 	return;
 }
 
 void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio){
-
+	puts("Leer");
+	puts("");
 	return;
 }
 

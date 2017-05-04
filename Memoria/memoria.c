@@ -196,9 +196,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 512) {
 
-			pthread_mutex_lock(&mutex_estructuras_administrativas);
-
 			int pid = atoi(mensajeDesdeCPU[2]);
+
+			printf("me llego una variable para definir del pid %d \n", pid);
 
 			int encontrar_pag(t_pagina_invertida *pag) {
 				return (pag->pid == pid);
@@ -212,6 +212,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
 
 			if(pag_encontrada == NULL){
+
 				//primera variable del programa
 
 				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
@@ -222,7 +223,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pag_a_cargar->offset = 4;
 				pag_a_cargar->pid = pid;
 
+				pthread_mutex_lock(&mutex_estructuras_administrativas);
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
+				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(pag_a_cargar->inicio));
@@ -233,13 +236,14 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 			}else{
-
 				//ya existen otras variables de ese programa
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
 				string_append(&mensajeACpu, ";");
 
+				pthread_mutex_lock(&mutex_estructuras_administrativas);
 				pag_encontrada->offset = pag_encontrada->offset + 4;
+				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 				enviarMensaje(&sock, mensajeACpu);
 			}
@@ -306,8 +310,6 @@ t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
 	int i;
 	int maximo = 0;
 	int igual = 1;
-
-	printf("El tama es %d \n", size);
 
 	for(i = 0; i < size; i++){
 		int num_marco = ((t_pagina_invertida*) list_get(lista, i))->nro_marco;
