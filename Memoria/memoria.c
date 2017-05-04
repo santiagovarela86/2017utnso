@@ -124,6 +124,8 @@ void * hilo_conexiones_kernel(void * args){
 			script_programa = codigo_programa;
 			skt_kernel = socketCliente;
 
+			retardo_acceso_memoria();
+
 			iniciar_programa(pid, cant_paginas);
 
 			result = recv(socketCliente, message, sizeof(message), 0);
@@ -179,6 +181,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	int result = recv(sock, message, sizeof(message), 0);
 
 	while (result > 0){
+
+		retardo_acceso_memoria();
+
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
 
@@ -798,6 +803,11 @@ t_pagina_invertida* buscar_pagina(int pid, int pagina){
 	else {
 		return buscar_pagina(pid, pagina);
 	}
+}
+
+void retardo_acceso_memoria(){
+	//Se divide por mil porque esta en milisegundos y sleep espera como parametro segundos
+	sleep(tiempo_retardo / 1000);
 }
 
 
