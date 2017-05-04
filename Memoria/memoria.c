@@ -200,8 +200,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
-			printf("El pid es %d \n", pid);
-
 			int encontrar_pag(t_pagina_invertida *pag) {
 				return (pag->pid == pid);
 			}
@@ -215,7 +213,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			if(pag_encontrada == NULL){
 				//primera variable del programa
-				puts("Primera variable");
+
 				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
 
 				pag_a_cargar->nro_marco = marco_libre_para_variables();
@@ -235,7 +233,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 			}else{
-				puts("No Primera variable");
+
 				//ya existen otras variables de ese programa
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
