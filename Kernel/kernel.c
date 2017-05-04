@@ -493,8 +493,8 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_listos);
 							largoCola--;
 							if(temporalN->pid == pidABuscar){
-							queue_push(cola_terminados, temporalN);
-							encontre = 1;
+								queue_push(cola_terminados, temporalN);
+								encontre = 1;
 							}
 						}
 
@@ -506,8 +506,8 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
 							largoColaBloq--;
 							if(temporalN->pid == pidABuscar){
-							queue_push(cola_terminados, temporalN);
-							encontreBloq = 1;
+								queue_push(cola_terminados, temporalN);
+								encontreBloq = 1;
 							}
 						}
 
@@ -519,68 +519,56 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 							largoColaEjec--;
 							if(temporalN->pid == pidABuscar){
-							queue_push(cola_terminados, temporalN);
-							encontreEjec = 1;
+								queue_push(cola_terminados, temporalN);
+								encontreEjec = 1;
 							}
 						}
-
-
-			/*			void *(t_queue *self) {
-			 * 			cola_listos = crear_cola_pcb();
-						cola_bloqueados = crear_cola_pcb();
-						cola_ejecucion = crear_cola_pcb();
-						cola_terminados = crear_cola_pcb();
-						*/
 
 					}if(atoi(respuesta_a_kernel[0]) == 399){
 						// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
 						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
 
-
 						int socket_a_buscar = sd;
 
 						t_pcb * temporalN;
 
+						int largoColaListos = queue_size(cola_listos);
 
-												int largoColaListos = queue_size(cola_listos);
+						//busco pid en cola listos
 
-												//busco pid en cola listos
-												while(largoColaListos != 0){
-													temporalN = (t_pcb*) queue_pop(cola_listos);
-													largoColaListos--;
-													if(&temporalN->socket_consola == socket_a_buscar){
-													queue_push(cola_terminados, temporalN);
-													}
-												}
+						while(largoColaListos != 0){
 
+							temporalN = (t_pcb*) queue_pop(cola_listos);
+							largoColaListos--;
+							if(&temporalN->socket_consola == socket_a_buscar){
+								queue_push(cola_terminados, temporalN);
+							}
+						}
 
-												int largoColaBloq = queue_size(cola_bloqueados);
+						int largoColaBloq = queue_size(cola_bloqueados);
 
-												//busco pid en cola bloqueados
-												while(largoColaBloq != 0){
-													temporalN = (t_pcb*) queue_pop(cola_bloqueados);
-													largoColaBloq--;
-													if(&temporalN->socket_consola == socket_a_buscar){
-													queue_push(cola_terminados, temporalN);
+						//busco pid en cola bloqueados
 
-													}
-												}
+						while(largoColaBloq != 0){
+							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+							largoColaBloq--;
+							if(&temporalN->socket_consola == socket_a_buscar){
+								queue_push(cola_terminados, temporalN);
+							}
+						}
 
+						int largoColaEjec = queue_size(cola_ejecucion);
 
-												int largoColaEjec = queue_size(cola_ejecucion);
+						//busco pid en cola bloqueados
 
-												//busco pid en cola bloqueados
-												while(largoColaEjec != 0){
-													temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-													largoColaEjec--;
-													if(&temporalN->socket_consola == socket_a_buscar){
-													queue_push(cola_terminados, temporalN);
-
-													}
-												}
-
+						while(largoColaEjec != 0){
+							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+							largoColaEjec--;
+							if(&temporalN->socket_consola == socket_a_buscar){
+								queue_push(cola_terminados, temporalN);
+							}
+						}
 					}
-
 					free(respuesta_a_kernel);
 				}
 			}
