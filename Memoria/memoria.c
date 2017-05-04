@@ -12,6 +12,7 @@
 #include "memoria.h"
 #include <errno.h>
 #include "helperFunctions.h"
+#include <time.h>
 
 int conexionesKernel = 0;
 int conexionesCPU = 0;
@@ -66,6 +67,18 @@ int main(int argc, char **argv) {
 	pthread_mutex_unlock(&mutex_tiempo_retardo);
 
 	inicializar_estructuras_administrativas(configuracion);
+
+	/*PRUEBAS FHASH
+	printf("PRUEBA 1 PID 1000 PAG 0: %d\n", f_hash_nene_malloc(1000, 0));
+	printf("PRUEBA 2 PID 1000 PAG 1 %d\n", f_hash_nene_malloc(1000, 1));
+	printf("PRUEBA 3 PID 1001 PAG 0 %d\n", f_hash_nene_malloc(1001, 0));
+	printf("PRUEBA 4 PID 1001 PAG 1 %d\n", f_hash_nene_malloc(1001, 1));
+	printf("PRUEBA 5 PID 1002 PAG 0 %d\n", f_hash_nene_malloc(1002, 0));
+	printf("PRUEBA 6 PID 1002 PAG 1 %d\n", f_hash_nene_malloc(1002, 1));
+	printf("PRUEBA 7 PID 1003 PAG 0 %d\n", f_hash_nene_malloc(1003, 0));
+	printf("PRUEBA 8 PID 1003 PAG 1 %d\n", f_hash_nene_malloc(1003, 1));
+	printf("PRUEBA 9 PID 1010 PAG 0 %d\n", f_hash_nene_malloc(1004, 0));
+	*/
 
 	pthread_t thread_consola;
 	pthread_t thread_kernel;
@@ -406,7 +419,7 @@ void * inicializar_consola(void* args){
 			switch(accion){
 				case 1:
 					accion_correcta = 1;
-					printf("Ingrese nuevo tiempo de retardo: ");
+					printf("Ingrese nuevo tiempo de retardo (en milisegundos): ");
 					scanf("%d", &nuevo_tiempo_retardo);
 					pthread_mutex_lock(&mutex_tiempo_retardo);
 					tiempo_retardo = nuevo_tiempo_retardo;
@@ -485,7 +498,7 @@ void inicializar_tabla_paginas(Memoria_Config* config){
 	//PID -1 ESTRUCTURAS ADMINISTRATIVAS
 	//PID 0 NO ASIGNADO
 
-	t_max_cantidad_paginas * tamanio_maximo = obtenerMaximaCantidadDePaginas(config, sizeof(t_pagina_invertida));
+	tamanio_maximo = obtenerMaximaCantidadDePaginas(config, sizeof(t_pagina_invertida));
 
 	tabla_paginas = list_create();
 
@@ -776,33 +789,47 @@ int paginaLibre(t_pagina_invertida* pagina){
 int f_hash_nene_malloc(int pid, int pagina) {
 	int nro_marco_insertar = 0;
 
-    void _list_elements(t_pagina_invertida *p) {
-    	nro_marco_insertar = p->nro_marco + 1;
-    	printf("NRO_MARCO_INSERTAR %d\n", nro_marco_insertar);
-    }
+	int _calc(int nro){
+		int result = nro * (nro + 1);
+		return result;
+	}
 
-	list_iterate(tabla_paginas, (void*) _list_elements);
-
-	nro_marco_insertar = nro_marco_insertar % configuracion->marcos;
-	//nro_marco_insertar = 39;
+    nro_marco_insertar = _calc((pid / 1000) + pagina) + tamanio_maximo->maxima_cant_paginas_administracion;
 
 	return nro_marco_insertar;
 }
 
-t_pagina_invertida* buscar_pagina(int pid, int pagina){
-
-	int _encontrar_entrada_tabla_paginas(t_pagina_invertida *pag, int pid, int pagina) {
-		return (pag->pid == pid && pag->nro_pagina == pagina);
-	}
+t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 	int nro_marco = f_hash_nene_malloc(pid, pagina);
 	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
-	if (_encontrar_entrada_tabla_paginas(pagina_encontrada, pid, pagina) != 0) {
+
+	//Si la pagina encontrada no es una estructura administrativa
+	//Ni esta ocupada por otro proceso
+	if (pagina_encontrada->pid != -1 && pagina_encontrada->pid !=0) {
 		return pagina_encontrada;
 	}
 	else {
-		return buscar_pagina(pid, pagina);
+		//Si la pagina que devuelve esta ocupada, o sea hubo una colision
+		//Busco un marco libre a partir del ultimo marco de estructuras administrativas
+		//Hasta final de la Memoria
+		int i = tamanio_maximo->maxima_cant_paginas_administracion;
+		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
+			pagina_encontrada = list_get(tabla_paginas, i);
+			if (pagina_encontrada->pid != -1 && pagina_encontrada->pid !=0) {
+				return pagina_encontrada;
+			}
+			i++;
+		}
 	}
+	return NULL;
+}
+
+t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina){
+	int nro_marco = f_hash_nene_malloc(pid, pagina);
+	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+
+	return pagina_encontrada;
 }
 
 void retardo_acceso_memoria(){
