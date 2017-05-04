@@ -423,7 +423,7 @@ void * hilo_conexiones_consola(void *args) {
 
 							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &sd);
 
-							printf("%s", buffer);
+
 
 							char* mensajeInicioPrograma = string_new();
 							char * codigo = limpioCodigo(respuesta_a_kernel[1]);
@@ -452,7 +452,11 @@ void * hilo_conexiones_consola(void *args) {
 							}else{
 								//Si hay espacio suficiente en la memoria
 								//Agrego el programa a la cola de listos
-								//ACA TENDRIA QUE VALIDAR QUE LA RESPUESTA SEA 203
+								printf("Se creo el programa %d \n", new_pcb->pid);
+								puts("");
+								printf("%s", buffer);
+								puts("");
+
 								new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
 								new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
 								cargoIndiceCodigo(new_pcb, codigo);

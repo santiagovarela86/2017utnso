@@ -198,8 +198,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
-			printf("me llego una variable para definir del pid %d \n", pid);
-
 			int encontrar_pag(t_pagina_invertida *pag) {
 				return (pag->pid == pid);
 			}
@@ -295,7 +293,6 @@ int marco_libre_para_variables(){
 	}
 
 	if(pag != NULL){
-		printf("La marco libre para variables %d\n", pag->nro_marco);
 		return pag->nro_marco;
 	}else{
 		return -1;
@@ -314,8 +311,6 @@ t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
 	for(i = 0; i < size; i++){
 		int num_marco = ((t_pagina_invertida*) list_get(lista, i))->nro_marco;
 
-		printf("La pagina %d se encuentra en el marco %d con y el pid es %d \n", i, num_marco,((t_pagina_invertida*) list_get(lista, i))->pid );
-
 		if(num_marco == maximo){
 			igual++;
 		}else if(num_marco > maximo){
@@ -333,7 +328,7 @@ t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
 		}
 
 		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
-		printf("El marco es %d \n", pag->nro_marco);
+
 		return pag;
 	}
 
@@ -535,15 +530,6 @@ void iniciar_programa(int pid, int cant_paginas){
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, script_programa);
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-		/*t_pagina_invertida* pagina_por_hash = buscar_pagina(1000, 0);
-
-		if (pagina_por_hash != NULL){
-			puts("PAGINA ENCONTRADA POR F. DE HASH \n");
-			printf("MARCO: %d\n", pagina_por_hash->nro_marco);
-			printf("PID: %d\n", pagina_por_hash->pid);
-		}
-		*/
 
 		if (pagina != NULL){
 			string_append(&respuestaAKernel, "203;");
@@ -761,7 +747,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
 			bloque_memoria[indice_bloque] = codigo[j];
 
-			printf("Bloque %d: %c\n", indice_bloque, bloque_memoria[indice_bloque]);
+		//	printf("Bloque %d: %c\n", indice_bloque, bloque_memoria[indice_bloque]);
 
 			indice_bloque++;
 			j++;
