@@ -486,19 +486,37 @@ void * hilo_conexiones_consola(void *args) {
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
 //TODO PROBAR EL ASESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
 
+						/*pthread_mutex_lock(&mtx_ejecucion mtx_listos mtx_terminados mtx_bloqueados);
+
+						pthread_mutex_unlock(&mtx_ejecucion mtx_listos mtx_terminados mtx_bloqueados);
+
+						pthread_mutex_t mtx_ejecucion;
+						pthread_mutex_t mtx_listos;
+						pthread_mutex_t mtx_bloqueados;
+						pthread_mutex_t mtx_terminados;*/
+
 						t_pcb * temporalN;
 						int pidABuscar = (atoi(respuesta_a_kernel[1]));
 
 						int encontre = 0;
+
 						int largoCola = queue_size(cola_listos);
 
 						//busco pid en cola listos
 						while(encontre == 0 && largoCola != 0){
+							pthread_mutex_lock(&mtx_listos);
 							temporalN = (t_pcb*) queue_pop(cola_listos);
+							pthread_mutex_unlock(&mtx_listos);
 							largoCola--;
 							if(temporalN->pid == pidABuscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
 								encontre = 1;
+							}else {
+								pthread_mutex_lock(&mtx_listos);
+								queue_push(cola_listos, temporalN);
+								pthread_mutex_unlock(&mtx_listos);
 							}
 						}
 
@@ -507,11 +525,19 @@ void * hilo_conexiones_consola(void *args) {
 
 						//busco pid en cola bloqueados
 						while(encontreBloq == 0 && largoColaBloq != 0){
+							pthread_mutex_lock(&mtx_bloqueados);
 							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+							pthread_mutex_unlock(&mtx_bloqueados);
 							largoColaBloq--;
 							if(temporalN->pid == pidABuscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
 								encontreBloq = 1;
+							}else {
+								pthread_mutex_lock(&mtx_bloqueados);
+								queue_push(cola_bloqueados, temporalN);
+								pthread_mutex_unlock(&mtx_bloqueados);
 							}
 						}
 
@@ -523,8 +549,14 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 							largoColaEjec--;
 							if(temporalN->pid == pidABuscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
 								encontreEjec = 1;
+							}else {
+								pthread_mutex_lock(&mtx_ejecucion);
+								queue_push(cola_ejecucion, temporalN);
+								pthread_mutex_unlock(&mtx_ejecucion);
 							}
 						}
 
@@ -541,11 +573,18 @@ void * hilo_conexiones_consola(void *args) {
 						//busco pid en cola listos
 
 						while(largoColaListos != 0){
-
+							pthread_mutex_lock(&mtx_listos);
 							temporalN = (t_pcb*) queue_pop(cola_listos);
+							pthread_mutex_unlock(&mtx_listos);
 							largoColaListos--;
 							if(&temporalN->socket_consola == socket_a_buscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
+							}else {
+								pthread_mutex_lock(&mtx_listos);
+								queue_push(cola_listos, temporalN);
+								pthread_mutex_unlock(&mtx_listos);
 							}
 						}
 
@@ -554,10 +593,18 @@ void * hilo_conexiones_consola(void *args) {
 						//busco pid en cola bloqueados
 
 						while(largoColaBloq != 0){
+							pthread_mutex_lock(&mtx_bloqueados);
 							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+							pthread_mutex_unlock(&mtx_bloqueados);
 							largoColaBloq--;
 							if(&temporalN->socket_consola == socket_a_buscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
+							}else {
+								pthread_mutex_lock(&mtx_bloqueados);
+								queue_push(cola_bloqueados, temporalN);
+								pthread_mutex_unlock(&mtx_bloqueados);
 							}
 						}
 
@@ -566,10 +613,18 @@ void * hilo_conexiones_consola(void *args) {
 						//busco pid en cola bloqueados
 
 						while(largoColaEjec != 0){
+							pthread_mutex_lock(&mtx_ejecucion);
 							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+							pthread_mutex_unlock(&mtx_ejecucion);
 							largoColaEjec--;
 							if(&temporalN->socket_consola == socket_a_buscar){
+								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
+								pthread_mutex_unlock(&mtx_terminados);
+							}else {
+								pthread_mutex_lock(&mtx_ejecucion);
+								queue_push(cola_ejecucion, temporalN);
+								pthread_mutex_unlock(&mtx_ejecucion);
 							}
 						}
 					}
