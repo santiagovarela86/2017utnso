@@ -486,15 +486,6 @@ void * hilo_conexiones_consola(void *args) {
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
 //TODO PROBAR EL ASESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
 
-						/*pthread_mutex_lock(&mtx_ejecucion mtx_listos mtx_terminados mtx_bloqueados);
-
-						pthread_mutex_unlock(&mtx_ejecucion mtx_listos mtx_terminados mtx_bloqueados);
-
-						pthread_mutex_t mtx_ejecucion;
-						pthread_mutex_t mtx_listos;
-						pthread_mutex_t mtx_bloqueados;
-						pthread_mutex_t mtx_terminados;*/
-
 						t_pcb * temporalN;
 						int pidABuscar = (atoi(respuesta_a_kernel[1]));
 
@@ -504,16 +495,21 @@ void * hilo_conexiones_consola(void *args) {
 
 						//busco pid en cola listos
 						while(encontre == 0 && largoCola != 0){
+
 							pthread_mutex_lock(&mtx_listos);
 							temporalN = (t_pcb*) queue_pop(cola_listos);
+
 							pthread_mutex_unlock(&mtx_listos);
+
 							largoCola--;
 							if(temporalN->pid == pidABuscar){
+
 								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
 								pthread_mutex_unlock(&mtx_terminados);
 								encontre = 1;
 							}else {
+								puts("Me llego el 398");
 								pthread_mutex_lock(&mtx_listos);
 								queue_push(cola_listos, temporalN);
 								pthread_mutex_unlock(&mtx_listos);

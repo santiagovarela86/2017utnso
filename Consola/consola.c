@@ -139,14 +139,16 @@ void terminar_proceso(int* socket_kernel){
 	puts(" ");
 	puts("Ingrese PID del proceso a terminar");
 
-	char pid_ingresado = 0;
+	char* pid_ingresado = string_new();
 
-	scanf("%s", &pid_ingresado);
+	scanf("%s", pid_ingresado);
 
-	char message[MAXBUF];
+	char* message = string_new();
+	string_append(&message, "398");
+	string_append(&message, ";");
+	string_append(&message, pid_ingresado);
+	string_append(&message, ";");
 
-	strcpy(message, "398;");
-	strcat(message, &pid_ingresado);
 
 	enviarMensaje(socket_kernel, message);
 
