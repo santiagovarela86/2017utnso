@@ -421,9 +421,7 @@ void * hilo_conexiones_consola(void *args) {
 						}else{
 							//Se crea programa nuevo
 
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &sd);
-
-
+							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(client_socket[i]));
 
 							char* mensajeInicioPrograma = string_new();
 							char * codigo = limpioCodigo(respuesta_a_kernel[1]);
@@ -571,9 +569,11 @@ void * hilo_conexiones_consola(void *args) {
 						while(largoColaListos != 0){
 							pthread_mutex_lock(&mtx_listos);
 							temporalN = (t_pcb*) queue_pop(cola_listos);
+							printf("El skt es %d \n", *(temporalN->socket_consola));
+							printf("El skt buscado es %d \n", socket_a_buscar);
 							pthread_mutex_unlock(&mtx_listos);
 							largoColaListos--;
-							if(&temporalN->socket_consola == socket_a_buscar){
+							if(*(temporalN->socket_consola) == socket_a_buscar){
 								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
 								pthread_mutex_unlock(&mtx_terminados);
@@ -593,7 +593,7 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
 							pthread_mutex_unlock(&mtx_bloqueados);
 							largoColaBloq--;
-							if(&temporalN->socket_consola == socket_a_buscar){
+							if(*(temporalN->socket_consola) == socket_a_buscar){
 								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
 								pthread_mutex_unlock(&mtx_terminados);
@@ -613,7 +613,7 @@ void * hilo_conexiones_consola(void *args) {
 							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 							pthread_mutex_unlock(&mtx_ejecucion);
 							largoColaEjec--;
-							if(&temporalN->socket_consola == socket_a_buscar){
+							if(*(temporalN->socket_consola) == socket_a_buscar){
 								pthread_mutex_lock(&mtx_terminados);
 								queue_push(cola_terminados, temporalN);
 								pthread_mutex_unlock(&mtx_terminados);
