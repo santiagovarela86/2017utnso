@@ -518,6 +518,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 }
 void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio){
 	puts("Escribir");
+	printf("El descriptor es: %d \n", descriptor_archivo);
 	puts("");
 	return;
 }
