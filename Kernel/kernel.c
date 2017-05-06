@@ -512,7 +512,6 @@ void * hilo_conexiones_consola(void *args) {
 							free(mensajeInicioPrograma);
 						}
 					}else if(atoi(respuesta_a_kernel[0]) == 398){
-//TODO PROBAR EL ASESINATO DEL PROCESO CON SLEEP  Y MULTIPROGRAMACION A 2 PARA LOGRAR MATARLO
 
 						t_pcb * temporalN;
 						int pidABuscar = (atoi(respuesta_a_kernel[1]));
@@ -907,8 +906,6 @@ void * handler_conexion_cpu(void * sock) {
 					sem->valor--;
 					pthread_mutex_unlock(&mtx_semaforos);
 
-					printf("Se ejecuto la operacion SIGNAL del semaforo %s decrementando su valor a %d\n", sem->nombre, sem->valor);
-
 					char* mensajeACPU = string_new();
 					string_append(&mensajeACPU, "570");
 					string_append(&mensajeACPU, ";");
@@ -936,12 +933,12 @@ void * handler_conexion_cpu(void * sock) {
 			sem->valor++;
 			pthread_mutex_unlock(&mtx_semaforos);
 
-			printf("Se ejecuto la operacion SIGNAL del semaforo %s incrementando su valor a %d\n", sem->nombre, sem->valor);
-
 		}else if(codigo == 515){
+
 			char* var_comp = string_new();
-			var_comp = mensajeDesdeCPU[1];
-			int valor_asignar = mensajeDesdeCPU[2];
+			string_append(&var_comp, "!");
+			string_append(&var_comp, mensajeDesdeCPU[1]);
+			int valor_asignar = atoi(mensajeDesdeCPU[2]);
 
 			int encontrar_sem(t_globales* glo){
 				return string_starts_with(var_comp, glo->nombre);
@@ -953,10 +950,10 @@ void * handler_conexion_cpu(void * sock) {
 			var_glo->valor = valor_asignar;
 			pthread_mutex_unlock(&mtx_globales);
 
-			printf("Se asigno el valor %d a la variable global %s \n", var_glo->valor, var_glo->nombre);
 		}else if(codigo == 514){
 			char* var_comp = string_new();
-			var_comp = mensajeDesdeCPU[1];
+			string_append(&var_comp, "!");
+			string_append(&var_comp, mensajeDesdeCPU[1]);
 
 			int encontrar_sem(t_globales* glo){
 				return string_starts_with(var_comp, glo->nombre);
