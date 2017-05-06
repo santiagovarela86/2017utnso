@@ -435,11 +435,11 @@ void * inicializar_consola(void* args){
 					break;
 				case 3:
 					accion_correcta = 1;
-					log_estructuras_memoria_in_disk(tabla_paginas);
+					log_estructuras_memoria_in_disk();
 					break;
 				case 4:
 					accion_correcta = 1;
-					log_contenido_memoria_in_disk(tabla_paginas);
+					log_contenido_memoria_in_disk();
 					break;
 				case 5:
 					accion_correcta = 1;
@@ -509,6 +509,7 @@ void inicializar_tabla_paginas(Memoria_Config* config){
 	for(i = 0; i < config->marcos; i++){
 		t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
 		nueva_pagina->nro_marco = i;
+		nueva_pagina->nro_pagina = 0;
 		if (i == 0){
 			nueva_pagina->inicio = i * config->marco_size;
 		}
@@ -651,40 +652,74 @@ void log_cache_in_disk(t_queue* cache) {
     log_destroy(logger);
 }
 
-void log_estructuras_memoria_in_disk(t_list* tabla_paginas) {
+void log_estructuras_memoria_in_disk() {
 
 	t_log* logger = log_create("estructura_memoria.log", "est_memoria", true, LOG_LEVEL_INFO);
 
-	log_info(logger, "LOGUEO DE INFO DE ESTRUCTURAS DE MEMORIA %s", "INFO");
+	char* dump_memoria = string_new();
+
+	t_list* listado_procesos_activos = list_create();
+
+	char* dump_procesos_activos = string_new();
+
+	string_append(&dump_memoria, "\n");
+	string_append(&dump_memoria, "TABLA DE PAGINAS \n");
+
+	void agregar_registro_dump(t_pagina_invertida* pagina){
+
+		bool _encontrar_procesos_activo(int valor){
+			return valor == pagina->pid;
+		}
+
+		if (pagina != NULL){
+			string_append(&dump_memoria, "PID: ");
+			string_append(&dump_memoria, string_itoa(pagina->pid));
+			string_append(&dump_memoria, " ");
+			string_append(&dump_memoria, "MARCO: ");
+			string_append(&dump_memoria, string_itoa(pagina->nro_marco));
+			string_append(&dump_memoria, " ");
+			string_append(&dump_memoria, "PAGINA: ");
+			string_append(&dump_memoria, string_itoa(pagina->nro_pagina));
+			string_append(&dump_memoria, "\n");
+
+			if (pagina->pid != -1 && pagina->pid != 0
+					&& list_find(listado_procesos_activos, (void *)_encontrar_procesos_activo) == 0){
+				list_add(listado_procesos_activos, pagina->pid);
+				string_append(&dump_procesos_activos, "PID: ");
+				string_append(&dump_procesos_activos, string_itoa(pagina->pid));
+				string_append(&dump_procesos_activos, "\n");
+			}
+		}
+	}
+
+	if (list_size(tabla_paginas) > 0){
+
+		list_iterate(tabla_paginas, (void*) agregar_registro_dump);
+
+		if (string_length(dump_procesos_activos) > 0){
+			string_append(&dump_memoria, "\n");
+			string_append(&dump_memoria, "LISTADO DE PROCESOS ACTIVOS \n");
+			string_append(&dump_memoria, dump_procesos_activos);
+		}
+
+		log_info(logger, dump_memoria, "INFO");
+	}
+	else {
+		printf("ESTRUCTURAS VACIAS");
+	}
+
+	list_destroy(listado_procesos_activos);
+	free(dump_procesos_activos);
+	free(dump_memoria);
 
     log_destroy(logger);
 }
 
-void log_contenido_memoria_in_disk(t_list* tabla_paginas) {
+void log_contenido_memoria_in_disk() {
 
 	t_log* logger = log_create("contenido_memoria.log", "contenido_memoria", true, LOG_LEVEL_INFO);
 
-	char* dump_memoria = string_new();
-
-	void agregar_registro_dump(t_pagina_invertida* pagina){
-		string_append(&dump_memoria, "PID: ");
-		string_append(&dump_memoria, string_itoa(pagina->pid));
-		string_append(&dump_memoria, " ");
-		string_append(&dump_memoria, "MARCO: ");
-		string_append(&dump_memoria, string_itoa(pagina->nro_marco));
-		string_append(&dump_memoria, " ");
-		string_append(&dump_memoria, "PAGINA: ");
-		string_append(&dump_memoria, string_itoa(pagina->nro_pagina));
-		string_append(&dump_memoria, " ");
-		string_append(&dump_memoria, "CODIGO: ");
-		string_append(&dump_memoria, string_substring(bloque_memoria, pagina->inicio, pagina->offset));
-	}
-
-	list_iterate(tabla_paginas, (void*) agregar_registro_dump);
-
-	log_info(logger, dump_memoria, "INFO");
-
-	free(dump_memoria);
+	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA %s", "INFO");
 
     log_destroy(logger);
 }
