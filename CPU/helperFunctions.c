@@ -25,7 +25,7 @@ void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int pu
 
 void bindSocket(int * sock, struct sockaddr_in * direccion) {
 
-	int resultado = bind(*sock, direccion, sizeof(*direccion));
+	int resultado = bind(*sock, (struct sockaddr*)direccion,  (socklen_t) sizeof(struct sockaddr_in));
 
 	if (resultado != 0) {
 		perror("Error en hacer Bind al Socket");
