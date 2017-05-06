@@ -79,7 +79,31 @@ int main(int argc, char **argv) {
 	if(configuracion->algoritmo[0] != 'R'){
 		configuracion->quantum = 99;
 	}
+	lista_semaforos = list_create();
+	lista_variables_globales = list_create();
 
+	int w = 0;
+	while(configuracion->sem_ids[w] != NULL){
+		t_globales* sem_aux = malloc(sizeof(t_globales));
+		sem_aux->nombre = string_new();
+		sem_aux->nombre = configuracion->sem_ids[w];
+		sem_aux->valor = atoi(configuracion->sem_init[w]);
+
+		list_add(lista_semaforos, sem_aux);
+		w++;
+	}
+
+	w = 0;
+
+	while(configuracion->shared_vars[w] != NULL){
+		t_globales* global_aux = malloc(sizeof(t_globales));
+		global_aux->nombre = string_new();
+		global_aux->nombre = configuracion->shared_vars[w];
+		global_aux->valor = 0;
+
+		list_add(lista_variables_globales, global_aux);
+		w++;
+	}
 
 	imprimirConfiguracion(configuracion);
 
