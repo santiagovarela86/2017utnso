@@ -397,27 +397,22 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");
 	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, &variable);
+	string_append(&mensajeAKernel, variable);
 	string_append(&mensajeAKernel, ";");
 
-
 	enviarMensaje(&sktKernel, mensajeAKernel);
-	free(mensajeAKernel);
 
 	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 	if(result > 0){
+
 		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
 
 		int valor = atoi(mensajeDesdeKernel[0]);
 
-		printf("El valor de la compartida es: %d \n", valor);
-
-		free(mensajeAKernel);
-
-		return valor;
-
 	}
+
+	free(mensajeAKernel);
 
 	return 0;
 }
@@ -429,14 +424,15 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "515");
 	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, &variable);
+	string_append(&mensajeAKernel, variable);
 	string_append(&mensajeAKernel, ";");
-
+	string_append(&mensajeAKernel, string_itoa(valor));
+	string_append(&mensajeAKernel, ";");
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 	free(mensajeAKernel);
 
-	return 0;
+	return valor;
 }
 
 void irAlLabel(t_nombre_etiqueta identificador_variable){
@@ -496,6 +492,7 @@ void wait(t_nombre_semaforo identificador_semaforo){
 			}
 		}
 	}
+
 	free(mensajeAKernel);
 
 	return;

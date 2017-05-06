@@ -937,6 +937,42 @@ void * handler_conexion_cpu(void * sock) {
 			pthread_mutex_unlock(&mtx_semaforos);
 
 			printf("Se ejecuto la operacion SIGNAL del semaforo %s incrementando su valor a %d\n", sem->nombre, sem->valor);
+
+		}else if(codigo == 515){
+			char* var_comp = string_new();
+			var_comp = mensajeDesdeCPU[1];
+			int valor_asignar = mensajeDesdeCPU[2];
+
+			int encontrar_sem(t_globales* glo){
+				return string_starts_with(var_comp, glo->nombre);
+			}
+
+			t_globales *var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
+
+			pthread_mutex_lock(&mtx_globales);
+			var_glo->valor = valor_asignar;
+			pthread_mutex_unlock(&mtx_globales);
+
+			printf("Se asigno el valor %d a la variable global %s \n", var_glo->valor, var_glo->nombre);
+		}else if(codigo == 514){
+			char* var_comp = string_new();
+			var_comp = mensajeDesdeCPU[1];
+
+			int encontrar_sem(t_globales* glo){
+				return string_starts_with(var_comp, glo->nombre);
+			}
+
+			t_globales* var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
+
+			printf("Se leyo el valor %d a la variable global %s \n", var_glo->valor, var_glo->nombre);
+
+			char* mensajeACPU = string_new();
+			string_append(&mensajeACPU, "514");
+			string_append(&mensajeACPU, ";");
+
+			enviarMensaje(socketCliente, mensajeACPU);
+
+			free(mensajeACPU);
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
