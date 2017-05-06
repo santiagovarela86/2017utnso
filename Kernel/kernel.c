@@ -38,6 +38,8 @@ pthread_mutex_t mtx_listos;
 pthread_mutex_t mtx_bloqueados;
 pthread_mutex_t mtx_terminados;
 pthread_mutex_t mtx_cpu;
+pthread_mutex_t mtx_globales;
+pthread_mutex_t mtx_semaforos;
 t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
@@ -61,6 +63,8 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mtx_listos, NULL);
 	pthread_mutex_init(&mtx_terminados, NULL);
 	pthread_mutex_init(&mtx_cpu, NULL);
+	pthread_mutex_init(&mtx_globales, NULL);
+	pthread_mutex_init(&mtx_semaforos, NULL);
 
 	cola_cpu = crear_cola_pcb();
 	pthread_t thread_id_filesystem;
@@ -75,6 +79,8 @@ int main(int argc, char **argv) {
 	if(configuracion->algoritmo[0] != 'R'){
 		configuracion->quantum = 99;
 	}
+
+
 	imprimirConfiguracion(configuracion);
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;

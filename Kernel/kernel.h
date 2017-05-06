@@ -43,6 +43,11 @@ typedef struct {
 } t_pcb;
 
 typedef struct{
+	char* nombre;
+	int valor;
+} t_globales;
+
+typedef struct{
 	int socket;
 	int pid_asignado;
 } estruct_cpu;
