@@ -416,7 +416,6 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 
 		return valor;
 
-		//TODO de esta falta hacer la parte de la memoria;
 	}
 
 	return 0;
@@ -435,8 +434,6 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 
 	enviarMensaje(&socketKernel, mensajeAKernel);
 	free(mensajeAKernel);
-
-		//TODO de esta falta hacer la parte de la memoria;
 
 	return 0;
 }
@@ -473,12 +470,46 @@ void retornar(t_valor_variable retorno){
 void wait(t_nombre_semaforo identificador_semaforo){
 	puts("Wait");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+	string_append(&mensajeAKernel, "570");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, identificador_semaforo);
+	string_append(&mensajeAKernel, ";");
+
+	enviarMensaje(&socketKernel, mensajeAKernel);
+	free(mensajeAKernel);
+
+	int valor_esperado = 0;
+
+	while(valor_esperado == 0){
+		recv(socketKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
+		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
+
+		int valor = atoi(mensajeDesdeKernel[0]);
+
+		if(valor == 570){
+			valor_esperado = 1;
+		}
+	}
+
 	return;
 }
 
 void signal(t_nombre_semaforo identificador_semaforo){
 	puts("Signal");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+	string_append(&mensajeAKernel, "571");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, identificador_semaforo);
+	string_append(&mensajeAKernel, ";");
+
+	enviarMensaje(&socketKernel, mensajeAKernel);
+	free(mensajeAKernel);
+
 	return;
 }
 

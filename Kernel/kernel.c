@@ -779,13 +779,10 @@ void * handler_conexion_cpu(void * sock) {
 
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
-		int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
 
-		//TODO HACER POP DE LA COLA DE EJECUCION NO NECESARIAMENTE TRAERA EL PROGRAMA BUSCADO.
-		//SE DEBE HACER UNA FUNCION QUE DADA UNA COLA Y UN PID, BUSQUE EL PCB CORRESPONDIENTE DENTRO DE ESA COLA
-		//LO QUITE Y LO DEVUELVA.
 
 		if(codigo == 530){
+			int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
 
 			int encontrado = 0;
 
@@ -842,6 +839,7 @@ void * handler_conexion_cpu(void * sock) {
 			}
 
 		}else if(codigo == 531){
+			int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
 
 			int encontrado = 0;
 
@@ -890,6 +888,50 @@ void * handler_conexion_cpu(void * sock) {
 				queue_push(cola_cpu, temporalCpu);
 				pthread_mutex_unlock(&mtx_cpu);
 			}
+		}else if(codigo == 570){ //WAIT DE SEMAFORO
+			char* semaforo_buscado = string_new();
+			semaforo_buscado = mensajeDesdeCPU[1];
+
+			int logrado = 0;
+
+			while(logrado == 0){
+
+				int encontrar_sem(t_globales* glo){
+					return (glo->nombre == semaforo_buscado);
+				}
+
+				t_globales* sem = list_find(lista_semaforos, encontrar_sem);
+
+				if(sem->valor > 0){
+					pthread_mutex_lock(&mtx_semaforos);
+					sem->valor--;
+					pthread_mutex_unlock(&mtx_semaforos);
+
+					char* mensajeACPU = string_new();
+					string_append(&mensajeACPU, "570");
+					string_append(&mensajeACPU, ";");
+					enviarMensaje(socketCliente, mensajeACPU);
+					logrado = 1;
+
+					free(mensajeACPU);
+				}
+			}
+
+			free(semaforo_buscado);
+
+		}else if(codigo == 571){//SIGNAL DE SEMAFORO
+			char* semaforo_buscado = string_new();
+			semaforo_buscado = mensajeDesdeCPU[1];
+
+			int encontrar_sem(t_globales* glo){
+				return (glo->nombre == semaforo_buscado);
+			}
+
+			t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
+
+			pthread_mutex_lock(&mtx_semaforos);
+			sem->valor++;
+			pthread_mutex_unlock(&mtx_semaforos);
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
@@ -1080,8 +1122,8 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 	for (i = 0; i < metadataProgram->instrucciones_size; i++){
 
 		elementoIndiceCodigo * elem = malloc(sizeof(elementoIndiceCodigo));
-		elem->start = metadataProgram->instrucciones_serializado[i].start;// ESTO NO VA ACA + pcb->inicio_codigo;
-		elem->offset = metadataProgram->instrucciones_serializado[i].offset;//ESTO NO VA ACA + pcb->inicio_codigo;
+		elem->start = metadataProgram->instrucciones_serializado[i].start;
+		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
 		list_add(pcb->indiceCodigo, elem);
 
 		printf("Inicio Instruccion %i: %d\n", i, elem->start);
