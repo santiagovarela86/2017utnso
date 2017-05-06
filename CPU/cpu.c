@@ -174,13 +174,13 @@ char * solicitoInstruccion(t_pcb* pcb){
 void imprimoInfoPCB(t_pcb * pcb){
 	printf("PID: %d\n", pcb->pid);
 	printf("PC: %d\n", pcb->program_counter);
-	printf("Cantidad de Paginas: %d\n", pcb->cantidadPaginas);
-	printf("Inicio de Codigo: %d\n", pcb->inicio_codigo);
-	printf("Tabla de Archivos: %d\n", pcb->tabla_archivos);
-	printf("Posicion de Stack: %d\n", pcb->pos_stack);
-	printf("Exit Code: %d\n", pcb->exit_code);
+//	printf("Cantidad de Paginas: %d\n", pcb->cantidadPaginas);
+//	printf("Inicio de Codigo: %d\n", pcb->inicio_codigo);
+//	printf("Tabla de Archivos: %d\n", pcb->tabla_archivos);
+//	printf("Posicion de Stack: %d\n", pcb->pos_stack);
+//	printf("Exit Code: %d\n", pcb->exit_code);
 	printf("Quantum: %d\n", pcb->quantum);
-
+/*
 	int i;
 	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
@@ -197,7 +197,7 @@ void imprimoInfoPCB(t_pcb * pcb){
 		int * elem = list_get(pcb->indiceStack, i);
 		printf("Elemento de Pila %d: %d\n", i, * elem);
 	}
-
+*/
 	puts("");
 }
 
@@ -206,7 +206,7 @@ t_pcb * reciboPCB(int * socketKernel) {
 	char message[MAXBUF];
 
 	int result = recv(*socketKernel, message, sizeof(message), 0);
-
+	puts("entre a recibir pcb");
 	//Se agrega manejo de error al recibir el PCB
 	if (result > 0) {
 		//INICIO CODIGO DE DESERIALIZACION DEL PCB
@@ -397,6 +397,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	puts("Obtener Valor Compartida");
 	puts("");
 
+	int valor;
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "514");
 	string_append(&mensajeAKernel, ";");
@@ -404,20 +405,20 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	string_append(&mensajeAKernel, ";");
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
-
+	puts("aqui");
 	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
-
+	puts("aqui");
 	if(result > 0){
 
 		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
 
-		int valor = atoi(mensajeDesdeKernel[0]);
+		valor = atoi(mensajeDesdeKernel[0]);
 
 	}
-
+	puts("aqui");
 	free(mensajeAKernel);
 
-	return 0;
+	return valor;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){

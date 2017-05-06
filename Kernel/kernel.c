@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
 	configuracion = leerConfiguracion(argv[1]);
 
 	if(configuracion->algoritmo[0] != 'R'){
-		configuracion->quantum = 99;
+		configuracion->quantum = 999;
 	}
 	lista_semaforos = list_create();
 	lista_variables_globales = list_create();
@@ -835,6 +835,7 @@ void * handler_conexion_cpu(void * sock) {
 				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
 				pthread_mutex_unlock(&mtx_cpu);
+
 			}
 
 		}else if(codigo == 531){
@@ -1058,9 +1059,9 @@ void * planificar(){
 	while (1){
 		usleep(configuracion->quantum_sleep);
 
-		pthread_mutex_lock(&mtx_cpu);
+//		pthread_mutex_lock(&mtx_cpu);
 		corte = queue_size(cola_cpu);
-		pthread_mutex_unlock(&mtx_cpu);
+//		pthread_mutex_unlock(&mtx_cpu);
 
 		i = 0;
 		encontrado = 0;
@@ -1070,9 +1071,9 @@ void * planificar(){
 
 			while (i <= corte && encontrado == 0){
 
-				pthread_mutex_lock(&mtx_cpu);
+//				pthread_mutex_lock(&mtx_cpu);
 				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
+//				pthread_mutex_unlock(&mtx_cpu);
 
 				if(temporalCpu->pid_asignado == -1){
 
@@ -1081,9 +1082,9 @@ void * planificar(){
 					i++;
 				}
 
-				pthread_mutex_lock(&mtx_cpu);
+//				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
+//				pthread_mutex_unlock(&mtx_cpu);
 			}
 
 			if(encontrado == 1){
@@ -1091,9 +1092,9 @@ void * planificar(){
 
 					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
 
-					pthread_mutex_lock(&mtx_listos);
+//					pthread_mutex_lock(&mtx_listos);
 					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
-					pthread_mutex_unlock(&mtx_listos);
+//					pthread_mutex_unlock(&mtx_listos);
 
 					temporalCpu->pid_asignado = pcbtemporalListos->pid;
 					pcbtemporalListos->socket_cpu = &temporalCpu->socket;
@@ -1101,9 +1102,9 @@ void * planificar(){
 					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
 					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
 
-					pthread_mutex_lock(&mtx_ejecucion);
+//					pthread_mutex_lock(&mtx_ejecucion);
 					queue_push(cola_ejecucion, pcbtemporalListos);
-					pthread_mutex_unlock(&mtx_ejecucion);
+//					pthread_mutex_unlock(&mtx_ejecucion);
 
 					free(mensajeACPUPlan);
 				}
@@ -1153,8 +1154,8 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 
 	metadataProgram = metadata_desde_literal(codigo);
 
-	printf("Instruccion Inicio: %d\n", metadataProgram->instruccion_inicio);
-	printf("Cantidad de Instrucciones: %d\n", metadataProgram->instrucciones_size);
+//	printf("Instruccion Inicio: %d\n", metadataProgram->instruccion_inicio);
+//	printf("Cantidad de Instrucciones: %d\n", metadataProgram->instrucciones_size);
 
 	int i;
 	for (i = 0; i < metadataProgram->instrucciones_size; i++){
@@ -1164,12 +1165,12 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
 		list_add(pcb->indiceCodigo, elem);
 
-		printf("Inicio Instruccion %i: %d\n", i, elem->start);
-		printf("Offset Instruccion %i: %d\n", i, elem->offset);
+//		printf("Inicio Instruccion %i: %d\n", i, elem->start);
+//		printf("Offset Instruccion %i: %d\n", i, elem->offset);
 
 	}
 
-	printf("Cantidad Etiquetas: %d\n", metadataProgram->cantidad_de_etiquetas);
+/*	printf("Cantidad Etiquetas: %d\n", metadataProgram->cantidad_de_etiquetas);
 	printf("Cantidad Etiquetas BIS: %d\n", metadataProgram->etiquetas_size);
 
 	for (i = 0; i < metadataProgram->etiquetas_size; i++){
@@ -1177,7 +1178,7 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 	}
 
 	printf("Cantidad de Funciones: %d\n", metadataProgram->cantidad_de_funciones);
-
+*/
 	metadata_destruir(metadataProgram);
 
 }
