@@ -897,7 +897,7 @@ void * handler_conexion_cpu(void * sock) {
 			while(logrado == 0){
 
 				int encontrar_sem(t_globales* glo){
-					return (glo->nombre == semaforo_buscado);
+					return string_starts_with(semaforo_buscado, glo->nombre);
 				}
 
 				t_globales* sem = list_find(lista_semaforos, encontrar_sem);
@@ -907,9 +907,12 @@ void * handler_conexion_cpu(void * sock) {
 					sem->valor--;
 					pthread_mutex_unlock(&mtx_semaforos);
 
+					printf("Se ejecuto la operacion SIGNAL del semaforo %s decrementando su valor a %d\n", sem->nombre, sem->valor);
+
 					char* mensajeACPU = string_new();
 					string_append(&mensajeACPU, "570");
 					string_append(&mensajeACPU, ";");
+
 					enviarMensaje(socketCliente, mensajeACPU);
 					logrado = 1;
 
@@ -924,7 +927,7 @@ void * handler_conexion_cpu(void * sock) {
 			semaforo_buscado = mensajeDesdeCPU[1];
 
 			int encontrar_sem(t_globales* glo){
-				return (glo->nombre == semaforo_buscado);
+				return string_starts_with(semaforo_buscado, glo->nombre);
 			}
 
 			t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
@@ -932,6 +935,8 @@ void * handler_conexion_cpu(void * sock) {
 			pthread_mutex_lock(&mtx_semaforos);
 			sem->valor++;
 			pthread_mutex_unlock(&mtx_semaforos);
+
+			printf("Se ejecuto la operacion SIGNAL del semaforo %s incrementando su valor a %d\n", sem->nombre, sem->valor);
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);

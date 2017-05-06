@@ -22,7 +22,7 @@
 
 CPU_Config* configuracion;
 int socketMemoria;
-int socketKernel;
+int sktKernel;
 t_list* variables_locales;
 t_pcb* pcb;
 
@@ -63,6 +63,7 @@ void* manejo_kernel(void *args) {
 	puts("Conectado al Kernel\n");
 
 	handShakeSend(&socketKernel, "500", "102", "Kernel");
+	sktKernel = socketKernel;
 
 	AnSISOP_funciones *funciones = NULL;
 	AnSISOP_kernel *kernel = NULL;
@@ -400,10 +401,10 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	string_append(&mensajeAKernel, ";");
 
 
-	enviarMensaje(&socketKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 	free(mensajeAKernel);
 
-	int result = recv(socketKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 	if(result > 0){
 		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
@@ -432,7 +433,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	string_append(&mensajeAKernel, ";");
 
 
-	enviarMensaje(&socketKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 	free(mensajeAKernel);
 
 	return 0;
@@ -477,22 +478,25 @@ void wait(t_nombre_semaforo identificador_semaforo){
 	string_append(&mensajeAKernel, identificador_semaforo);
 	string_append(&mensajeAKernel, ";");
 
-	enviarMensaje(&socketKernel, mensajeAKernel);
-	free(mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 
 	int valor_esperado = 0;
 
 	while(valor_esperado == 0){
-		recv(socketKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+		int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
+		if(result > 0){
 
-		int valor = atoi(mensajeDesdeKernel[0]);
+			char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
 
-		if(valor == 570){
-			valor_esperado = 1;
+			int valor = atoi(mensajeDesdeKernel[0]);
+
+			if(valor == 570){
+				valor_esperado = 1;
+			}
 		}
 	}
+	free(mensajeAKernel);
 
 	return;
 }
@@ -507,7 +511,7 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	string_append(&mensajeAKernel, identificador_semaforo);
 	string_append(&mensajeAKernel, ";");
 
-	enviarMensaje(&socketKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 	free(mensajeAKernel);
 
 	return;
