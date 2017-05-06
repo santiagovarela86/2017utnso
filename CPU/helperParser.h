@@ -1,9 +1,3 @@
-/*
- * helper.h
- *
- *  Created on: 7/4/2017
- *      Author: utnso
- */
 
 #ifndef HELPERPARSER_H_
 #define HELPERPARSER_H_
