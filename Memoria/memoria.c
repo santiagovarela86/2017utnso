@@ -71,17 +71,9 @@ int main(int argc, char **argv) {
 
 	inicializar_estructuras_administrativas(configuracion);
 
-	/*PRUEBAS FHASH
-	printf("PRUEBA 1 PID 1000 PAG 0: %d\n", f_hash_nene_malloc(1000, 0));
-	printf("PRUEBA 2 PID 1000 PAG 1 %d\n", f_hash_nene_malloc(1000, 1));
-	printf("PRUEBA 3 PID 1001 PAG 0 %d\n", f_hash_nene_malloc(1001, 0));
-	printf("PRUEBA 4 PID 1001 PAG 1 %d\n", f_hash_nene_malloc(1001, 1));
-	printf("PRUEBA 5 PID 1002 PAG 0 %d\n", f_hash_nene_malloc(1002, 0));
-	printf("PRUEBA 6 PID 1002 PAG 1 %d\n", f_hash_nene_malloc(1002, 1));
-	printf("PRUEBA 7 PID 1003 PAG 0 %d\n", f_hash_nene_malloc(1003, 0));
-	printf("PRUEBA 8 PID 1003 PAG 1 %d\n", f_hash_nene_malloc(1003, 1));
-	printf("PRUEBA 9 PID 1010 PAG 0 %d\n", f_hash_nene_malloc(1004, 0));
-	*/
+	/*PRUEBAS FHASH*/
+	//pruebas_f_hash();
+
 
 	pthread_t thread_consola;
 	pthread_t thread_kernel;
@@ -827,14 +819,85 @@ int paginaLibre(t_pagina_invertida* pagina){
 int f_hash_nene_malloc(int pid, int pagina) {
 	int nro_marco_insertar = 0;
 
-	int _calc(int nro){
-		int result = nro * (nro + 1);
-		return result;
+	nro_marco_insertar = tamanio_maximo->maxima_cant_paginas_administracion;
+
+	int i = 0;
+	for(i = 0; i < pagina; i++){
+		nro_marco_insertar += configuracion->marco_size + pid + i;
 	}
 
-    nro_marco_insertar = _calc((pid / 1000) + pagina) + tamanio_maximo->maxima_cant_paginas_administracion;
+	nro_marco_insertar = (pid + nro_marco_insertar) % configuracion->marcos + 1;
 
 	return nro_marco_insertar;
+}
+
+void pruebas_f_hash(){
+	printf("PID 1000 PAG 0: %d\n", f_hash_nene_malloc(1000, 0));
+	printf("PID 1000 PAG 1 %d\n", f_hash_nene_malloc(1000, 1));
+	printf("PID 1000 PAG 2 %d\n", f_hash_nene_malloc(1000, 2));
+	printf("PID 1000 PAG 3 %d\n", f_hash_nene_malloc(1000, 3));
+	printf("PID 1000 PAG 4 %d\n", f_hash_nene_malloc(1000, 4));
+	printf("PID 1000 PAG 5 %d\n", f_hash_nene_malloc(1000, 5));
+	printf("PID 1001 PAG 0 %d\n", f_hash_nene_malloc(1001, 0));
+	printf("PID 1001 PAG 1 %d\n", f_hash_nene_malloc(1001, 1));
+	printf("PID 1001 PAG 2 %d\n", f_hash_nene_malloc(1001, 2));
+	printf("PID 1001 PAG 3 %d\n", f_hash_nene_malloc(1001, 3));
+	printf("PID 1001 PAG 4 %d\n", f_hash_nene_malloc(1001, 4));
+	printf("PID 1001 PAG 5 %d\n", f_hash_nene_malloc(1001, 5));
+	printf("PID 1002 PAG 0 %d\n", f_hash_nene_malloc(1002, 0));
+	printf("PID 1002 PAG 1 %d\n", f_hash_nene_malloc(1002, 1));
+	printf("PID 1002 PAG 2 %d\n", f_hash_nene_malloc(1002, 2));
+	printf("PID 1002 PAG 3 %d\n", f_hash_nene_malloc(1002, 3));
+	printf("PID 1002 PAG 4 %d\n", f_hash_nene_malloc(1002, 4));
+	printf("PID 1002 PAG 5 %d\n", f_hash_nene_malloc(1002, 5));
+	printf("PID 1003 PAG 0 %d\n", f_hash_nene_malloc(1003, 0));
+	printf("PID 1003 PAG 1 %d\n", f_hash_nene_malloc(1003, 1));
+	printf("PID 1003 PAG 2 %d\n", f_hash_nene_malloc(1003, 2));
+	printf("PID 1003 PAG 3 %d\n", f_hash_nene_malloc(1003, 3));
+	printf("PID 1003 PAG 4 %d\n", f_hash_nene_malloc(1003, 4));
+	printf("PID 1003 PAG 5 %d\n", f_hash_nene_malloc(1003, 5));
+	printf("PID 1004 PAG 0 %d\n", f_hash_nene_malloc(1004, 0));
+	printf("PID 1004 PAG 1 %d\n", f_hash_nene_malloc(1004, 1));
+	printf("PID 1004 PAG 2 %d\n", f_hash_nene_malloc(1004, 2));
+	printf("PID 1004 PAG 3 %d\n", f_hash_nene_malloc(1004, 3));
+	printf("PID 1004 PAG 4 %d\n", f_hash_nene_malloc(1004, 4));
+	printf("PID 1004 PAG 5 %d\n", f_hash_nene_malloc(1004, 5));
+	printf("PID 1005 PAG 0 %d\n", f_hash_nene_malloc(1005, 0));
+	printf("PID 1005 PAG 1 %d\n", f_hash_nene_malloc(1005, 1));
+	printf("PID 1005 PAG 2 %d\n", f_hash_nene_malloc(1005, 2));
+	printf("PID 1005 PAG 3 %d\n", f_hash_nene_malloc(1005, 3));
+	printf("PID 1005 PAG 4 %d\n", f_hash_nene_malloc(1005, 4));
+	printf("PID 1005 PAG 5 %d\n", f_hash_nene_malloc(1005, 5));
+	printf("PID 1006 PAG 0 %d\n", f_hash_nene_malloc(1006, 0));
+	printf("PID 1006 PAG 1 %d\n", f_hash_nene_malloc(1006, 1));
+	printf("PID 1006 PAG 2 %d\n", f_hash_nene_malloc(1006, 2));
+	printf("PID 1006 PAG 3 %d\n", f_hash_nene_malloc(1006, 3));
+	printf("PID 1006 PAG 4 %d\n", f_hash_nene_malloc(1006, 4));
+	printf("PID 1006 PAG 5 %d\n", f_hash_nene_malloc(1006, 5));
+	printf("PID 1007 PAG 0 %d\n", f_hash_nene_malloc(1007, 0));
+	printf("PID 1007 PAG 1 %d\n", f_hash_nene_malloc(1007, 1));
+	printf("PID 1007 PAG 2 %d\n", f_hash_nene_malloc(1007, 2));
+	printf("PID 1007 PAG 3 %d\n", f_hash_nene_malloc(1007, 3));
+	printf("PID 1007 PAG 4 %d\n", f_hash_nene_malloc(1007, 4));
+	printf("PID 1007 PAG 5 %d\n", f_hash_nene_malloc(1007, 5));
+	printf("PID 1008 PAG 0 %d\n", f_hash_nene_malloc(1008, 0));
+	printf("PID 1008 PAG 1 %d\n", f_hash_nene_malloc(1008, 1));
+	printf("PID 1008 PAG 2 %d\n", f_hash_nene_malloc(1008, 2));
+	printf("PID 1008 PAG 3 %d\n", f_hash_nene_malloc(1008, 3));
+	printf("PID 1008 PAG 4 %d\n", f_hash_nene_malloc(1008, 4));
+	printf("PID 1008 PAG 5 %d\n", f_hash_nene_malloc(1008, 5));
+	printf("PID 1009 PAG 0 %d\n", f_hash_nene_malloc(1009, 0));
+	printf("PID 1009 PAG 1 %d\n", f_hash_nene_malloc(1009, 1));
+	printf("PID 1009 PAG 2 %d\n", f_hash_nene_malloc(1009, 2));
+	printf("PID 1009 PAG 3 %d\n", f_hash_nene_malloc(1009, 3));
+	printf("PID 1009 PAG 4 %d\n", f_hash_nene_malloc(1009, 4));
+	printf("PID 1009 PAG 5 %d\n", f_hash_nene_malloc(1009, 5));
+	printf("PID 1010 PAG 0 %d\n", f_hash_nene_malloc(1010, 0));
+	printf("PID 1010 PAG 1 %d\n", f_hash_nene_malloc(1010, 1));
+	printf("PID 1010 PAG 2 %d\n", f_hash_nene_malloc(1010, 2));
+	printf("PID 1010 PAG 3 %d\n", f_hash_nene_malloc(1010, 3));
+	printf("PID 1010 PAG 4 %d\n", f_hash_nene_malloc(1010, 4));
+	printf("PID 1010 PAG 5 %d\n", f_hash_nene_malloc(1010, 5));
 }
 
 t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){

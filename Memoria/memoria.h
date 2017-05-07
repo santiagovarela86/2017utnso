@@ -89,6 +89,7 @@ int f_hash_nene_malloc(int pid, int pagina);
 int paginaLibre(t_pagina_invertida* pagina);
 t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina);
 t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina);
-void retardo_acceso_memoria();
+void retardo_acceso_memoria(void);
+void pruebas_f_hash(void);
 
 #endif /* MEMORIA_H_ */
