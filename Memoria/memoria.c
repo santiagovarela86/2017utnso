@@ -785,7 +785,8 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 	for(i = 0; i < cantidad_paginas; i++){
 		int nro_pagina = 0;
-		pagina_invertida = get_pagina_libre(false);
+		//pagina_invertida = get_pagina_libre(false);
+		pagina_invertida = buscar_pagina_para_insertar(pid, cantidad_paginas);
 
 		if (pagina_invertida == NULL){
 			break;
@@ -794,9 +795,6 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		int indice_bloque = pagina_invertida->inicio;
 		while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
 			bloque_memoria[indice_bloque] = codigo[j];
-
-		//	printf("Bloque %d: %c\n", indice_bloque, bloque_memoria[indice_bloque]);
-
 			indice_bloque++;
 			j++;
 		}
@@ -907,7 +905,8 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 	//Si la pagina encontrada no es una estructura administrativa
 	//Ni esta ocupada por otro proceso
-	if (pagina_encontrada->pid != -1 && pagina_encontrada->pid !=0) {
+
+	if (pagina_encontrada->pid != -1 && pagina_encontrada->pid == 0) {
 		return pagina_encontrada;
 	}
 	else {
