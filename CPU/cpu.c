@@ -206,7 +206,7 @@ t_pcb * reciboPCB(int * socketKernel) {
 	char message[MAXBUF];
 
 	int result = recv(*socketKernel, message, sizeof(message), 0);
-	puts("entre a recibir pcb");
+
 	//Se agrega manejo de error al recibir el PCB
 	if (result > 0) {
 		//INICIO CODIGO DE DESERIALIZACION DEL PCB
@@ -296,7 +296,7 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	puts("Asignar");
 	puts("");
 
-	printf("Entre a asignar el valor %d en la direccion %d \n", valor, direccion);
+
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -307,6 +307,8 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 	free(mensajeAMemoria);
+
+	printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
 
 	return;
 }
@@ -416,7 +418,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 		valor = atoi(mensajeDesdeKernel[0]);
 
 	}
-	puts("aqui");
+
 	free(msj);
 
 	return valor;
@@ -514,6 +516,9 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	string_append(&mensajeAKernel, ";");
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
+
+	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
 	free(mensajeAKernel);
 
 	return;

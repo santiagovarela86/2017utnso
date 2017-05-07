@@ -936,6 +936,14 @@ void * handler_conexion_cpu(void * sock) {
 			sem->valor++;
 			pthread_mutex_unlock(&mtx_semaforos);
 
+			char* mensajeACPU = string_new();
+			string_append(&mensajeACPU, "571");
+			string_append(&mensajeACPU, ";");
+
+			enviarMensaje(socketCliente, mensajeACPU);
+
+			free(mensajeACPU);
+
 		}else if(codigo == 515){
 
 			char* var_comp = string_new();
