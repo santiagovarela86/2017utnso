@@ -889,6 +889,7 @@ void * handler_conexion_cpu(void * sock) {
 				pthread_mutex_unlock(&mtx_cpu);
 			}
 		}else if(codigo == 570){ //WAIT DE SEMAFORO
+
 			char* semaforo_buscado = string_new();
 			semaforo_buscado = mensajeDesdeCPU[1];
 
@@ -921,6 +922,7 @@ void * handler_conexion_cpu(void * sock) {
 			free(semaforo_buscado);
 
 		}else if(codigo == 571){//SIGNAL DE SEMAFORO
+
 			char* semaforo_buscado = string_new();
 			semaforo_buscado = mensajeDesdeCPU[1];
 
@@ -952,6 +954,7 @@ void * handler_conexion_cpu(void * sock) {
 			pthread_mutex_unlock(&mtx_globales);
 
 		}else if(codigo == 514){
+
 			char* var_comp = string_new();
 			string_append(&var_comp, "!");
 			string_append(&var_comp, mensajeDesdeCPU[1]);
@@ -962,10 +965,8 @@ void * handler_conexion_cpu(void * sock) {
 
 			t_globales* var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
 
-			printf("Se leyo el valor %d a la variable global %s \n", var_glo->valor, var_glo->nombre);
-
 			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, "514");
+			string_append(&mensajeACPU, string_itoa(var_glo->valor));
 			string_append(&mensajeACPU, ";");
 
 			enviarMensaje(socketCliente, mensajeACPU);

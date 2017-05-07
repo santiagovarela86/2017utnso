@@ -398,25 +398,26 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	puts("");
 
 	int valor;
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "514");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, variable);
-	string_append(&mensajeAKernel, ";");
+	char* msj = string_new();
 
-	enviarMensaje(&sktKernel, mensajeAKernel);
-	puts("aqui");
-	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
-	puts("aqui");
+	string_append(&msj, "514");
+	string_append(&msj, ";");
+	string_append(&msj, variable);
+	string_append(&msj, ";");
+
+	enviarMensaje(&sktKernel, msj);
+
+	int result = recv(sktKernel, msj, sizeof(msj), 0);
+
 	if(result > 0){
 
-		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
+		char**mensajeDesdeKernel = string_split(msj, ";");
 
 		valor = atoi(mensajeDesdeKernel[0]);
 
 	}
 	puts("aqui");
-	free(mensajeAKernel);
+	free(msj);
 
 	return valor;
 }
