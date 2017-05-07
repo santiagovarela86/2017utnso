@@ -37,4 +37,5 @@ void * escuchar_Kernel(void * args);
 void inicializarEstado(InfoConsola * infoConsola);
 void destruirEstado(InfoConsola * infoConsola);
 
+
 #endif /* CONSOLA_H_ */

@@ -517,7 +517,7 @@ void signal(t_nombre_semaforo identificador_semaforo){
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 	free(mensajeAKernel);
 
@@ -562,6 +562,22 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	puts("Escribir");
 	printf("El descriptor es: %d \n", descriptor_archivo);
 	puts("");
+
+	char* mensajeAKernel = string_new();
+	string_append(&mensajeAKernel, "575");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(descriptor_archivo));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, ((char*) informacion));
+	string_append(&mensajeAKernel, ";");
+
+
+	enviarMensaje(&sktKernel, mensajeAKernel);
+
+	free(mensajeAKernel);
+
 	return;
 }
 

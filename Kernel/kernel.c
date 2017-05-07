@@ -988,9 +988,7 @@ void * handler_conexion_cpu(void * sock) {
 			info = mensajeDesdeCPU[3];
 			int pid_mensaje = atoi(mensajeDesdeCPU[2]);
 
-			printf("EL pid es %d \n", pid_mensaje);
-
-			if(fd == 0){
+			if(fd == 1){
 				t_pcb* temporalN;
 				int encontreEjec = 0;
 				int largoColaEjec = queue_size(cola_ejecucion);
@@ -1023,7 +1021,8 @@ void * handler_conexion_cpu(void * sock) {
 
 				free(mensajeAConso);
 
-			}
+			}//TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
+			//Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
