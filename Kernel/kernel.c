@@ -980,6 +980,50 @@ void * handler_conexion_cpu(void * sock) {
 			enviarMensaje(socketCliente, mensajeACPU);
 
 			free(mensajeACPU);
+
+		}else if(codigo == 575){
+
+			char* info = string_new();
+			int fd = atoi(mensajeDesdeCPU[1]);
+			info = mensajeDesdeCPU[3];
+			int pid_mensaje = atoi(mensajeDesdeCPU[2]);
+
+			printf("EL pid es %d \n", pid_mensaje);
+
+			if(fd == 0){
+				t_pcb* temporalN;
+				int encontreEjec = 0;
+				int largoColaEjec = queue_size(cola_ejecucion);
+
+				//busco pid en cola bloqueados
+				while(encontreEjec == 0 && largoColaEjec != 0){
+					temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+					largoColaEjec--;
+					if(temporalN->pid == pid_mensaje){
+						pthread_mutex_lock(&mtx_terminados);
+						queue_push(cola_terminados, temporalN);
+						pthread_mutex_unlock(&mtx_terminados);
+						encontreEjec = 1;
+					}else {
+						pthread_mutex_lock(&mtx_ejecucion);
+						queue_push(cola_ejecucion, temporalN);
+						pthread_mutex_unlock(&mtx_ejecucion);
+					}
+				}
+
+				char* mensajeAConso = string_new();
+				string_append(&mensajeAConso, "575");
+				string_append(&mensajeAConso, ";");
+				string_append(&mensajeAConso, string_itoa(pid_mensaje));
+				string_append(&mensajeAConso, ";");
+				string_append(&mensajeAConso, info);
+				string_append(&mensajeAConso, ";");
+
+				enviarMensaje(temporalN->socket_consola, mensajeAConso);
+
+				free(mensajeAConso);
+
+			}
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);

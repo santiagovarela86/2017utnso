@@ -205,8 +205,8 @@ void * escuchar_Kernel(void * args){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else if(atoi(respuesta_kernel[0]) == 198){
 				printf("El programa no pudo iniciarse por limite de multiprogramacion\n");
-			}else{
-				printf("Mensaje de programa: %s\n", *respuesta_kernel);
+			}else if (atoi(respuesta_kernel[0]) == 575){
+				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
 			}
 
 			//free(respuesta_kernel);
