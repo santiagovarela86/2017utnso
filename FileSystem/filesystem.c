@@ -35,14 +35,14 @@ int main(int argc, char** argv) {
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
-	montaje = configuracion->punto_montaje;
+	/*montaje = configuracion->punto_montaje;
 
 	metadata_Config* metadata;
 	metadata = leerMetaData(configuracion->punto_montaje);
 	imprimirMetadata(metadata);
 
 	size_t tamanio_bitmap = (metadata->cantidad_bloques);
-	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);
+	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);*/
 
 	int socketFileSystem;
 	struct sockaddr_in direccionSocket;
@@ -58,13 +58,14 @@ int main(int argc, char** argv) {
 	pthread_t thread_kernel;
 	creoThread(&thread_kernel, hilo_conexiones_kernel, threadSocketInfoKernel);
 
+
 	pthread_join(thread_kernel, NULL);
 
 	free(configuracion);
 	free(threadSocketInfoKernel);
 	free(montaje);
-	free(metadata);
-	free(bitmap);
+	//free(metadata);
+	//free(bitmap);
 
 	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
@@ -189,5 +190,77 @@ int validar_archivo(char* directorio){
 	 //El archivo existe
 		return 1;
 	}
+
+}
+char* crear_archivo(char* directorio, char permiso){
+	  FILE * pFile;
+	  pFile = fopen (directorio,"w"); //por defecto lo crea
+	  if (pFile!=NULL)
+	  {
+	    fputs ("asigno_Bloque_Prueba",pFile);
+		int fd_script = open(directorio, O_WRONLY);
+		struct stat scriptFileStat;
+		fstat(fd_script, &scriptFileStat);
+
+			char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
+			close(fd_script);
+		    fclose (pFile);
+			return arch;
+	  	  }
+	    return 0;
+      fclose(pFile);
+}
+
+char* obtener_datos(char* directorio, int offset, int size, char permiso){
+
+	  FILE *file;
+	  file = fopen(directorio, "r");
+	    if(permiso == 'r'){
+	    if (file != NULL) {
+	        char* mensaje = string_new();
+
+	        fseek(file,offset,SEEK_SET);
+	        fgets(mensaje, size, file );
+
+	        fclose(file);
+	        return mensaje;
+
+	    } // End if file
+
+	}
+	else
+	{
+		puts("Permiso incorrecto");
+	}
+	fclose(file);
+	return 0;
+
+}
+
+char* guardar_datos(char* directorio, int offset, int size, char* buffer, char permiso){
+
+   FILE *file;
+   file = fopen(directorio, "w");
+
+	if(permiso == 'w'){
+
+	    if (file != NULL) {
+	        char* mensaje = string_new();
+
+	        fseek(file,offset,SEEK_SET);
+	        fputs(buffer, file );
+
+	        fclose(file);
+	        return mensaje;
+
+	    } // End if file
+	   }
+
+    	else
+    	{
+    		puts("Permiso incorrecto");
+    	}
+	  fclose(file);
+	return 0;
 
 }
