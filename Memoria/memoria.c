@@ -481,6 +481,11 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
 
+	bloque_cache = calloc(config->entradas_cache, config->marco_size);
+	if (bloque_cache == NULL){
+		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
+	}
+
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	inicializar_tabla_paginas(config);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
