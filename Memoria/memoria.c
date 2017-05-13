@@ -920,7 +920,7 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 		int i = tamanio_maximo->maxima_cant_paginas_administracion;
 		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
 			pagina_encontrada = list_get(tabla_paginas, i);
-			if (pagina_encontrada->pid != -1 && pagina_encontrada->pid !=0) {
+			if (pagina_encontrada->pid != -1 && pagina_encontrada->pid == 0) {
 				return pagina_encontrada;
 			}
 			i++;
