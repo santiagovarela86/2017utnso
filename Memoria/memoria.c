@@ -546,6 +546,9 @@ void iniciar_programa(int pid, int cant_paginas){
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 		if (pagina != NULL){
+
+			printf("MARCO ASIGNADO: %d\n", pagina->nro_marco);
+
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
 			string_append(&respuestaAKernel, ";");
@@ -780,31 +783,32 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 	int i = 0, j = 0;
 
-	if (cantidad_paginas == 0) //El contenido del programa es menor al tamanio del marco le asigno un marco como minimo
-		cantidad_paginas = 1;
+	if (cantidad_paginas == 1){
+		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
+	}
+	else {
+		for(i = 0; i < cantidad_paginas; i++){
+			int nro_pagina = 0;
+			pagina_invertida = buscar_pagina_para_insertar(pid, cantidad_paginas);
 
-	for(i = 0; i < cantidad_paginas; i++){
-		int nro_pagina = 0;
-		//pagina_invertida = get_pagina_libre(false);
-		pagina_invertida = buscar_pagina_para_insertar(pid, cantidad_paginas);
+			if (pagina_invertida == NULL){
+				break;
+			}
 
-		if (pagina_invertida == NULL){
-			break;
+			int indice_bloque = pagina_invertida->inicio;
+			while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
+				bloque_memoria[indice_bloque] = codigo[j];
+				indice_bloque++;
+				j++;
+			}
+
+			//Actualizo la tabla de paginas
+			pagina_invertida->nro_pagina = nro_pagina;
+			pagina_invertida->pid = pid;
+			list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
+
+			nro_pagina++;
 		}
-
-		int indice_bloque = pagina_invertida->inicio;
-		while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
-			bloque_memoria[indice_bloque] = codigo[j];
-			indice_bloque++;
-			j++;
-		}
-
-		//Actualizo la tabla de paginas
-		pagina_invertida->nro_pagina = nro_pagina;
-		pagina_invertida->pid = pid;
-		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
-
-		nro_pagina++;
 	}
 
 	return pagina_invertida;
