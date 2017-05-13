@@ -6,6 +6,7 @@
 #include <string.h>
 #include "helperFunctions.h"
 #include <pthread.h>
+#include <ctype.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -25,7 +26,7 @@ void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int pu
 
 void bindSocket(int * sock, struct sockaddr_in * direccion) {
 
-	int resultado = bind(*sock, direccion, sizeof(*direccion));
+	int resultado = bind(*sock, (struct sockaddr*)direccion,  (socklen_t) sizeof(struct sockaddr_in));
 
 	if (resultado != 0) {
 		perror("Error en hacer Bind al Socket");
@@ -139,4 +140,22 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 	}
 
 	*/
+}
+char *ltrim(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+char *rtrim(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+char *trim(char *s)
+{
+    return rtrim(ltrim(s));
 }

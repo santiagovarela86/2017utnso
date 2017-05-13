@@ -43,5 +43,7 @@ void enviarMensaje(int * sock, char * message);
 void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * componente);
 void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * args);
 void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * componente);
-
+char *trim(char *s);
+char *rtrim(char *s);
+char *ltrim(char *s);
 #endif /* HELPERFUNCTIONS_H_ */

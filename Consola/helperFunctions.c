@@ -6,6 +6,7 @@
 #include <string.h>
 #include "helperFunctions.h"
 #include <pthread.h>
+#include <ctype.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -124,3 +125,22 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 	}
 
 }
+char *ltrim(char *s)
+{
+    while(isspace(*s)) s++;
+    return s;
+}
+
+char *rtrim(char *s)
+{
+    char* back = s + strlen(s);
+    while(isspace(*--back));
+    *(back+1) = '\0';
+    return s;
+}
+
+char *trim(char *s)
+{
+    return rtrim(ltrim(s));
+}
+
