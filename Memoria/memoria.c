@@ -28,8 +28,7 @@ t_list* tabla_paginas;
 t_queue* memoria_cache;
 
 char* bloque_memoria;
-int indice_bloque_procesos;
-int indice_bloque_estructuras_administrativas;
+char* bloque_cache;
 
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
@@ -51,6 +50,7 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
 
 	bloque_memoria = string_new();
+	bloque_cache = string_new();
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 
@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 	free(tamanio_maximo);
 	free(threadSocketInfoMemoria);
 	free(bloque_memoria);
+	free(bloque_cache);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
