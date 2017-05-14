@@ -352,14 +352,15 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int pid = atoi(mensajeDesdeCPU[1]);
 	int inicio_instruccion = atoi(mensajeDesdeCPU[2]);
 	int offset = atoi(mensajeDesdeCPU[3]);
-	int inicio_bloque = atoi(mensajeDesdeCPU[4]);
-
-	int inicio = inicio_bloque + inicio_instruccion;
-
-	printf("INICIO: %d\n", inicio);
+	int cantidadPaginas = atoi(mensajeDesdeCPU[4]);
+	int paginaALeer = 0;
+	if (cantidadPaginas > 1){
+	}
+	//int inicio = inicio_bloque + inicio_instruccion;
 
 	char* respuestaACPU = string_new();
-	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
+	//string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
+	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
 	enviarMensaje(socketCliente, respuestaACPU);
 	free(respuestaACPU);
 }
@@ -575,11 +576,19 @@ void iniciar_programa(int pid, int cant_paginas){
 	free(respuestaAKernel);
 }
 
+char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
+	char* datos_pagina = string_new();
+	t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+	if (pagina_buscada != NULL){
+		datos_pagina = leer_memoria(pagina_buscada->inicio + offset, tamanio);
+	}
+	printf("DATOS OBTENIDOS: %s\n", datos_pagina);
+	return datos_pagina;
+}
+
 char* leer_codigo_programa(int pid, int inicio, int offset){
-	puts("LEER CODIGO DEL PROGRAMA");
 	char* codigo_programa = string_new();
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
-	printf("CODIGO DEL PROGRAMA: %s\n", codigo_programa);
 	return codigo_programa;
 }
 

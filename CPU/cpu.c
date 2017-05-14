@@ -154,7 +154,7 @@ char * solicitoInstruccion(t_pcb* pcb){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->offset));
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pcb->inicio_codigo));
+	string_append(&mensajeAMemoria, string_itoa(pcb->cantidadPaginas));
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
