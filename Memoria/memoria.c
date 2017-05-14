@@ -355,6 +355,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int cantidadPaginas = atoi(mensajeDesdeCPU[4]);
 	int paginaALeer = 0;
 	if (cantidadPaginas > 1){
+		paginaALeer = (inicio_instruccion + offset) % configuracion->marco_size;
 	}
 	//int inicio = inicio_bloque + inicio_instruccion;
 
