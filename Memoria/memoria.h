@@ -42,6 +42,17 @@ typedef struct {
 	int offset;
 } t_pagina_invertida;
 
+typedef struct {
+	int pagina;
+	int offset;
+	int size;
+} t_Direccion;
+
+typedef struct {
+	t_Direccion direccion;
+	char nombre_variable;
+} t_Stack;
+
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);
