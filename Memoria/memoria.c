@@ -26,6 +26,7 @@ pthread_mutex_t mutex_bloque_memoria;
 int semaforo = 0;
 t_list* tabla_paginas;
 t_queue* memoria_cache;
+int stack_size = 2; //TODO: Al realizar el handshake con Kernel le deberia pasar a memoria el stack_size
 
 char* bloque_memoria;
 char* bloque_cache;
@@ -212,50 +213,58 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
-			int encontrar_pag(t_pagina_invertida *pag) {
-				return (pag->pid == pid);
-			}
+			int paginaParaVariables = atoi(mensajeDesdeCPU[3]) + 1;
 
 			t_pagina_invertida* pag_encontrada;
 
-			t_list* lista_pag_auxiliar = list_create();
-			lista_pag_auxiliar = list_filter(tabla_paginas,  (void*) encontrar_pag);
+			//t_list* lista_pag_auxiliar = list_create();
 
-			pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
+			t_manejo_programa * manejo_programa = get_manejo_programa(pid);
 
-			if(pag_encontrada == NULL){
+			//lista_pag_auxiliar = list_filter(tabla_paginas,  (void*) encontrar_pag);
 
-				//primera variable del programa
+			//pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
 
-				t_pagina_invertida* pag_a_cargar = malloc(sizeof(t_pagina_invertida));
+			if(manejo_programa == NULL){
 
-				pag_a_cargar->nro_marco = marco_libre_para_variables();
-				pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
-				pag_a_cargar->nro_pagina = 0;
-				pag_a_cargar->offset = 4;
-				pag_a_cargar->pid = pid;
+				//puts("primera variable del programa");
 
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
+
+				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
+
+				//pag_a_cargar->nro_marco = marco_libre_para_variables();
+				//pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
+				pag_a_cargar->nro_pagina = paginaParaVariables;
+				pag_a_cargar->offset = pag_a_cargar->inicio + 4;
+				pag_a_cargar->pid = pid;
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
+
+				manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
+				list_add(tabla_programas, manejo_programa);
+
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(pag_a_cargar->inicio));
+				string_append(&mensajeACpu, string_itoa(pag_a_cargar->offset));
 				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
 
-				pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
 			}else{
-				//ya existen otras variables de ese programa
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa((pag_encontrada->inicio + pag_encontrada->offset)));
-				string_append(&mensajeACpu, ";");
+
+				//puts("ya existen otras variables de ese programa");
+
+				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->numero_pagina);
 
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
 				pag_encontrada->offset = pag_encontrada->offset + 4;
+				list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(pag_encontrada->offset));
+				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
 			}
@@ -342,6 +351,8 @@ t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
 		}
 
 		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
+
+		printf("MARCO VARIABLE: %d\n", pag->nro_marco);
 
 		return pag;
 	}
@@ -600,30 +611,15 @@ char* leer_memoria(int inicio, int offset){
 	return codigo_programa;
 }
 
-t_pagina_invertida* crear_nueva_pagina(int pid, int marco, int pagina, int inicio, int offset){
-	t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
-	nueva_pagina->pid = pid;
-	nueva_pagina->nro_marco = marco;
-	nueva_pagina->nro_pagina = pagina;
-	nueva_pagina->inicio = inicio;
-	nueva_pagina->offset = offset;
-	return nueva_pagina;
-}
-
-t_manejo_programa* crear_nuevo_manejo_programa(int pid, char variable, int marco, int pagina){
+t_manejo_programa* crear_nuevo_manejo_programa(int pid, int pagina){
 
 	int encontrar_pid(t_manejo_programa *p) {
-		return (p->variable == pid);
+		return (p->pid == pid);
 	}
-
-	t_list* lista_aux = list_filter(tabla_programas, (void*) encontrar_pid);
 
 	t_manejo_programa* nuevo_manejo_programa = malloc(sizeof(t_manejo_programa));
 	nuevo_manejo_programa->pid = pid;
-	nuevo_manejo_programa->variable = variable;
-	nuevo_manejo_programa->nro_marco = marco;
 	nuevo_manejo_programa->numero_pagina = pagina;
-	nuevo_manejo_programa->nro_variable = list_size(lista_aux);
 
 	return nuevo_manejo_programa;
 }
@@ -635,29 +631,6 @@ t_manejo_programa* get_manejo_programa(int pid){
 	}
 
 	return list_find(tabla_programas, (void*) esElProgramaBuscado);
-}
-
-t_pagina_invertida* get_pagina_libre(bool esDescendente){
-
-	t_pagina_invertida* pagina_encontrada = NULL;
-
-    bool _nro_marco_descendente(t_pagina_invertida *pagina1, t_pagina_invertida *pagina2) {
-        return pagina1->nro_marco > pagina2->nro_marco;
-    }
-
-    bool _nro_marco_ascendente(t_pagina_invertida *pagina1, t_pagina_invertida *pagina2) {
-        return pagina1->nro_marco < pagina2->nro_marco;
-    }
-
-    if (esDescendente) {
-    	list_sort(tabla_paginas, (void*)_nro_marco_descendente);
-    	pagina_encontrada = list_find(tabla_paginas, (void*) paginaLibre);
-    	//Ordeno de vuelta la estructura porque es global
-    	list_sort(tabla_paginas, (void*)_nro_marco_ascendente);
-    	return pagina_encontrada;
-    }
-
-	return list_find(tabla_paginas, (void*) paginaLibre);
 }
 
 void log_cache_in_disk(t_queue* cache) {
@@ -740,18 +713,6 @@ void log_contenido_memoria_in_disk() {
     log_destroy(logger);
 }
 
-void definir_variable(int posicion_donde_guardo, char identificador_variable, int pid){
-
-	bloque_memoria[posicion_donde_guardo] = '0';
-	bloque_memoria[posicion_donde_guardo + 1] = '0';
-	bloque_memoria[posicion_donde_guardo + 2] = '0';
-	bloque_memoria[posicion_donde_guardo + 3] = '0';
-
-	printf("La variable %c se guardo en la pos: %d \n",identificador_variable, posicion_donde_guardo);
-
-	return;
-}
-
 void grabar_valor(int direccion, int valor){
 
 	if(valor > 999){
@@ -808,6 +769,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
 		pagina_invertida->nro_pagina = 0;
 		pagina_invertida->pid = pid;
+		pagina_invertida->offset = pagina_invertida->inicio + string_length(codigo);
 
 		grabar_codigo_programa(&j, pagina_invertida, codigo);
 
@@ -827,6 +789,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 			//Actualizo la tabla de paginas
 			pagina_invertida->nro_pagina = nro_pagina;
 			pagina_invertida->pid = pid;
+			pagina_invertida->offset = pagina_invertida->inicio + string_length(codigo);
 			list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 
 			nro_pagina++;

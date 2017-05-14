@@ -367,6 +367,8 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(pcb->cantidadPaginas));
+	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
