@@ -85,5 +85,7 @@ void retardo_acceso_memoria(void);
 void pruebas_f_hash(void);
 void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo);
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio);
+t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina);
+char* serializar_entrada_indice_stack(t_Stack* indice_stack);
 
 #endif /* MEMORIA_H_ */

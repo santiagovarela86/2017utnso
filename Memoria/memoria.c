@@ -213,6 +213,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
+			char nombreVariable = *mensajeDesdeCPU[1];
+
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]) + 1;
 
 			t_pagina_invertida* pag_encontrada;
@@ -245,11 +247,15 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
+				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
+
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(pag_a_cargar->offset));
 				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
+
+				free(entrada_stack);
 
 			}else{
 
@@ -936,6 +942,30 @@ void retardo_acceso_memoria(){
 	sleep(tiempo_retardo / 1000);
 }
 
+t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina){
+
+	t_Stack* entrada_stack = malloc(sizeof(t_Stack));
+	entrada_stack->nombre_variable = variable;
+	entrada_stack->direccion.pagina = pagina->nro_pagina;
+	entrada_stack->direccion.offset = pagina->offset;
+	entrada_stack->direccion.size = 4;
+
+	return entrada_stack;
+}
+char* serializar_entrada_indice_stack(t_Stack* indice_stack){
+
+	char* entrada_stack = string_new();
+	entrada_stack[0] = indice_stack->nombre_variable;
+	string_append(&entrada_stack, ";");
+	string_append(&entrada_stack, string_itoa(indice_stack->direccion.pagina));
+	string_append(&entrada_stack, ";");
+	string_append(&entrada_stack, string_itoa(indice_stack->direccion.offset));
+	string_append(&entrada_stack, ";");
+	string_append(&entrada_stack, string_itoa(indice_stack->direccion.size));
+	string_append(&entrada_stack, ";");
+
+	return entrada_stack;
+}
 
 
 
