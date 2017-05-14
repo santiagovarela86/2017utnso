@@ -356,6 +356,8 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 
 	int inicio = inicio_bloque + inicio_instruccion;
 
+	printf("INICIO: %d\n", inicio);
+
 	char* respuestaACPU = string_new();
 	string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
 	enviarMensaje(socketCliente, respuestaACPU);
@@ -574,8 +576,10 @@ void iniciar_programa(int pid, int cant_paginas){
 }
 
 char* leer_codigo_programa(int pid, int inicio, int offset){
+	puts("LEER CODIGO DEL PROGRAMA");
 	char* codigo_programa = string_new();
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
+	printf("CODIGO DEL PROGRAMA: %s\n", codigo_programa);
 	return codigo_programa;
 }
 
@@ -789,8 +793,14 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 	int i = 0, j = 0;
 
-	if (cantidad_paginas == 0){
+	if (cantidad_paginas == 1){
 		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
+		pagina_invertida->nro_pagina = 0;
+		pagina_invertida->pid = pid;
+
+		grabar_codigo_programa(&j, pagina_invertida, codigo);
+
+		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 	}
 	else {
 		for(i = 0; i < cantidad_paginas; i++){
@@ -801,12 +811,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 				break;
 			}
 
-			int indice_bloque = pagina_invertida->inicio;
-			while(codigo[j] != NULL && indice_bloque < (pagina_invertida->inicio * configuracion->marco_size)){
-				bloque_memoria[indice_bloque] = codigo[j];
-				indice_bloque++;
-				j++;
-			}
+			grabar_codigo_programa(&j, pagina_invertida, codigo);
 
 			//Actualizo la tabla de paginas
 			pagina_invertida->nro_pagina = nro_pagina;
@@ -818,6 +823,16 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 	}
 
 	return pagina_invertida;
+}
+
+void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
+
+	int indice_bloque = pagina->inicio;
+	while(codigo[*j] != NULL && indice_bloque < (pagina->inicio * configuracion->marco_size)){
+		bloque_memoria[indice_bloque] = codigo[*j];
+		indice_bloque++;
+		(*j)++;
+	}
 }
 
 int paginaLibre(t_pagina_invertida* pagina){

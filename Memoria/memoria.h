@@ -91,5 +91,6 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina);
 t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina);
 void retardo_acceso_memoria(void);
 void pruebas_f_hash(void);
+void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo);
 
 #endif /* MEMORIA_H_ */
