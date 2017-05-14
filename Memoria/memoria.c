@@ -361,7 +361,9 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 
 	char* respuestaACPU = string_new();
 	//string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	enviarMensaje(socketCliente, respuestaACPU);
 	free(respuestaACPU);
 }
