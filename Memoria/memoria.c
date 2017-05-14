@@ -789,7 +789,7 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 	int i = 0, j = 0;
 
-	if (cantidad_paginas == 1){
+	if (cantidad_paginas == 0){
 		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
 	}
 	else {

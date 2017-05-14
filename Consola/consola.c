@@ -85,7 +85,7 @@ void * handlerConsola(void * args){
 
 	int * socketKernel = (int *) args;
 
-	int numero = 0;
+	char* valorIngresado = string_new();
 
 	int intentos_fallidos = 0;
 
@@ -100,24 +100,34 @@ void * handlerConsola(void * args){
 		puts("4) Limpiar");
 		puts("***********************************************************");
 
-		scanf("%d",&numero);
+		scanf("%s", valorIngresado);
+		 int numero =	atoi(valorIngresado);
+				switch(numero){
+				case 1:
+					iniciar_programa(socketKernel);
+					break;
+				case 2:
+					terminar_proceso(socketKernel);
+					break;
+				case 3:
+					desconectar_consola(socketKernel);
+					break;
+				case 4:
+					limpiar_mensajes();
+					break;
+				default:
 
-		if(numero == 1){
-			iniciar_programa(socketKernel);
-		}else if(numero == 2){
-			terminar_proceso(socketKernel);
-		}else if(numero == 3){
-			desconectar_consola(socketKernel);
-		}else if(numero == 4){
-			limpiar_mensajes();
-		}else{
-			intentos_fallidos++;
-		}
+					break;
+				}
+				intentos_fallidos++;
+
+				if(intentos_fallidos == 10){
+					return 0;
+				}
+
 	}
 
-	if(intentos_fallidos == 10){
-		return 0;
-	}
+	free(valorIngresado);
 	return 0;
 }
 
@@ -226,10 +236,21 @@ void iniciar_programa(int* socket_kernel){
 	scanf("%s", directorio);
 
 	int fd_script = open(directorio, O_RDWR);
+
+	while (fd_script < 0) //por si ingresamos mal el nombre del archivo no cuelgue.
+	{
+			puts("");
+			puts("No se encuentra el archivo solicitado");
+			puts("");
+			puts("Ingrese nombre del programa");
+			puts("");
+			scanf("%s", directorio);
+			fd_script = open(directorio, O_RDWR);
+
+	}
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-
 	char* respuestaConsola = string_new();
 	string_append(&respuestaConsola, "303");
 	string_append(&respuestaConsola, ";");
