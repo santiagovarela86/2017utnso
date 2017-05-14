@@ -582,7 +582,6 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	if (pagina_buscada != NULL){
 		datos_pagina = leer_memoria(pagina_buscada->inicio + offset, tamanio);
 	}
-	printf("DATOS OBTENIDOS: %s\n", datos_pagina);
 	return datos_pagina;
 }
 
