@@ -211,9 +211,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 512) {
 
-			int pid = atoi(mensajeDesdeCPU[2]);
-
 			char nombreVariable = *mensajeDesdeCPU[1];
+
+			int pid = atoi(mensajeDesdeCPU[2]);
 
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]) + 1;
 
@@ -250,9 +250,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
 
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(pag_a_cargar->offset));
-				string_append(&mensajeACpu, ";");
-
+				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				enviarMensaje(&sock, mensajeACpu);
 
 				free(entrada_stack);
@@ -268,8 +266,11 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
+				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(pag_encontrada->offset));
+				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+
 				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
@@ -952,6 +953,7 @@ t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina){
 
 	return entrada_stack;
 }
+
 char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 
 	char* entrada_stack = string_new();

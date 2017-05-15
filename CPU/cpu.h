@@ -60,5 +60,6 @@ void imprimoInfoPCB(t_pcb * pcb);
 t_pcb * reciboPCB(int * socketKernel);
 t_pcb * deserializar_pcb(char * message);
 char* serializar_pcb(t_pcb* pcb);
+t_Stack* deserializar_entrada_stack(char* mensajeRecibido);
 
 #endif /* CPU_H_ */

@@ -789,7 +789,7 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->cantidadEtiquetas));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
+	string_append(&mensajeACPU, string_itoa(list_size(pcb->indiceStack)));
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->quantum));
@@ -817,7 +817,7 @@ char* serializar_pcb(t_pcb* pcb){
 
 	//printf("\n");
 
-	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+	for (i = 0; i < list_size(pcb->indiceStack); i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta =  list_get(pcb->indiceStack, i);
 		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
@@ -1463,7 +1463,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int k = i;
 
-	while (i < k + cantIndiceStack){
+	while(cantIndiceStack > 0) {
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta->direccion.offset = atoi(message[i]);
 		i++;
@@ -1474,8 +1474,10 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		sta->nombre_funcion = message[i][0];
 		i++;
 		sta->nombre_variable = message[i][0];
+
 		list_add(pcb->indiceStack, sta);
 		i++;
+		cantIndiceStack--;
 	}
 
 	return pcb;

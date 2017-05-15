@@ -308,9 +308,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	printf("\n");
 	*/
 
-	int k = i;
-
-	while (i < k + cantIndiceStack){
+	while (cantIndiceStack > 0){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta->direccion.offset = atoi(message[i]);
 		i++;
@@ -321,8 +319,10 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		sta->nombre_funcion = message[i][0];
 		i++;
 		sta->nombre_variable = message[i][0];
+
 		list_add(pcb->indiceStack, sta);
 		i++;
+		cantIndiceStack--;
 	}
 
 	return pcb;
@@ -351,7 +351,6 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	puts("Asignar");
 	puts("");
 
-
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -372,16 +371,22 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	puts("Obtener Posicion Variable");
 	puts("");
 
-	int encontrar_var(variables *var) {
+	/*int encontrar_var(variables *var) {
 		return (var->pid == pcb->pid && var->variable == identificador_variable);
+	}*/
+
+	//variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
+
+	int encontrar_var(t_Stack* var){
+		return (var->nombre_variable == (char) identificador_variable);
 	}
 
-	variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
+	t_Stack* entrada_encontrada = list_find(pcb->indiceStack, (void*) encontrar_var);
 
 	//TODO CAMBIAR EL TIPO DE DATO DE var_encontrada A t_Stack Y LUEGO ENVIARMENSAJE A MEMORIA PIDIENDO LA POSICION EXACTA DE LA VARIABLE
 	//ENVIANDOLE PID, PAGINA Y OFFSET Y ESA DIRECCION ES LA QUEDE ENVIARSE EN EL RETURN.
 
-	return var_encontrada->direcion;
+	return entrada_encontrada->direccion.offset;
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
@@ -415,7 +420,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable){
-	puts("Definir Variable");
+	printf("Definir Variable %c \n", identificador_variable);
 	puts("");
 
 	char* mensajeAMemoria = string_new();
@@ -433,22 +438,35 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
 
 	if(result > 0){
-		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
-		int posicion = atoi(mensajeDesdeCPU[0]);
 
-		variables* var = malloc(sizeof(variables));
+		t_Stack* entrada_stack = deserializar_entrada_stack(mensajeAMemoria);
+
+		list_add(pcb->indiceStack, entrada_stack);
+
+		int encontrar_var(t_Stack* var){
+			return (var->nombre_variable == (char) identificador_variable);
+		}
+
+		entrada_stack = list_find(pcb->indiceStack, (void*) encontrar_var);
+
+		printf("ENTRADA STACK ENCONTRADA PARA VARIABLE %c\n", entrada_stack->nombre_variable);
+
+		//char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+		//int posicion = atoi(mensajeDesdeCPU[0]);
+		/*variables* var = malloc(sizeof(variables));
 		var->direcion = posicion;
 		var->nro_variable = (list_size(variables_locales) + 1);
 		var->variable = identificador_variable;
 		var->pid = pcb->pid;
 
 		list_add(variables_locales, var);
+		*/
 
-		printf("La variable %c se guardo en la pos: %d \n", identificador_variable , posicion);
+		printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
 
 		free(mensajeAMemoria);
 
-		return posicion;
+		return entrada_stack->direccion.offset;
 	}
 
 	return -1;
@@ -682,7 +700,8 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->cantidadEtiquetas));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
+	string_append(&mensajeACPU, string_itoa(list_size(pcb->indiceStack)));
+
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->quantum));
@@ -710,8 +729,9 @@ char* serializar_pcb(t_pcb* pcb){
 	}
 
 	printf("\n");
+	printf("SERIALIZAR PCB - CANT. INDICE STACK %d\n", list_size(pcb->indiceStack));
 
-	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+	for (i = 0; i < list_size(pcb->indiceStack); i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta =  list_get(pcb->indiceStack, i);
 		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
@@ -732,3 +752,20 @@ char* serializar_pcb(t_pcb* pcb){
 
 }
 
+t_Stack* deserializar_entrada_stack(char* mensajeRecibido){
+	t_Stack* entrada_stack = malloc(sizeof(t_Stack));
+
+	char** mensajeSplit = string_split(mensajeRecibido, ";");
+
+	entrada_stack->nombre_variable = mensajeSplit[0][0];
+	entrada_stack->direccion.pagina = atoi(mensajeSplit[1]);
+	entrada_stack->direccion.offset = atoi(mensajeSplit[2]);
+	entrada_stack->direccion.size = atoi(mensajeSplit[3]);
+
+	printf("ENTRADA STACK - NOMBRE VARIABLE :%c\n", entrada_stack->nombre_variable);
+	printf("ENTRADA STACK - DIRECCION OFFSET :%d\n", entrada_stack->direccion.offset);
+	printf("ENTRADA STACK - DIRECCION PAGINA :%d\n", entrada_stack->direccion.pagina);
+	printf("ENTRADA STACK - DIRECCION SIZE :%d\n", entrada_stack->direccion.size);
+
+	return entrada_stack;
+}
