@@ -229,7 +229,7 @@ void iniciar_programa(int* socket_kernel){
 	puts("");
 	puts("Ingrese nombre del programa");
 
-	char directorio[1000];
+	char directorio[MAXBUF];
 
 	scanf("%s", directorio);
 
