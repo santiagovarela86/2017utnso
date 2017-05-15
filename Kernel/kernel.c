@@ -1314,7 +1314,7 @@ void * multiprogramar(){
 
 		if(queue_size(cola_nuevos) > 0){
 		t_nuevo* nue = queue_pop(cola_nuevos);
-		puts("aquie entre");
+
 		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
 
 		char* mensajeInicioPrograma = string_new();
