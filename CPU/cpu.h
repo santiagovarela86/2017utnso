@@ -16,7 +16,9 @@ typedef struct {
 	int program_counter;
 	int cantidadPaginas;
 	t_list* indiceCodigo;
-	t_list* indiceEtiquetas;
+	char * etiquetas;
+	int etiquetas_size;
+	int cantidadEtiquetas;
 	t_list* indiceStack;
 	int inicio_codigo;
 	int tabla_archivos;
@@ -24,6 +26,7 @@ typedef struct {
 	int* socket_cpu;
 	int exit_code;
 	int quantum;
+	int* socket_consola;
 } t_pcb;
 
 typedef struct {
@@ -42,6 +45,13 @@ typedef struct {
 	char nombre_variable;
 	char nombre_funcion;
 } t_Stack;
+
+typedef struct {
+	int pid;
+	char variable;
+	int direcion;
+	int nro_variable;
+} variables;
 
 void* manejo_memoria();
 void* manejo_kernel();
