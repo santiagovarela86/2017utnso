@@ -219,13 +219,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			t_pagina_invertida* pag_encontrada;
 
-			//t_list* lista_pag_auxiliar = list_create();
-
 			t_manejo_programa * manejo_programa = get_manejo_programa(pid);
-
-			//lista_pag_auxiliar = list_filter(tabla_paginas,  (void*) encontrar_pag);
-
-			//pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
 
 			if(manejo_programa == NULL){
 
@@ -234,9 +228,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
-
-				//pag_a_cargar->nro_marco = marco_libre_para_variables();
-				//pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
 				pag_a_cargar->nro_pagina = paginaParaVariables;
 				pag_a_cargar->offset = pag_a_cargar->inicio + 4;
 				pag_a_cargar->pid = pid;

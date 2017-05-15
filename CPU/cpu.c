@@ -443,14 +443,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 		list_add(pcb->indiceStack, entrada_stack);
 
-		int encontrar_var(t_Stack* var){
-			return (var->nombre_variable == (char) identificador_variable);
-		}
-
-		entrada_stack = list_find(pcb->indiceStack, (void*) encontrar_var);
-
-		printf("ENTRADA STACK ENCONTRADA PARA VARIABLE %c\n", entrada_stack->nombre_variable);
-
 		//char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 		//int posicion = atoi(mensajeDesdeCPU[0]);
 		/*variables* var = malloc(sizeof(variables));
