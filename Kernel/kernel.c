@@ -177,6 +177,7 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				string_append(&mensaje, "Listado de procesos del sistema");
 				log_console_in_disk(mensaje);
+				abrir_subconsola_procesos();
 				break;
 			case 2:
 				accion_correcta = 1;
@@ -267,6 +268,87 @@ void * inicializar_consola(void* args){
 		}
 	}
 }
+
+void abrir_subconsola_procesos(void* args){
+
+	while(1){
+		puts("");
+		puts("***********************************************************");
+		puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
+		puts("1)  Procesos en cola de Listos");
+		puts("2)  Procesos en cola de Ejecucion");
+		puts("3)  Procesos en cola de Boqueados");
+		puts("4)  Procesos en cola de Terminados");
+		puts("5)  Procesos en cola de Nuevos");
+		puts("***********************************************************");
+
+		int accion = 0;
+		int accion_correcta = 0;
+
+		while (accion_correcta == 0){
+
+			scanf("%d", &accion);
+
+			switch(accion){
+			case 1:
+				accion_correcta = 1;
+				listarCola(cola_listos);
+				break;
+			case 2:
+				accion_correcta = 1;
+				listarCola(cola_ejecucion);
+				break;
+			case 3:
+				accion_correcta = 1;
+				listarCola(cola_bloqueados);
+				break;
+			case 4:
+				accion_correcta = 1;
+				listarCola(cola_terminados);
+				break;
+			case 5:
+				accion_correcta = 1;
+				listarCola(cola_nuevos);
+				break;
+
+			default:
+				accion_correcta = 0;
+				puts("Comando invalido. A continuacion se detallan las acciones:");
+				puts("");
+				puts("***********************************************************");
+				puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
+				puts("1)  Procesos en cola de Listos");
+				puts("2)  Procesos en cola de Ejecucion");
+				puts("3)  Procesos en cola de Boqueados");
+				puts("4)  Procesos en cola de Terminados");
+				puts("5)  Procesos en cola de Nuevos");
+				puts("***********************************************************");
+				break;
+			}
+
+
+		}
+	}
+}
+
+void listarCola(t_queue* cola){
+	t_pcb * temporalP;
+	int tempPid;
+	puts("hice");
+	int largoColaListada = queue_size(cola);
+	while(largoColaListada != 0){
+		pthread_mutex_lock(&mtx_globales);
+		temporalP = (t_pcb*) queue_pop(cola);
+		tempPid = 1111;
+		//tempPid = temporalP->pid;
+		printf("Programa %d \n", tempPid);
+		puts("");
+		pthread_mutex_unlock(&mtx_globales);
+		largoColaListada--;
+	}
+
+}
+
 
 void inicializar_variables_globales(){
 	lista_variables_globales = list_create();
