@@ -126,7 +126,7 @@ void* manejo_kernel(void *args) {
 
         	char* mensajeAKernel2 = serializar_pcb(pcb);
 
-        	printf("Enviando mensaje %s \n", mensajeAKernel);
+        	//printf("Enviando mensaje %s \n", mensajeAKernel);
         	enviarMensaje(&socketKernel, mensajeAKernel2);
 
         	free(mensajeAKernel);
