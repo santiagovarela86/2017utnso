@@ -87,8 +87,9 @@ void* manejo_kernel(void *args) {
 
     	instruccion = "";
 
-    	//FORMA CABEZA
-    	pcb->quantum = 3;
+    	//Guardo el Quantum
+    	int q = pcb->quantum;
+
     	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
     		instruccion = solicitoInstruccion(pcb);
 
@@ -120,6 +121,9 @@ void* manejo_kernel(void *args) {
 
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
+        	//ACA RESTAURO EL VALOR NO SE SI VA ACA
+        	pcb->quantum = q;
+
         	char* mensajeAKernel2 = serializar_pcb(pcb);
 
         	printf("Enviando mensaje %s \n", mensajeAKernel);
@@ -143,13 +147,13 @@ void* manejo_kernel(void *args) {
 
 char * solicitoInstruccion(t_pcb* pcb){
 
-    int inst_pointer = pcb->program_counter;
+	char* mensajeAMemoria = string_new();
+
+	int inst_pointer = pcb->program_counter;
 
     elementoIndiceCodigo* coordenadas_instruccion = ((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
 
 	char message[MAXBUF];
-
-	char* mensajeAMemoria = string_new();
 
 	string_append(&mensajeAMemoria, "510");
 	string_append(&mensajeAMemoria, ";");
@@ -169,7 +173,7 @@ char * solicitoInstruccion(t_pcb* pcb){
 	int result = recv(socketMemoria, message, sizeof(message), 0);
 
 	if (result > 0){
-		return message;
+		return &message;
 	}else{
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
@@ -180,6 +184,17 @@ void imprimoInfoPCB(t_pcb * pcb){
 	printf("PID: %d\n", pcb->pid);
 	printf("PC: %d\n", pcb->program_counter);
 	printf("Quantum: %d\n", pcb->quantum);
+
+	printf("Etiquetas:\n");
+
+	int i = 0;
+
+	while (i < pcb->etiquetas_size){
+		printf("[%d]", pcb->etiquetas[i]);
+		i++;
+	}
+
+	printf("\n");
 /*
 	int i;
 	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
@@ -197,8 +212,9 @@ void imprimoInfoPCB(t_pcb * pcb){
 		int * elem = list_get(pcb->indiceStack, i);
 		printf("Elemento de Pila %d: %d\n", i, * elem);
 	}
-*/
+
 	puts("");
+	*/
 }
 
 t_pcb * reciboPCB(int * socketKernel) {
@@ -256,23 +272,41 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int j = i;
 
+	int e = 0;
+
+	//printf("Etiquetas Deserializacion: \n");
+
 	if (pcb->etiquetas_size > 0){
 		pcb->etiquetas = malloc(pcb->etiquetas_size);
 			while (i < j + pcb->etiquetas_size){
 				int ascii = atoi(message[i]);
 
-				if (ascii >= 32 || ascii <= 126){
-					pcb->etiquetas[i] = (char) ascii;
+				if (ascii >= 32 && ascii <= 126){
+					pcb->etiquetas[e] = (char) ascii;
 				} else {
-					pcb->etiquetas[i] = atoi(message[i]);
+					pcb->etiquetas[e] = atoi(message[i]);
 				}
 
-				printf("[%d]", pcb->etiquetas[i]);
+				//printf("[%d]", pcb->etiquetas[z]);
 				i++;
+				e++;
 			}
 	}
 
+	/*
 	printf("\n");
+
+	printf("Etiquetas DE NUEVO EN LA DESERIALIZACION:\n");
+
+	z = 0;
+
+	while (z < pcb->etiquetas_size){
+		printf("[%d]", pcb->etiquetas[z]);
+		z++;
+	}
+
+	printf("\n");
+	*/
 
 	int k = i;
 
@@ -666,11 +700,16 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 	}
 
+
+	//printf("Etiquetas Serializacion: \n");
+
 	for (i = 0; i < pcb->etiquetas_size; i++){
 		string_append(&mensajeACPU, string_itoa(pcb->etiquetas[i]));
 		string_append(&mensajeACPU, ";");
 		//printf("[%d]", pcb->etiquetas[i]);
 	}
+
+	printf("\n");
 
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));

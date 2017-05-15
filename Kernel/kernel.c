@@ -807,11 +807,15 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 	}
 
+	//printf("Etiquetas Serializacion: \n");
+
 	for (i = 0; i < pcb->etiquetas_size; i++){
 		string_append(&mensajeACPU, string_itoa(pcb->etiquetas[i]));
 		string_append(&mensajeACPU, ";");
-		printf("[%d]", pcb->etiquetas[i]);
+		//printf("[%d]", pcb->etiquetas[i]);
 	}
+
+	//printf("\n");
 
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
@@ -1421,19 +1425,41 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int j = i;
 
-	pcb->etiquetas = malloc(pcb->etiquetas_size);
-	while (i < j + pcb->etiquetas_size){
-		int ascii = atoi(message[i]);
+	int e = 0;
 
-		if (ascii >= 32 || ascii <= 126){
-			pcb->etiquetas[i] = (char) ascii;
-		} else {
-			pcb->etiquetas[i] = atoi(message[i]);
-		}
+	//printf("Etiquetas Deserializacion: \n");
 
-		//printf("[%c, %d]", pcb->etiquetas[i], pcb->etiquetas[i]);
-		i++;
+	if (pcb->etiquetas_size > 0){
+		pcb->etiquetas = malloc(pcb->etiquetas_size);
+			while (i < j + pcb->etiquetas_size){
+				int ascii = atoi(message[i]);
+
+				if (ascii >= 32 && ascii <= 126){
+					pcb->etiquetas[e] = (char) ascii;
+				} else {
+					pcb->etiquetas[e] = atoi(message[i]);
+				}
+
+				//printf("[%d]", pcb->etiquetas[z]);
+				i++;
+				e++;
+			}
 	}
+
+	/*
+	printf("\n");
+
+	printf("Etiquetas DE NUEVO EN LA DESERIALIZACION:\n");
+
+	z = 0;
+
+	while (z < pcb->etiquetas_size){
+		printf("[%d]", pcb->etiquetas[z]);
+		z++;
+	}
+
+	printf("\n");
+	*/
 
 	int k = i;
 
