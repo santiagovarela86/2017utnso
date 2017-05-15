@@ -8,7 +8,8 @@
 #ifndef HELPERFUNCTIONS_H_
 #define HELPERFUNCTIONS_H_
 
-#define MAXBUF 1024
+#define MAXBUF 2048
+#define MAXLIST 20
 
 typedef struct threadSocketInfo {
 	int sock;

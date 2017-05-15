@@ -7,6 +7,7 @@
 #include "helperFunctions.h"
 #include <pthread.h>
 #include <ctype.h>
+
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
 	*sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -35,7 +36,7 @@ void bindSocket(int * sock, struct sockaddr_in * direccion) {
 
 void escuchoSocket(int * sock) {
 
-	int resultado = listen(*sock, 20);
+	int resultado = listen(*sock, MAXLIST);
 
 	if (resultado != 0) {
 		perror("Error al escuchar Socket");
@@ -123,22 +124,6 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 		printf("Error al recibir datos del %s", proceso);
 	}
 
-	/*
-
-	while ((recv(* socketServer, message, sizeof(message), 0)) > 0) {
-
-			codigo = strtok(message, separador);
-
-			if (strcmp(codigo, codigoEsperado) == 0) {
-				printf("El proceso %s acepto la conexion \n", proceso);
-				printf("\n");
-			} else {
-				printf("El proceso %s rechazo la conexion \n", proceso);
-				exit(errno);
-			}
-	}
-
-	*/
 }
 char *ltrim(char *s)
 {

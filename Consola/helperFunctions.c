@@ -36,7 +36,7 @@ void bindSocket(int * sock, struct sockaddr_in * direccion) {
 
 void escuchoSocket(int * sock) {
 
-	int resultado = listen(*sock, 20);
+	int resultado = listen(*sock, MAXLIST);
 
 	if (resultado != 0) {
 		perror("Error al escuchar Socket");
