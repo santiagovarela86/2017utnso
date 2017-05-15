@@ -1220,63 +1220,45 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 
 void logExitCode(int code)
 {
+	char* errorLog = string_new();
 	switch(code){
 	case 0:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "El programa finalizó correctamente", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "El programa finalizó correctamente";
 		break;
 	case -1:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_ERROR);
-		log_info(logger, "No se pudieron reservar recursos para ejecutar el programa", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "No se pudieron reservar recursos para ejecutar el programa";
 		break;
 	case -2:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_ERROR);
-		log_info(logger, "El programa intentó acceder a un archivo que no existe.", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "El programa intentó acceder a un archivo que no existe.";
 		break;
 	case -3:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "El programa intentó leer un archivo sin permisos.", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "El programa intentó leer un archivo sin permisos.";
 		break;
 	case -4:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "El programa intentó escribir un archivo sin permisos.", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "El programa intentó escribir un archivo sin permisos.";
 		break;
 	case -5:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "Excepción de memoria.", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "Excepción de memoria";
 		break;
 	case -6:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "Finalizado a través de desconexión de consola", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "Finalizado a través de desconexión de consola";
 		break;
 	case -7:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "Finalizado a través de comando Finalizar Programa de la consola", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "Finalizado a través de comando Finalizar Programa de la consola";
 		break;
 	case -8:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "Se intento reservar mas memoria que el tamaño de una página", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "Se intento reservar mas memoria que el tamaño de una página";
 		break;
 	case -9:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "No se pueden asignar mas páginas al proceso", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "No se pueden asignar mas páginas al proceso";
 		break;
 	case -20:
-		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
-		log_info(logger, "Error sin definición", "EXITCODE");
-	    log_destroy(logger);
+		errorLog = "Error sin definición";
 		break;
 	}
+	t_log* logCode = log_create("kernelExist.log", "kernel", true, LOG_LEVEL_ERROR );
+	log_error(logCode, errorLog, "EXITCODE");
+    log_destroy(logCode);
 
 }
 
