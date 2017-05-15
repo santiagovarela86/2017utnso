@@ -254,20 +254,23 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int j = i;
 
-	//pcb->etiquetas = malloc(pcb->etiquetas_size);
-	pcb->etiquetas = string_new();
-	while (i < j + pcb->etiquetas_size){
-		int ascii = atoi(message[i]);
+	if (pcb->etiquetas_size > 0){
+		pcb->etiquetas = malloc(pcb->etiquetas_size);
+			while (i < j + pcb->etiquetas_size){
+				int ascii = atoi(message[i]);
 
-		if (ascii >= 32 || ascii <= 126){
-			pcb->etiquetas[i] = (char) ascii;
-		} else {
-			pcb->etiquetas[i] = atoi(message[i]);
-		}
+				if (ascii >= 32 || ascii <= 126){
+					pcb->etiquetas[i] = (char) ascii;
+				} else {
+					pcb->etiquetas[i] = atoi(message[i]);
+				}
 
-		//printf("[%c, %d]", pcb->etiquetas[i], pcb->etiquetas[i]);
-		i++;
+				printf("[%d]", pcb->etiquetas[i]);
+				i++;
+			}
 	}
+
+	printf("\n");
 
 	int k = i;
 

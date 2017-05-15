@@ -810,7 +810,7 @@ char* serializar_pcb(t_pcb* pcb){
 	for (i = 0; i < pcb->etiquetas_size; i++){
 		string_append(&mensajeACPU, string_itoa(pcb->etiquetas[i]));
 		string_append(&mensajeACPU, ";");
-		//printf("[%d]", pcb->etiquetas[i]);
+		printf("[%d]", pcb->etiquetas[i]);
 	}
 
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
