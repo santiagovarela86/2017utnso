@@ -177,11 +177,6 @@ char * solicitoInstruccion(t_pcb* pcb){
 void imprimoInfoPCB(t_pcb * pcb){
 	printf("PID: %d\n", pcb->pid);
 	printf("PC: %d\n", pcb->program_counter);
-//	printf("Cantidad de Paginas: %d\n", pcb->cantidadPaginas);
-//	printf("Inicio de Codigo: %d\n", pcb->inicio_codigo);
-//	printf("Tabla de Archivos: %d\n", pcb->tabla_archivos);
-//	printf("Posicion de Stack: %d\n", pcb->pos_stack);
-//	printf("Exit Code: %d\n", pcb->exit_code);
 	printf("Quantum: %d\n", pcb->quantum);
 /*
 	int i;
@@ -216,8 +211,6 @@ t_pcb * reciboPCB(int * socketKernel) {
 		pcb = deserializar_pcb(message);
 		//FIN CODIGO DE DESERIALIZACION DEL PCB
 
-		//MUESTRO EL BUFFER DEL PCB
-		printf("BUFFER: %s\n", message);
 	} else {
 		printf("Error al recibir PCB\n");
 		exit(errno);
@@ -335,6 +328,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	}
 
 	variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
+
+	//TODO CAMBIAR EL TIPO DE DATO DE var_encontrada A t_Stack Y LUEGO ENVIARMENSAJE A MEMORIA PIDIENDO LA POSICION EXACTA DE LA VARIABLE
+	//ENVIANDOLE PID, PAGINA Y OFFSET Y ESA DIRECCION ES LA QUEDE ENVIARSE EN EL RETURN.
 
 	return var_encontrada->direcion;
 }

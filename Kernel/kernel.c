@@ -37,6 +37,7 @@ pthread_mutex_t mtx_ejecucion;
 pthread_mutex_t mtx_listos;
 pthread_mutex_t mtx_bloqueados;
 pthread_mutex_t mtx_terminados;
+pthread_mutex_t mtx_nuevos;
 pthread_mutex_t mtx_cpu;
 pthread_mutex_t mtx_globales;
 pthread_mutex_t mtx_semaforos;
@@ -44,6 +45,7 @@ t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
 t_queue* cola_terminados;
+t_queue* cola_nuevos;
 t_queue* cola_cpu;
 t_list* lista_variables_globales;
 t_list* lista_semaforos;
@@ -61,6 +63,7 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mtx_bloqueados, NULL);
 	pthread_mutex_init(&mtx_ejecucion, NULL);
 	pthread_mutex_init(&mtx_listos, NULL);
+	pthread_mutex_init(&mtx_nuevos, NULL);
 	pthread_mutex_init(&mtx_terminados, NULL);
 	pthread_mutex_init(&mtx_cpu, NULL);
 	pthread_mutex_init(&mtx_globales, NULL);
@@ -73,6 +76,7 @@ int main(int argc, char **argv) {
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
 	pthread_t thread_planificador;
+	pthread_t thread_multiprogramacion;
 
 	configuracion = leerConfiguracion(argv[1]);
 
@@ -117,6 +121,7 @@ int main(int argc, char **argv) {
 	cola_bloqueados = crear_cola_pcb();
 	cola_ejecucion = crear_cola_pcb();
 	cola_terminados = crear_cola_pcb();
+	cola_nuevos = crear_cola_pcb();
 
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
@@ -124,6 +129,7 @@ int main(int argc, char **argv) {
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
 	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
 	creoThread(&thread_planificador, planificar, NULL);
+	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
 
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
@@ -445,9 +451,15 @@ void * hilo_conexiones_consola(void *args) {
 					if(atoi(respuesta_a_kernel[0]) == 303){
 						//validacion de nivel de multiprogramacion
 						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
-							char message[MAXBUF];
-							strcpy(message, "198;");
-							enviarMensaje(&sd, message);
+							t_nuevo* nue = malloc(sizeof(t_nuevo));
+							nue->codigo = string_new();
+							nue->codigo = limpioCodigo(respuesta_a_kernel[1]);
+							nue->skt = client_socket[i];
+
+							pthread_mutex_lock(&mtx_nuevos);
+							queue_push(cola_nuevos, nue);
+							pthread_mutex_unlock(&mtx_nuevos);
+
 						}else{
 							//Se crea programa nuevo
 
@@ -1236,8 +1248,6 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 }
 
 t_pcb * deserializar_pcb(char * mensajeRecibido){
-	puts("llegue 1 ");
-	printf("El mensaje es %s \n", mensajeRecibido);
 
 	t_pcb * pcb = malloc(sizeof(t_pcb));
 	int cantIndiceCodigo, cantIndiceEtiquetas, cantIndiceStack;
@@ -1259,7 +1269,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	pcb->quantum = atoi(message[10]);
 
 	int i = 11;
-	puts("llegue 2 ");
+
 	while (i < 10 + cantIndiceCodigo * 2){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem->start = atoi(message[i]);
@@ -1270,14 +1280,14 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	}
 
 	int j = i;
-	puts("llegue 3 ");
+
 	while (i < j + cantIndiceEtiquetas){
 		list_add(pcb->indiceEtiquetas, message[i]);
 		i++;
 	}
 
 	int k = i;
-	puts("llegue 4 ");
+
 	while (i < k + cantIndiceStack){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta->direccion.offset = atoi(message[i]);
@@ -1294,4 +1304,79 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	}
 
 	return pcb;
+}
+
+void * multiprogramar(){
+	//validacion de nivel de multiprogramacion
+	while(1){
+		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < configuracion->grado_multiprogramacion){
+		//Se crea programa nuevo
+
+		if(queue_size(cola_nuevos) > 0){
+		t_nuevo* nue = queue_pop(cola_nuevos);
+		puts("aquie entre");
+		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
+
+		char* mensajeInicioPrograma = string_new();
+
+		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
+		string_append(&mensajeInicioPrograma, ";");
+		string_append(&mensajeInicioPrograma, nue->codigo);
+		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
+
+		char message[MAXBUF];
+		recv(skt_memoria, message, sizeof(message), 0);
+
+		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
+		char** respuesta_Memoria = string_split(message, ";");
+
+		if(atoi(respuesta_Memoria[0]) == 298){
+			puts("Se rechaza programa por falta de espacio en memoria");
+			puts("aquie entre");
+			//Decremento el numero de pid global del kernel
+			pthread_mutex_lock(&mutex_numerador_pcb);
+			numerador_pcb--;
+			pthread_mutex_unlock(&mutex_numerador_pcb);
+
+			char message2[MAXBUF];
+			strcpy(message2, "197;");
+			enviarMensaje(&(nue->skt), message2);
+		}else{
+			//Si hay espacio suficiente en la memoria
+			//Agrego el programa a la cola de listos
+			printf("Se creo el programa %d \n", new_pcb->pid);
+			puts("");
+
+			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
+			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
+			cargoIndiceCodigo(new_pcb, nue->codigo);
+			//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, new_pcb);
+			pthread_mutex_unlock(&mtx_listos);
+
+			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
+			char* info_pid = string_new();
+			char* respuestaAConsola = string_new();
+			string_append(&info_pid, "103");
+			string_append(&info_pid, ";");
+			string_append(&info_pid, string_itoa(new_pcb->pid));
+			string_append(&respuestaAConsola, info_pid);
+			enviarMensaje(&(nue->skt), respuestaAConsola);
+
+			free(nue);
+			free(info_pid);
+			free(respuestaAConsola);
+
+		}
+
+		free(respuesta_Memoria);
+		free(mensajeInicioPrograma);
+
+		}
+
+	}
+
+	}
 }

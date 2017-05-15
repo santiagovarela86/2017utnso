@@ -80,6 +80,11 @@ typedef struct {
 	int tamanio_disponible;
 } t_pagina_heap;
 
+typedef struct {
+	char* codigo;
+	int skt;
+}t_nuevo;
+
 
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
@@ -106,5 +111,6 @@ bool esNewLine(char* linea);
 char * limpioCodigo(char * codigo);
 void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
+void * multiprogramar();
 
 #endif /* KERNEL_H_ */
