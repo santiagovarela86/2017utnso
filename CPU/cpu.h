@@ -31,11 +31,24 @@ typedef struct {
 	int offset;
 } elementoIndiceCodigo;
 
+typedef struct {
+	int pagina;
+	int offset;
+	int size;
+} t_Direccion;
+
+typedef struct {
+	t_Direccion direccion;
+	char nombre_variable;
+	char nombre_funcion;
+} t_Stack;
+
 void* manejo_memoria();
 void* manejo_kernel();
 char * solicitoInstruccion(t_pcb* pcb);
 void imprimoInfoPCB(t_pcb * pcb);
 t_pcb * reciboPCB(int * socketKernel);
 t_pcb * deserializar_pcb(char * message);
+char* serializar_pcb(t_pcb* pcb);
 
 #endif /* CPU_H_ */

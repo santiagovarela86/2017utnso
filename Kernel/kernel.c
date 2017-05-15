@@ -716,7 +716,17 @@ char* serializar_pcb(t_pcb* pcb){
 	}
 
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
-		string_append(&mensajeACPU, string_itoa((int) list_get(pcb->indiceStack, i)));
+		t_Stack *sta = malloc(sizeof(t_Stack));
+		sta =  list_get(pcb->indiceStack, i);
+		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, string_itoa(sta->direccion.pagina));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, string_itoa(sta->direccion.size));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, &(sta->nombre_funcion));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, &(sta->nombre_variable));
 		string_append(&mensajeACPU, ";");
 	}
 
@@ -781,7 +791,12 @@ void * handler_conexion_cpu(void * sock) {
 
 
 		if(codigo == 530){
-			int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
+			recv(* socketCliente, message, sizeof(message), 0);
+
+			t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
+			pcb_deserializado = deserializar_pcb(message);
+
+			int pid_a_buscar = pcb_deserializado->pid;
 
 			int encontrado = 0;
 
@@ -797,7 +812,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				if(pcb_a_cambiar->pid == pid_a_buscar){
 
-					pcb_a_cambiar->program_counter = pcb_a_cambiar->program_counter + pcb_a_cambiar->quantum;
+					pcb_a_cambiar = pcb_deserializado;
 
 					pthread_mutex_lock(&mtx_listos);
 					queue_push(cola_listos, pcb_a_cambiar);
@@ -1111,9 +1126,9 @@ void * planificar(){
 	while (1){
 		usleep(configuracion->quantum_sleep);
 
-//		pthread_mutex_lock(&mtx_cpu);
+		pthread_mutex_lock(&mtx_cpu);
 		corte = queue_size(cola_cpu);
-//		pthread_mutex_unlock(&mtx_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
 
 		i = 0;
 		encontrado = 0;
@@ -1123,9 +1138,9 @@ void * planificar(){
 
 			while (i <= corte && encontrado == 0){
 
-//				pthread_mutex_lock(&mtx_cpu);
+				pthread_mutex_lock(&mtx_cpu);
 				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-//				pthread_mutex_unlock(&mtx_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
 
 				if(temporalCpu->pid_asignado == -1){
 
@@ -1134,9 +1149,9 @@ void * planificar(){
 					i++;
 				}
 
-//				pthread_mutex_lock(&mtx_cpu);
+				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
-//				pthread_mutex_unlock(&mtx_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
 			}
 
 			if(encontrado == 1){
@@ -1144,9 +1159,9 @@ void * planificar(){
 
 					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
 
-//					pthread_mutex_lock(&mtx_listos);
+					pthread_mutex_lock(&mtx_listos);
 					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
-//					pthread_mutex_unlock(&mtx_listos);
+					pthread_mutex_unlock(&mtx_listos);
 
 					temporalCpu->pid_asignado = pcbtemporalListos->pid;
 					pcbtemporalListos->socket_cpu = &temporalCpu->socket;
@@ -1154,9 +1169,9 @@ void * planificar(){
 					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
 					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
 
-//					pthread_mutex_lock(&mtx_ejecucion);
+					pthread_mutex_lock(&mtx_ejecucion);
 					queue_push(cola_ejecucion, pcbtemporalListos);
-//					pthread_mutex_unlock(&mtx_ejecucion);
+					pthread_mutex_unlock(&mtx_ejecucion);
 
 					free(mensajeACPUPlan);
 				}
@@ -1206,9 +1221,6 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 
 	metadataProgram = metadata_desde_literal(codigo);
 
-//	printf("Instruccion Inicio: %d\n", metadataProgram->instruccion_inicio);
-//	printf("Cantidad de Instrucciones: %d\n", metadataProgram->instrucciones_size);
-
 	int i;
 	for (i = 0; i < metadataProgram->instrucciones_size; i++){
 
@@ -1217,20 +1229,69 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
 		list_add(pcb->indiceCodigo, elem);
 
-//		printf("Inicio Instruccion %i: %d\n", i, elem->start);
-//		printf("Offset Instruccion %i: %d\n", i, elem->offset);
-
 	}
 
-/*	printf("Cantidad Etiquetas: %d\n", metadataProgram->cantidad_de_etiquetas);
-	printf("Cantidad Etiquetas BIS: %d\n", metadataProgram->etiquetas_size);
-
-	for (i = 0; i < metadataProgram->etiquetas_size; i++){
-		printf("Etiqueta %i: %d\n", i, metadataProgram->etiquetas[i]);
-	}
-
-	printf("Cantidad de Funciones: %d\n", metadataProgram->cantidad_de_funciones);
-*/
 	metadata_destruir(metadataProgram);
 
+}
+
+t_pcb * deserializar_pcb(char * mensajeRecibido){
+	puts("llegue 1 ");
+	printf("El mensaje es %s \n", mensajeRecibido);
+
+	t_pcb * pcb = malloc(sizeof(t_pcb));
+	int cantIndiceCodigo, cantIndiceEtiquetas, cantIndiceStack;
+	char ** message = string_split(mensajeRecibido, ";");
+	pcb->indiceCodigo = list_create();
+	pcb->indiceEtiquetas = list_create();
+	pcb->indiceStack = list_create();
+
+	pcb->pid = atoi(message[0]);
+	pcb->program_counter = atoi(message[1]);
+	pcb->cantidadPaginas = atoi(message[2]);
+	pcb->inicio_codigo = atoi(message[3]);
+	pcb->tabla_archivos = atoi(message[4]);
+	pcb->pos_stack = atoi(message[5]);
+	pcb->exit_code = atoi(message[6]);
+	cantIndiceCodigo = atoi(message[7]);
+	cantIndiceEtiquetas = atoi(message[8]);
+	cantIndiceStack = atoi(message[9]);
+	pcb->quantum = atoi(message[10]);
+
+	int i = 11;
+	puts("llegue 2 ");
+	while (i < 10 + cantIndiceCodigo * 2){
+		elementoIndiceCodigo * elem = malloc(sizeof(elem));
+		elem->start = atoi(message[i]);
+		i++;
+		elem->offset = atoi(message[i]);
+		i++;
+		list_add(pcb->indiceCodigo, elem);
+	}
+
+	int j = i;
+	puts("llegue 3 ");
+	while (i < j + cantIndiceEtiquetas){
+		list_add(pcb->indiceEtiquetas, message[i]);
+		i++;
+	}
+
+	int k = i;
+	puts("llegue 4 ");
+	while (i < k + cantIndiceStack){
+		t_Stack *sta = malloc(sizeof(t_Stack));
+		sta->direccion.offset = atoi(message[i]);
+		i++;
+		sta->direccion.pagina = atoi(message[i]);
+		i++;
+		sta->direccion.size = atoi(message[i]);
+		i++;
+		sta->nombre_funcion = message[i][0];
+		i++;
+		sta->nombre_variable = message[i][0];
+		list_add(pcb->indiceStack, sta);
+		i++;
+	}
+
+	return pcb;
 }

@@ -115,12 +115,16 @@ void* manejo_kernel(void *args) {
 
         	string_append(&mensajeAKernel, "530");
         	string_append(&mensajeAKernel, ";");
-        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-        	string_append(&mensajeAKernel, ";");
 
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
+        	char* mensajeAKernel2 = serializar_pcb(pcb);
+
+        	printf("Enviando mensaje %s \n", mensajeAKernel);
+        	enviarMensaje(&socketKernel, mensajeAKernel2);
+
         	free(mensajeAKernel);
+        	free(mensajeAKernel2);
     	}
 
 
@@ -135,7 +139,6 @@ void* manejo_kernel(void *args) {
 	return EXIT_SUCCESS;
 }
 
-//TODO Cambiar esta funcion por "solicitoInstruccion"
 char * solicitoInstruccion(t_pcb* pcb){
 
     int inst_pointer = pcb->program_counter;
@@ -264,7 +267,17 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	int k = i;
 
 	while (i < k + cantIndiceStack){
-		list_add(pcb->indiceStack, message[i]);
+		t_Stack *sta = malloc(sizeof(t_Stack));
+		sta->direccion.offset = atoi(message[i]);
+		i++;
+		sta->direccion.pagina = atoi(message[i]);
+		i++;
+		sta->direccion.size = atoi(message[i]);
+		i++;
+		sta->nombre_funcion = message[i][0];
+		i++;
+		sta->nombre_variable = message[i][0];
+		list_add(pcb->indiceStack, sta);
 		i++;
 	}
 
@@ -587,5 +600,77 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	puts("Leer");
 	puts("");
 	return;
+}
+
+char* serializar_pcb(t_pcb* pcb){
+
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, string_itoa(pcb->pid));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->program_counter));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->cantidadPaginas));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->inicio_codigo));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->tabla_archivos));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceCodigo->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceEtiquetas->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->quantum));
+	string_append(&mensajeACPU, ";");
+
+	int i;
+	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
+		elementoIndiceCodigo * elem = malloc(sizeof(elem));
+		elem = list_get(pcb->indiceCodigo, i);
+
+		string_append(&mensajeACPU, string_itoa(elem->start));
+		string_append(&mensajeACPU, ";");
+
+		string_append(&mensajeACPU, string_itoa(elem->offset));
+		string_append(&mensajeACPU, ";");
+	}
+
+	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
+		string_append(&mensajeACPU, string_itoa((int) list_get(pcb->indiceEtiquetas, i)));
+		string_append(&mensajeACPU, ";");
+	}
+
+	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+		t_Stack *sta = malloc(sizeof(t_Stack));
+		sta =  list_get(pcb->indiceStack, i);
+		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, string_itoa(sta->direccion.pagina));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, string_itoa(sta->direccion.size));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, &(sta->nombre_funcion));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, &(sta->nombre_variable));
+		string_append(&mensajeACPU, ";");
+	}
+
+	return mensajeACPU;
+
 }
 

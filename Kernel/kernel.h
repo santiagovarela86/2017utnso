@@ -19,6 +19,7 @@ typedef struct {
 typedef struct {
 	t_Direccion direccion;
 	char nombre_variable;
+	char nombre_funcion;
 } t_Stack;
 
 typedef struct {
@@ -104,5 +105,6 @@ bool esComentario(char* linea);
 bool esNewLine(char* linea);
 char * limpioCodigo(char * codigo);
 void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
+t_pcb * deserializar_pcb(char * mensajeRecibido);
 
 #endif /* KERNEL_H_ */
