@@ -32,7 +32,9 @@ typedef struct {
 	int program_counter;
 	int cantidadPaginas;
 	t_list* indiceCodigo;
-	t_list* indiceEtiquetas;
+	char * etiquetas;
+	int etiquetas_size;
+	int cantidadEtiquetas;
 	t_list* indiceStack;
 	int inicio_codigo;
 	int tabla_archivos;

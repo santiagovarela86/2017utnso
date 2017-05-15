@@ -440,7 +440,7 @@ void * hilo_conexiones_consola(void *args) {
 	int max_sd;
 	struct sockaddr_in address;
 
-	char buffer[1025];  //data buffer of 1K
+	char buffer[MAXBUF];  //data buffer of 1K
 
 	//set of socket descriptors
 	fd_set readfds;
@@ -783,13 +783,16 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->indiceCodigo->elements_count));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(pcb->indiceEtiquetas->elements_count));
+	string_append(&mensajeACPU, string_itoa(pcb->etiquetas_size));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->cantidadEtiquetas));
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(configuracion->quantum));
+	string_append(&mensajeACPU, string_itoa(pcb->quantum));
 	string_append(&mensajeACPU, ";");
 
 	int i;
@@ -804,9 +807,10 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 	}
 
-	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
-		string_append(&mensajeACPU, string_itoa((int) list_get(pcb->indiceEtiquetas, i)));
+	for (i = 0; i < pcb->etiquetas_size; i++){
+		string_append(&mensajeACPU, string_itoa(pcb->etiquetas[i]));
 		string_append(&mensajeACPU, ";");
+		//printf("[%d]", pcb->etiquetas[i]);
 	}
 
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
@@ -1179,7 +1183,7 @@ t_pcb *nuevo_pcb(int pid, int* socket_consola){
 	new->program_counter = 0;
 	new->cantidadPaginas = 0;
 	new->indiceCodigo = list_create();
-	new->indiceEtiquetas = list_create();
+	//new->indiceEtiquetas = list_create();
 	new->indiceStack = list_create();
 	new->inicio_codigo = 0;
 	new->tabla_archivos = 0;
@@ -1325,6 +1329,15 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 
 	}
 
+	i = 0;
+	pcb->etiquetas = malloc(metadataProgram->etiquetas_size);
+	while (i < metadataProgram->etiquetas_size){
+		pcb->etiquetas[i] = metadataProgram->etiquetas[i];
+		i++;
+	}
+	pcb->etiquetas_size = metadataProgram->etiquetas_size;
+	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_etiquetas;
+
 	metadata_destruir(metadataProgram);
 
 }
@@ -1332,10 +1345,10 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
 t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	t_pcb * pcb = malloc(sizeof(t_pcb));
-	int cantIndiceCodigo, cantIndiceEtiquetas, cantIndiceStack;
+	int cantIndiceCodigo, cantIndiceStack;
 	char ** message = string_split(mensajeRecibido, ";");
 	pcb->indiceCodigo = list_create();
-	pcb->indiceEtiquetas = list_create();
+	//pcb->indiceEtiquetas = list_create();
 	pcb->indiceStack = list_create();
 
 	pcb->pid = atoi(message[0]);
@@ -1346,13 +1359,14 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	pcb->pos_stack = atoi(message[5]);
 	pcb->exit_code = atoi(message[6]);
 	cantIndiceCodigo = atoi(message[7]);
-	cantIndiceEtiquetas = atoi(message[8]);
-	cantIndiceStack = atoi(message[9]);
-	pcb->quantum = atoi(message[10]);
+	pcb->etiquetas_size = atoi(message[8]);
+	pcb->cantidadEtiquetas = atoi(message[9]);
+	cantIndiceStack = atoi(message[10]);
+	pcb->quantum = atoi(message[11]);
 
-	int i = 11;
+	int i = 12;
 
-	while (i < 10 + cantIndiceCodigo * 2){
+	while (i < 12 + cantIndiceCodigo * 2){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem->start = atoi(message[i]);
 		i++;
@@ -1363,8 +1377,17 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int j = i;
 
-	while (i < j + cantIndiceEtiquetas){
-		list_add(pcb->indiceEtiquetas, message[i]);
+	pcb->etiquetas = malloc(pcb->etiquetas_size);
+	while (i < j + pcb->etiquetas_size){
+		int ascii = atoi(message[i]);
+
+		if (ascii >= 32 || ascii <= 126){
+			pcb->etiquetas[i] = (char) ascii;
+		} else {
+			pcb->etiquetas[i] = atoi(message[i]);
+		}
+
+		//printf("[%c, %d]", pcb->etiquetas[i], pcb->etiquetas[i]);
 		i++;
 	}
 
