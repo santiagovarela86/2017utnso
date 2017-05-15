@@ -25,7 +25,7 @@ pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
 int semaforo = 0;
 t_list* tabla_paginas;
-t_queue* memoria_cache;
+t_list* tabla_cache;
 int stack_size = 2; //TODO: Al realizar el handshake con Kernel le deberia pasar a memoria el stack_size
 
 char* bloque_memoria;
@@ -439,7 +439,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 2:
 					accion_correcta = 1;
-					log_cache_in_disk(memoria_cache);
+					log_cache_in_disk(tabla_cache);
 					break;
 				case 3:
 					accion_correcta = 1;
@@ -451,7 +451,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 5:
 					accion_correcta = 1;
-					flush_cola_cache(memoria_cache);
+					flush_memoria_cache(tabla_cache);
 					break;
 				case 6:
 					accion_correcta = 1;
@@ -505,7 +505,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	inicializar_tabla_paginas(config);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
-	memoria_cache = crear_cola_cache();
+	tabla_cache = list_create();
 	tabla_programas = list_create();
 }
 
@@ -631,7 +631,7 @@ t_manejo_programa* get_manejo_programa(int pid){
 	return list_find(tabla_programas, (void*) esElProgramaBuscado);
 }
 
-void log_cache_in_disk(t_queue* cache) {
+void log_cache_in_disk(t_list* cache) {
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
 
     log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");

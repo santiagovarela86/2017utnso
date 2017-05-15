@@ -56,7 +56,7 @@ typedef struct {
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);
-void log_cache_in_disk(t_queue*);
+void log_cache_in_disk(t_list*);
 void log_estructuras_memoria_in_disk();
 void log_contenido_memoria_in_disk();
 void limpiar_memoria_cache();
