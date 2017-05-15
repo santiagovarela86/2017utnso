@@ -87,6 +87,8 @@ void* manejo_kernel(void *args) {
 
     	instruccion = "";
 
+    	//FORMA CABEZA
+    	pcb->quantum = 3;
     	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
     		instruccion = solicitoInstruccion(pcb);
 
