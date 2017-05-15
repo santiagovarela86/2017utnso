@@ -940,7 +940,7 @@ t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina){
 	entrada_stack->nombre_variable = variable;
 	entrada_stack->direccion.pagina = pagina->nro_pagina;
 	entrada_stack->direccion.offset = pagina->offset;
-	entrada_stack->direccion.size = 4;
+	entrada_stack->direccion.size = OFFSET_VAR;
 
 	return entrada_stack;
 }
