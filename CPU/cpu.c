@@ -471,6 +471,8 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 void irAlLabel(t_nombre_etiqueta identificador_variable){
 	puts("Ir a Label");
 	puts("");
+	  // t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
+	 //  pcb->program_counter = instruccion;
 	return;
 }
 
