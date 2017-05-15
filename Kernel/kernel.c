@@ -1218,6 +1218,68 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_push(fin, element);
 }
 
+void logExitCode(int code)
+{
+	switch(code){
+	case 0:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "El programa finalizó correctamente", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -1:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_ERROR);
+		log_info(logger, "No se pudieron reservar recursos para ejecutar el programa", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -2:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_ERROR);
+		log_info(logger, "El programa intentó acceder a un archivo que no existe.", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -3:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "El programa intentó leer un archivo sin permisos.", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -4:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "El programa intentó escribir un archivo sin permisos.", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -5:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "Excepción de memoria.", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -6:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "Finalizado a través de desconexión de consola", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -7:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "Finalizado a través de comando Finalizar Programa de la consola", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -8:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "Se intento reservar mas memoria que el tamaño de una página", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -9:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "No se pueden asignar mas páginas al proceso", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	case -20:
+		t_log* logger = log_create("kernel.log", "kernel", true, LOG_LEVEL_INFO);
+		log_info(logger, "Error sin definición", "EXITCODE");
+	    log_destroy(logger);
+		break;
+	}
+
+}
+
 void * planificar(){
 	int corte, i, encontrado;
 
