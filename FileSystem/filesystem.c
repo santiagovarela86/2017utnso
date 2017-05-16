@@ -21,6 +21,8 @@
 #include "filesystem.h"
 
 char* montaje;
+t_list* lista_File_global;
+t_list* lista_File_proceso;
 
 int main(int argc, char** argv) {
 
@@ -28,6 +30,10 @@ int main(int argc, char** argv) {
 		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
+
+
+	lista_File_global = list_create();
+	lista_File_proceso = list_create();
 
 	montaje = string_new();
 
@@ -152,11 +158,28 @@ void atender_peticiones(int socket){
 	}
 }
 
-char* abrir_archivo(char* directorio, char permiso){
+/*char* abrir_archivo(char** directorio, char permiso){
+
+
 	int fd_script = open(directorio, O_RDWR);
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 
+	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
+	archNuevo->cantidadDeAperturas = 0;
+	archNuevo->fileDescriptor = fd_script;
+	archNuevo->path = directorio;
+
+	int encontrar_arch(t_fileGlobal* glo){
+		return string_equals_ignore_case(directorio, glo->path);
+	}
+
+
+	t_fileGlobal* archAbrir = list_find(lista_File_global, encontrar_arch);
+
+	archAbrir->cantidadDeAperturas = 1;
+
+	list_add()
 	if(permiso == 'r'){
 		char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 		close(fd_script);
@@ -170,9 +193,10 @@ char* abrir_archivo(char* directorio, char permiso){
 	}
 
 	close(fd_script);
-	return 0;
+	char* extra = string_new();
+	return extra;
 
-}
+}*/
 
 int validar_archivo(char* directorio){
 
@@ -199,6 +223,14 @@ char* crear_archivo(char* directorio, char permiso){
 	  {
 	    fputs ("asigno_Bloque_Prueba",pFile);
 		int fd_script = open(directorio, O_WRONLY);
+
+		t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
+		archNuevo->cantidadDeAperturas = 0;
+		archNuevo->fileDescriptor = fd_script;
+		archNuevo->path = directorio;
+
+		list_add(lista_File_global, archNuevo);
+
 		struct stat scriptFileStat;
 		fstat(fd_script, &scriptFileStat);
 

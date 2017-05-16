@@ -7,6 +7,9 @@
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
 //102 KER A CPU - RESPUESTA HANDSHAKE DE CPU
 //202 MEM A CPU - RESPUESTA HANDSHAKE
+//801 CPU A KER - CERRAR ARCHIVO
+//802 CPU A KER - BORRAR ARCHIVO
+//803 CPU A KER - ABRIR ARCHIVO
 
 
 #include <stdio.h>
@@ -92,11 +95,20 @@ void* manejo_kernel(void *args) {
 
     	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
     		instruccion = solicitoInstruccion(pcb);
+    	//	printf("el program es: %d\n", pcb->program_counter);
+       	//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
     		analizadorLinea(instruccion, funciones, kernel);
 
+
     		pcb->quantum--;
+			//	if (pcb->quantum == 0)
+			//	{
+			//		puts("corta por quatum");
+			//	}
+
     		pcb->program_counter++;
+
     	}
 
 
@@ -505,8 +517,10 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 void irAlLabel(t_nombre_etiqueta identificador_variable){
 	puts("Ir a Label");
 	puts("");
-	  // t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
-	 //  pcb->program_counter = instruccion;
+	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
+
+	    pcb->program_counter = instruccion;
+		printf("tamaño Etiquetas BIS: %d\n", pcb->program_counter);
 	return;
 }
 
@@ -601,17 +615,61 @@ void liberar(t_puntero puntero){
 t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 	puts("Abrir");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "803");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, direccion);
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(flags.creacion));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+
+		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
+		free(mensajeAKernel);
+
+
 	return 0;
 }
 
-void borrar(t_descriptor_archivo direccion){
+void borrar(t_descriptor_archivo descriptor){
 	puts("Borrar");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "802");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(descriptor));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+
+		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
+		free(mensajeAKernel);
+
+
 	return;
 }
 void cerrar(t_descriptor_archivo descriptor){
 	puts("Cerrar");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "801");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(descriptor));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+
+		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
+		free(mensajeAKernel);
+
+
 	return;
 }
 
