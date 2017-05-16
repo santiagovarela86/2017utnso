@@ -62,4 +62,6 @@ t_pcb * deserializar_pcb(char * message);
 char* serializar_pcb(t_pcb* pcb);
 t_Stack* deserializar_entrada_stack(char* mensajeRecibido);
 
+#define CONST_SIN_NOMBRE_FUNCION -1
+
 #endif /* CPU_H_ */

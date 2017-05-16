@@ -115,4 +115,6 @@ void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
 void * multiprogramar();
 
+#define CONST_SIN_NOMBRE_FUNCION -1
+
 #endif /* KERNEL_H_ */

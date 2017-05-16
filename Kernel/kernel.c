@@ -824,12 +824,16 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 		string_append(&mensajeACPU, string_itoa(sta->direccion.size));
 		string_append(&mensajeACPU, ";");
-		string_append(&mensajeACPU, &(sta->nombre_funcion));
+		if (sta->nombre_funcion != NULL){
+			string_append(&mensajeACPU, string_itoa(sta->nombre_funcion));
+		}
+		else {
+			string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+		}
 		string_append(&mensajeACPU, ";");
-		string_append(&mensajeACPU, &(sta->nombre_variable));
+		string_append(&mensajeACPU, string_itoa(sta->nombre_variable));
 		string_append(&mensajeACPU, ";");
 	}
-
 
 
 	return mensajeACPU;
@@ -1468,9 +1472,17 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		i++;
 		sta->direccion.size = atoi(message[i]);
 		i++;
-		sta->nombre_funcion = *(message[i]);
-		i++;
-		sta->nombre_variable = *(message[i]);
+		int nro_funcion = atoi(message[i]);
+		if (nro_funcion != CONST_SIN_NOMBRE_FUNCION){
+			char nombre_funcion = nro_funcion;
+			sta->nombre_funcion = nombre_funcion;
+			i++;
+		} else {
+			i++;
+		}
+		char nombre_variable = atoi(message[i]);
+		sta->nombre_variable = nombre_variable;
+
 		list_add(pcb->indiceStack, sta);
 		i++;
 		cantIndiceStack--;
