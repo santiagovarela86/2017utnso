@@ -805,7 +805,6 @@ t_Stack* deserializar_entrada_stack(char* mensajeRecibido){
 	char** mensajeSplit = string_split(mensajeRecibido, ";");
 
 	entrada_stack->nombre_variable = mensajeSplit[0][0];
-	entrada_stack->nombre_funcion = 'c';
 	entrada_stack->direccion.pagina = atoi(mensajeSplit[1]);
 	entrada_stack->direccion.offset = atoi(mensajeSplit[2]);
 	entrada_stack->direccion.size = atoi(mensajeSplit[3]);
