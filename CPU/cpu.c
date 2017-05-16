@@ -316,10 +316,9 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		i++;
 		sta->direccion.size = atoi(message[i]);
 		i++;
-		sta->nombre_funcion = message[i][0];
+		sta->nombre_funcion = *(message[i]);
 		i++;
-		sta->nombre_variable = message[i][0];
-
+		sta->nombre_variable = *(message[i]);
 		list_add(pcb->indiceStack, sta);
 		i++;
 		cantIndiceStack--;
@@ -692,7 +691,7 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->cantidadEtiquetas));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(list_size(pcb->indiceStack)));
+	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
 
 	string_append(&mensajeACPU, ";");
 
@@ -720,10 +719,8 @@ char* serializar_pcb(t_pcb* pcb){
 		//printf("[%d]", pcb->etiquetas[i]);
 	}
 
-	printf("\n");
-	printf("SERIALIZAR PCB - CANT. INDICE STACK %d\n", list_size(pcb->indiceStack));
 
-	for (i = 0; i < list_size(pcb->indiceStack); i++){
+	for (i = 0; i < pcb->indiceStack->elements_count; i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta =  list_get(pcb->indiceStack, i);
 		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
@@ -750,14 +747,10 @@ t_Stack* deserializar_entrada_stack(char* mensajeRecibido){
 	char** mensajeSplit = string_split(mensajeRecibido, ";");
 
 	entrada_stack->nombre_variable = mensajeSplit[0][0];
+	entrada_stack->nombre_funcion = 'c';
 	entrada_stack->direccion.pagina = atoi(mensajeSplit[1]);
 	entrada_stack->direccion.offset = atoi(mensajeSplit[2]);
 	entrada_stack->direccion.size = atoi(mensajeSplit[3]);
-
-	printf("ENTRADA STACK - NOMBRE VARIABLE :%c\n", entrada_stack->nombre_variable);
-	printf("ENTRADA STACK - DIRECCION OFFSET :%d\n", entrada_stack->direccion.offset);
-	printf("ENTRADA STACK - DIRECCION PAGINA :%d\n", entrada_stack->direccion.pagina);
-	printf("ENTRADA STACK - DIRECCION SIZE :%d\n", entrada_stack->direccion.size);
 
 	return entrada_stack;
 }

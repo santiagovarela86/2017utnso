@@ -789,7 +789,7 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->cantidadEtiquetas));
 	string_append(&mensajeACPU, ";");
 
-	string_append(&mensajeACPU, string_itoa(list_size(pcb->indiceStack)));
+	string_append(&mensajeACPU, string_itoa(pcb->indiceStack->elements_count));
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->quantum));
@@ -817,7 +817,7 @@ char* serializar_pcb(t_pcb* pcb){
 
 	//printf("\n");
 
-	for (i = 0; i < list_size(pcb->indiceStack); i++){
+	for (i = 0; i < pcb->indiceStack->elements_count; i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta =  list_get(pcb->indiceStack, i);
 		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
@@ -1461,20 +1461,18 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	printf("\n");
 	*/
 
-	int k = i;
-
 	while(cantIndiceStack > 0) {
 		t_Stack *sta = malloc(sizeof(t_Stack));
+
 		sta->direccion.offset = atoi(message[i]);
 		i++;
 		sta->direccion.pagina = atoi(message[i]);
 		i++;
 		sta->direccion.size = atoi(message[i]);
 		i++;
-		sta->nombre_funcion = message[i][0];
+		sta->nombre_funcion = *(message[i]);
 		i++;
-		sta->nombre_variable = message[i][0];
-
+		sta->nombre_variable = *(message[i]);
 		list_add(pcb->indiceStack, sta);
 		i++;
 		cantIndiceStack--;
