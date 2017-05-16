@@ -277,7 +277,7 @@ void abrir_subconsola_procesos(void* args){
 		puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
 		puts("1)  Procesos en cola de Listos");
 		puts("2)  Procesos en cola de Ejecucion");
-		puts("3)  Procesos en cola de Boqueados");
+		puts("3)  Procesos en cola de Bloqueados");
 		puts("4)  Procesos en cola de Terminados");
 		puts("5)  Procesos en cola de Nuevos");
 		puts("***********************************************************");
@@ -319,7 +319,7 @@ void abrir_subconsola_procesos(void* args){
 				puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
 				puts("1)  Procesos en cola de Listos");
 				puts("2)  Procesos en cola de Ejecucion");
-				puts("3)  Procesos en cola de Boqueados");
+				puts("3)  Procesos en cola de Bloqueados");
 				puts("4)  Procesos en cola de Terminados");
 				puts("5)  Procesos en cola de Nuevos");
 				puts("***********************************************************");
@@ -334,13 +334,11 @@ void abrir_subconsola_procesos(void* args){
 void listarCola(t_queue* cola){
 	t_pcb * temporalP;
 	int tempPid;
-	puts("hice");
 	int largoColaListada = queue_size(cola);
 	while(largoColaListada != 0){
 		pthread_mutex_lock(&mtx_globales);
 		temporalP = (t_pcb*) queue_pop(cola);
-		tempPid = 1111;
-		//tempPid = temporalP->pid;
+		tempPid = temporalP->pid;
 		printf("Programa %d \n", tempPid);
 		puts("");
 		pthread_mutex_unlock(&mtx_globales);
