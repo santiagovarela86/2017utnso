@@ -25,7 +25,7 @@ pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
 int semaforo = 0;
 t_list* tabla_paginas;
-t_queue* memoria_cache;
+t_list* tabla_cache;
 int stack_size = 2; //TODO: Al realizar el handshake con Kernel le deberia pasar a memoria el stack_size
 
 char* bloque_memoria;
@@ -211,21 +211,15 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 512) {
 
-			int pid = atoi(mensajeDesdeCPU[2]);
-
 			char nombreVariable = *mensajeDesdeCPU[1];
+
+			int pid = atoi(mensajeDesdeCPU[2]);
 
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]) + 1;
 
 			t_pagina_invertida* pag_encontrada;
 
-			//t_list* lista_pag_auxiliar = list_create();
-
 			t_manejo_programa * manejo_programa = get_manejo_programa(pid);
-
-			//lista_pag_auxiliar = list_filter(tabla_paginas,  (void*) encontrar_pag);
-
-			//pag_encontrada = list_encontrar_pag_variables(lista_pag_auxiliar);
 
 			if(manejo_programa == NULL){
 
@@ -234,9 +228,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
-
-				//pag_a_cargar->nro_marco = marco_libre_para_variables();
-				//pag_a_cargar->inicio = (pag_a_cargar->nro_marco * configuracion->marco_size);
 				pag_a_cargar->nro_pagina = paginaParaVariables;
 				pag_a_cargar->offset = pag_a_cargar->inicio + 4;
 				pag_a_cargar->pid = pid;
@@ -250,9 +241,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
 
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(pag_a_cargar->offset));
-				string_append(&mensajeACpu, ";");
-
+				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				enviarMensaje(&sock, mensajeACpu);
 
 				free(entrada_stack);
@@ -268,8 +257,11 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
+				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(pag_encontrada->offset));
+				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+
 				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
@@ -447,7 +439,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 2:
 					accion_correcta = 1;
-					log_cache_in_disk(memoria_cache);
+					log_cache_in_disk(tabla_cache);
 					break;
 				case 3:
 					accion_correcta = 1;
@@ -459,7 +451,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 5:
 					accion_correcta = 1;
-					flush_cola_cache(memoria_cache);
+					flush_memoria_cache(tabla_cache);
 					break;
 				case 6:
 					accion_correcta = 1;
@@ -513,7 +505,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config){
 	inicializar_tabla_paginas(config);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
-	memoria_cache = crear_cola_cache();
+	tabla_cache = list_create();
 	tabla_programas = list_create();
 }
 
@@ -639,7 +631,7 @@ t_manejo_programa* get_manejo_programa(int pid){
 	return list_find(tabla_programas, (void*) esElProgramaBuscado);
 }
 
-void log_cache_in_disk(t_queue* cache) {
+void log_cache_in_disk(t_list* cache) {
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
 
     log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");
@@ -948,10 +940,11 @@ t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina){
 	entrada_stack->nombre_variable = variable;
 	entrada_stack->direccion.pagina = pagina->nro_pagina;
 	entrada_stack->direccion.offset = pagina->offset;
-	entrada_stack->direccion.size = 4;
+	entrada_stack->direccion.size = OFFSET_VAR;
 
 	return entrada_stack;
 }
+
 char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 
 	char* entrada_stack = string_new();

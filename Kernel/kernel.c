@@ -1461,21 +1461,21 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	printf("\n");
 	*/
 
-	int k = i;
-
-	while (i < k + cantIndiceStack){
+	while(cantIndiceStack > 0) {
 		t_Stack *sta = malloc(sizeof(t_Stack));
+
 		sta->direccion.offset = atoi(message[i]);
 		i++;
 		sta->direccion.pagina = atoi(message[i]);
 		i++;
 		sta->direccion.size = atoi(message[i]);
 		i++;
-		sta->nombre_funcion = message[i][0];
+		sta->nombre_funcion = *(message[i]);
 		i++;
-		sta->nombre_variable = message[i][0];
+		sta->nombre_variable = *(message[i]);
 		list_add(pcb->indiceStack, sta);
 		i++;
+		cantIndiceStack--;
 	}
 
 	return pcb;
