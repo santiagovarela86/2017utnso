@@ -53,6 +53,16 @@ typedef struct {
 	char nombre_variable;
 } t_Stack;
 
+typedef struct {
+	uint32_t size;
+	bool isFree;
+} heapMetadata;
+
+typedef struct {
+	heapMetadata metadata;
+	char* data;
+} t_pagina_heap;
+
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);

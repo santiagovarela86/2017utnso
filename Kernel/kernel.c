@@ -106,6 +106,8 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mtx_globales, NULL);
 	pthread_mutex_init(&mtx_semaforos, NULL);
 
+	heap = list_create();
+
 	cola_cpu = crear_cola_pcb();
 
 	configuracion = leerConfiguracion(pathConfig);
@@ -168,6 +170,8 @@ void liberarEstructuras(){
 	pthread_mutex_destroy(&mtx_cpu);
 	pthread_mutex_destroy(&mtx_globales);
 	pthread_mutex_destroy(&mtx_semaforos);
+
+	list_destroy_and_destroy_elements(heap, heapElementDestroyer);
 
 	queue_destroy_and_destroy_elements(cola_cpu, eliminar_pcb);
 	free(configuracion);
@@ -1671,6 +1675,14 @@ void * multiprogramar(){
 	}
 }
 
-void reservarMemoria(){
+void reservarMemoriaHeap(int pid, int bytes){
 
+}
+
+void liberarMemoriaHeap(){
+
+}
+
+void heapElementDestroyer(void * heapElement){
+	free(heapElement);
 }
