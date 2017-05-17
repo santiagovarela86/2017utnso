@@ -221,7 +221,19 @@ void * inicializar_consola(void* args){
 				break;
 			case 7:
 				accion_correcta = 1;
-				string_append(&mensaje, "Tabla global de archivos");
+
+				puts("Se busca la Tabla global de archivos");
+				string_append(&mensaje, "820");
+
+				string_append(&mensaje, ";");
+				//enviarMensaje(&skt_memoria, mensaje);
+
+				/*char message[MAXBUF];
+				recv(skt_memoria, message, sizeof(message), 0);
+				char** respuesta_Memoria = string_split(message, ";");
+
+				enviarMensaje(manejo_filesystem);*/
+
 				log_console_in_disk(mensaje);
 				break;
 			case 8:
@@ -534,7 +546,7 @@ void * hilo_conexiones_consola(void *args) {
 					char** respuesta_a_kernel = string_split(buffer, ";");
 					if(atoi(respuesta_a_kernel[0]) == 303){
 						//validacion de nivel de multiprogramacion
-						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
+						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion){
 							t_nuevo* nue = malloc(sizeof(t_nuevo));
 							nue->codigo = string_new();
 							nue->codigo = limpioCodigo(respuesta_a_kernel[1]);
@@ -1498,7 +1510,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 void * multiprogramar(){
 	//validacion de nivel de multiprogramacion
 	while(1){
-		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < configuracion->grado_multiprogramacion){
+		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion){
 		//Se crea programa nuevo
 
 		if(queue_size(cola_nuevos) > 0){
