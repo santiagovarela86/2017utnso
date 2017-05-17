@@ -331,8 +331,9 @@ void abrir_subconsola_procesos(void* args){
 	}
 }
 
-void listarCola(t_queue* cola){
-	t_pcb * temporalP;
+void listarCola(t_queue * cola){
+
+	t_pcb * temporalP = malloc(sizeof(t_pcb));
 	int tempPid;
 	int largoColaListada = queue_size(cola);
 	while(largoColaListada != 0){
@@ -341,6 +342,9 @@ void listarCola(t_queue* cola){
 		tempPid = temporalP->pid;
 		printf("Programa %d \n", tempPid);
 		puts("");
+		if(tempPid > 0){
+		queue_push(cola, temporalP);
+		}
 		pthread_mutex_unlock(&mtx_globales);
 		largoColaListada--;
 	}
