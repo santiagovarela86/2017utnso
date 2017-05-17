@@ -292,6 +292,7 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
+				matarProceso(&pid_buscado);
 				string_append(&mensaje, "Se finalizo el proceso con PID ");
 				string_append(&mensaje, string_itoa(pid_buscado));
 				log_console_in_disk(mensaje);
@@ -390,6 +391,72 @@ void abrir_subconsola_procesos(void* args){
 
 		}
 	}
+}
+
+
+
+void matarProceso(int pidAMatar){
+
+		int tempPid;
+		t_pcb * temporalP = malloc(sizeof(t_pcb));
+		int largoColaListada;
+
+		largoColaListada = queue_size(cola_listos);
+		while(largoColaListada != 0){
+			pthread_mutex_lock(&mtx_globales);
+			temporalP = (t_pcb*) queue_pop(cola_listos);
+			tempPid = temporalP->pid;
+			if(temporalP->pid != pidAMatar && tempPid > 0){
+				queue_push(cola_listos, temporalP);
+			}else{
+				queue_push(cola_terminados, temporalP);
+			}
+			pthread_mutex_unlock(&mtx_globales);
+			largoColaListada--;
+		}
+
+		largoColaListada = queue_size(cola_bloqueados);
+		while(largoColaListada != 0){
+			pthread_mutex_lock(&mtx_globales);
+			temporalP = (t_pcb*) queue_pop(cola_bloqueados);
+			tempPid = temporalP->pid;
+			if(temporalP->pid != pidAMatar && tempPid > 0){
+				queue_push(cola_bloqueados, temporalP);
+			}else{
+				queue_push(cola_terminados, temporalP);
+			}
+			pthread_mutex_unlock(&mtx_globales);
+			largoColaListada--;
+		}
+
+		largoColaListada = queue_size(cola_ejecucion);
+		while(largoColaListada != 0){
+			pthread_mutex_lock(&mtx_globales);
+			temporalP = (t_pcb*) queue_pop(cola_ejecucion);
+			tempPid = temporalP->pid;
+			if(temporalP->pid != pidAMatar && tempPid > 0){
+				queue_push(cola_ejecucion, temporalP);
+			}else{
+				queue_push(cola_terminados, temporalP);
+			}
+			pthread_mutex_unlock(&mtx_globales);
+			largoColaListada--;
+		}
+
+		largoColaListada = queue_size(cola_nuevos);
+		while(largoColaListada != 0){
+			pthread_mutex_lock(&mtx_globales);
+			temporalP = (t_pcb*) queue_pop(cola_nuevos);
+			tempPid = temporalP->pid;
+			if(temporalP->pid != pidAMatar && tempPid > 0){
+				queue_push(cola_nuevos, temporalP);
+			}else{
+				queue_push(cola_terminados, temporalP);
+			}
+			pthread_mutex_unlock(&mtx_globales);
+			largoColaListada--;
+		}
+
 }
 
 void listarCola(t_queue * cola){
