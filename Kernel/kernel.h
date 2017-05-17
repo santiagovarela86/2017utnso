@@ -66,14 +66,11 @@ typedef struct {
 } t_semaforo;
 
 typedef struct {
-	uint32_t size;
-	bool isFree;
-} t_metadata_heap;
-
-typedef struct {
-	t_metadata_heap metadata;
-	char* data;
-} t_bloque_heap;
+	//t_bloque_heap** bloques;
+	int pid;
+	int nro_pagina;
+	int tamanio_disponible;
+} heapElement;
 
 typedef struct {
 	int fileDescriptor;
@@ -88,17 +85,9 @@ typedef struct {
 } t_fileGlobal;
 
 typedef struct {
-	t_bloque_heap** bloques;
-	int pid;
-	int nro_pagina;
-	int tamanio_disponible;
-} t_pagina_heap;
-
-typedef struct {
 	char* codigo;
 	int skt;
 }t_nuevo;
-
 
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
@@ -108,24 +97,38 @@ void* manejo_memoria(void* args);
 void* manejo_filesystem(void* args);
 void* inicializar_consola(void* args);
 void log_console_in_disk(char*);
-void eliminar_pcb(t_pcb*);
+//void eliminar_pcb(t_pcb*);
+void eliminar_pcb(void * voidPCB);
 void flush_cola_pcb(t_queue*);
 void * planificar();
+void inicializarEstructuras(char * pathConfig);
 
 t_queue* crear_cola_pcb();
 t_pcb* nuevo_pcb(int, int *);
 char* serializar_pcb(t_pcb* pcb);
 void inicializar_variables_globales();
 void inicializar_semaforos();
-void liberar_estructuras();
-
+void liberarEstructuras();
+void heapElementDestroyer(void * heapElement);
 
 bool esComentario(char* linea);
 bool esNewLine(char* linea);
 char * limpioCodigo(char * codigo);
-void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
+void cargoIndicesPCB(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
 void * multiprogramar();
+
+void iniciarPrograma(char * codigo, int socket, int pid);
+void finalizarPrograma(int pidACerrar);
+void cerrarConsola(int socketCliente);
+
+void finDeQuantum(int * socketCliente);
+void finDePrograma(int pid);
+void waitSemaforo(int * socketCliente, char * semaforo_buscado);
+void signalSemaforo(int * socketCliente, char * otro_semaforo_buscado);
+void asignarValorCompartida(char * variable, int valor);
+void obtenerValorCompartida(char * otra_variable, int * socketCliente);
+void escribir(int fd, int pid_mensaje, char * info);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

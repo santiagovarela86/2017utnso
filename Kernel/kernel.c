@@ -23,6 +23,7 @@
 #include "kernel.h"
 #include "helperFunctions.h"
 #include <parser/metadata_program.h>
+#include <semaphore.h>
 
 #define MAXCON 10
 #define MAXCPU 10
@@ -55,6 +56,9 @@ int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
 int plan;
+t_list * heap;
+sem_t semaforoMemoria;
+sem_t semaforoFileSystem;
 
 int main(int argc, char **argv) {
 
@@ -63,6 +67,40 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
+	pthread_t thread_id_filesystem;
+	pthread_t thread_id_memoria;
+	pthread_t thread_proceso_consola;
+	pthread_t thread_proceso_cpu;
+	pthread_t thread_consola_kernel;
+	pthread_t thread_planificador;
+	pthread_t thread_multiprogramacion;
+
+	char * pathConfig = argv[1];
+	inicializarEstructuras(pathConfig);
+
+	imprimirConfiguracion(configuracion);
+
+	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
+	creoThread(&thread_id_memoria, manejo_memoria, NULL);
+	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
+	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
+	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
+	creoThread(&thread_planificador, planificar, NULL);
+	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
+
+	pthread_join(thread_id_filesystem, NULL);
+	pthread_join(thread_id_memoria, NULL);
+	pthread_join(thread_proceso_consola, NULL);
+	pthread_join(thread_proceso_cpu, NULL);
+	pthread_join(thread_consola_kernel, NULL);
+	pthread_join(thread_planificador, NULL);
+
+	liberarEstructuras();
+
+	return EXIT_SUCCESS;
+}
+
+void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_grado_multiprog, NULL);
 	pthread_mutex_init(&mtx_bloqueados, NULL);
 	pthread_mutex_init(&mtx_ejecucion, NULL);
@@ -73,25 +111,30 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mtx_globales, NULL);
 	pthread_mutex_init(&mtx_semaforos, NULL);
 
+	sem_init(&semaforoMemoria, 0, 0);
+	sem_init(&semaforoFileSystem, 0, 0);
+
+	heap = list_create();
+
+	lista_semaforos = list_create();
+	lista_variables_globales = list_create();
+	lista_File_global = list_create();
+	lista_File_proceso = list_create();
+
+	cola_listos = crear_cola_pcb();
+	cola_bloqueados = crear_cola_pcb();
+	cola_ejecucion = crear_cola_pcb();
+	cola_terminados = crear_cola_pcb();
+	cola_nuevos = crear_cola_pcb();
+
 	cola_cpu = crear_cola_pcb();
-	pthread_t thread_id_filesystem;
-	pthread_t thread_id_memoria;
-	pthread_t thread_proceso_consola;
-	pthread_t thread_proceso_cpu;
-	pthread_t thread_consola_kernel;
-	pthread_t thread_planificador;
-	pthread_t thread_multiprogramacion;
 
-	configuracion = leerConfiguracion(argv[1]);
-
+	configuracion = leerConfiguracion(pathConfig);
 	if(configuracion->algoritmo[0] != 'R'){
 		configuracion->quantum = 999;
 	}
-	lista_semaforos = list_create();
-	lista_variables_globales = list_create();
 
-	lista_File_global = list_create();
-	lista_File_proceso = list_create();
+	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
 	int w = 0;
 	plan = 0;
@@ -117,39 +160,39 @@ int main(int argc, char **argv) {
 		w++;
 	}
 
-	imprimirConfiguracion(configuracion);
-
-	grado_multiprogramacion = configuracion->grado_multiprogramacion;
-
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
+}
 
-	cola_listos = crear_cola_pcb();
-	cola_bloqueados = crear_cola_pcb();
-	cola_ejecucion = crear_cola_pcb();
-	cola_terminados = crear_cola_pcb();
-	cola_nuevos = crear_cola_pcb();
+void liberarEstructuras(){
+	pthread_mutex_destroy(&mutex_grado_multiprog);
+	pthread_mutex_destroy(&mtx_bloqueados);
+	pthread_mutex_destroy(&mtx_ejecucion);
+	pthread_mutex_destroy(&mtx_listos);
+	pthread_mutex_destroy(&mtx_nuevos);
+	pthread_mutex_destroy(&mtx_terminados);
+	pthread_mutex_destroy(&mtx_cpu);
+	pthread_mutex_destroy(&mtx_globales);
+	pthread_mutex_destroy(&mtx_semaforos);
 
-	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
-	creoThread(&thread_id_memoria, manejo_memoria, NULL);
-	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
-	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
-	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
-	creoThread(&thread_planificador, planificar, NULL);
-	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
+	list_destroy_and_destroy_elements(heap, heapElementDestroyer);
 
-	pthread_join(thread_id_filesystem, NULL);
-	pthread_join(thread_id_memoria, NULL);
-	pthread_join(thread_proceso_consola, NULL);
-	pthread_join(thread_proceso_cpu, NULL);
-	pthread_join(thread_consola_kernel, NULL);
-	pthread_join(thread_planificador, NULL);
-
-	liberar_estructuras();
+	queue_destroy_and_destroy_elements(cola_cpu, eliminar_pcb);
 	free(configuracion);
+	list_destroy_and_destroy_elements(lista_semaforos, free);
+	list_destroy_and_destroy_elements(lista_variables_globales, free);
 
-	return EXIT_SUCCESS;
+	list_destroy_and_destroy_elements(lista_File_global, free);
+	list_destroy_and_destroy_elements(lista_File_proceso, free);
+
+	queue_destroy_and_destroy_elements(cola_listos, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_bloqueados, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_ejecucion, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_terminados, eliminar_pcb);
+
+	sem_destroy(&semaforoMemoria);
+	sem_destroy(&semaforoFileSystem);
 }
 
 void * inicializar_consola(void* args){
@@ -492,19 +535,6 @@ void inicializar_variables_globales(){
 	}
 }
 
-void liberar_estructuras(){
-	//YA QUE HAY UN LIBERAR ESTRUCTURAS
-	//PODRIAMOS ARMAR UN INICIALIZAR ESTRUCTURAS
-	free(configuracion);
-	free(lista_variables_globales);
-	free(lista_semaforos);
-	free(cola_cpu);
-	free(cola_listos);
-	free(cola_bloqueados);
-	free(cola_ejecucion);
-	free(cola_terminados);
-}
-
 void inicializar_semaforos(){
 	lista_semaforos = list_create();
 	int i = 0;
@@ -537,7 +567,9 @@ void* manejo_filesystem(void *args) {
 
 	handShakeSend(&socketFS, "100", "401", "File System");
 
-	pause();
+	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
+	//se cierren los sockets
+	sem_wait(&semaforoFileSystem);
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -558,7 +590,9 @@ void* manejo_memoria(void *args) {
 
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
-	pause();
+	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
+	//se cierren los sockets
+	sem_wait(&semaforoMemoria);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -568,11 +602,11 @@ void* manejo_memoria(void *args) {
 void * hilo_conexiones_consola(void *args) {
 
 	struct sockaddr_in direccionKernel;
-	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , sd;
+	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , socketCliente;
 	int max_sd;
 	struct sockaddr_in address;
 
-	char buffer[MAXBUF];  //data buffer of 1K
+	char buffer[MAXBUF];
 
 	//set of socket descriptors
 	fd_set readfds;
@@ -604,16 +638,16 @@ void * hilo_conexiones_consola(void *args) {
 		//add child sockets to set
 		for ( i = 0 ; i < max_clients ; i++) {
 			//socket descriptor
-			sd = client_socket[i];
+			socketCliente = client_socket[i];
 
 			//if valid socket descriptor then add to read list
-			if(sd > 0){
-				FD_SET( sd , &readfds);
+			if(socketCliente > 0){
+				FD_SET( socketCliente , &readfds);
 			}
 
 			//highest file descriptor number, need it for the select function
-			if(sd > max_sd){
-				max_sd = sd;
+			if(socketCliente > max_sd){
+				max_sd = socketCliente;
 			}
 		}
 
@@ -648,237 +682,40 @@ void * hilo_conexiones_consola(void *args) {
 
 		//else its some IO operation on some other socket :)
 		for (i = 0; i < max_clients; i++){
-			sd = client_socket[i];
+			socketCliente = client_socket[i];
 
-			if (FD_ISSET( sd , &readfds)){
+			if (FD_ISSET( socketCliente , &readfds)){
 				//Check if it was for closing , and also read the incoming message
-				if ((valread = read( sd , buffer, 1024)) == 0){
+				if ((valread = read( socketCliente , buffer, MAXBUF)) == 0){
 					//Somebody disconnected
 					puts("Se desconectó una consola");
 					//Close the socket and mark as 0 in list for reuse
-					close( sd );
+					close( socketCliente );
 					client_socket[i] = 0;
 				}else{
 					//set the string terminating NULL byte on the end of the data read
 					buffer[valread] = '\0';
 					char** respuesta_a_kernel = string_split(buffer, ";");
-					if(atoi(respuesta_a_kernel[0]) == 303){
-						//validacion de nivel de multiprogramacion
-						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion){
-							t_nuevo* nue = malloc(sizeof(t_nuevo));
-							nue->codigo = string_new();
-							nue->codigo = limpioCodigo(respuesta_a_kernel[1]);
-							nue->skt = client_socket[i];
+					int operacion = atoi(respuesta_a_kernel[0]);
 
-							pthread_mutex_lock(&mtx_nuevos);
-							queue_push(cola_nuevos, nue);
-							pthread_mutex_unlock(&mtx_nuevos);
+					switch(operacion){
+						case 303:
+							; //https://goo.gl/y7nI85
+							char * codigo = respuesta_a_kernel[1];
+							iniciarPrograma(codigo, socketCliente, numerador_pcb);
+							break;
 
-						}else{
-							//Se crea programa nuevo
+						case 398:
+							; //https://goo.gl/y7nI85
+							int pidACerrar = atoi(respuesta_a_kernel[1]);
+							finalizarPrograma(pidACerrar);
+							break;
 
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(client_socket[i]));
-
-							char* mensajeInicioPrograma = string_new();
-							char * codigo = limpioCodigo(respuesta_a_kernel[1]);
-							string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
-							string_append(&mensajeInicioPrograma, ";");
-							string_append(&mensajeInicioPrograma, codigo);
-							enviarMensaje(&skt_memoria, mensajeInicioPrograma);
-
-							char message[MAXBUF];
-							recv(skt_memoria, message, sizeof(message), 0);
-
-							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
-							char** respuesta_Memoria = string_split(message, ";");
-
-							if(atoi(respuesta_Memoria[0]) == 298){
-								puts("Se rechaza programa por falta de espacio en memoria");
-
-								//Decremento el numero de pid global del kernel
-								pthread_mutex_lock(&mutex_numerador_pcb);
-								numerador_pcb--;
-								pthread_mutex_unlock(&mutex_numerador_pcb);
-
-								char message2[MAXBUF];
-								strcpy(message2, "197;");
-								enviarMensaje(&sd, message2);
-							}else{
-								//Si hay espacio suficiente en la memoria
-								//Agrego el programa a la cola de listos
-								printf("Se creo el programa %d \n", new_pcb->pid);
-								puts("");
-								printf("%s", buffer);
-								puts("");
-
-								new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
-								new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-								cargoIndiceCodigo(new_pcb, codigo);
-								//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
-
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, new_pcb);
-								pthread_mutex_unlock(&mtx_listos);
-
-								// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
-								char* info_pid = string_new();
-								char* respuestaAConsola = string_new();
-								string_append(&info_pid, "103");
-								string_append(&info_pid, ";");
-								string_append(&info_pid, string_itoa(new_pcb->pid));
-								string_append(&respuestaAConsola, info_pid);
-								enviarMensaje(&sd, respuestaAConsola);
-
-								free(info_pid);
-								free(respuestaAConsola);
-
-							}
-
-							free(respuesta_Memoria);
-							free(mensajeInicioPrograma);
-						}
-					}else if(atoi(respuesta_a_kernel[0]) == 398){
-
-						t_pcb * temporalN;
-						int pidABuscar = (atoi(respuesta_a_kernel[1]));
-
-						int encontre = 0;
-
-						int largoCola = queue_size(cola_listos);
-
-						//busco pid en cola listos
-						while(encontre == 0 && largoCola != 0){
-
-							pthread_mutex_lock(&mtx_listos);
-							temporalN = (t_pcb*) queue_pop(cola_listos);
-
-							pthread_mutex_unlock(&mtx_listos);
-
-							largoCola--;
-							if(temporalN->pid == pidABuscar){
-
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontre = 1;
-							}else {
-								puts("Me llego el 398");
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, temporalN);
-								pthread_mutex_unlock(&mtx_listos);
-							}
-						}
-
-						int encontreBloq = 0;
-						int largoColaBloq = queue_size(cola_bloqueados);
-
-						//busco pid en cola bloqueados
-						while(encontreBloq == 0 && largoColaBloq != 0){
-							pthread_mutex_lock(&mtx_bloqueados);
-							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
-							pthread_mutex_unlock(&mtx_bloqueados);
-							largoColaBloq--;
-							if(temporalN->pid == pidABuscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontreBloq = 1;
-							}else {
-								pthread_mutex_lock(&mtx_bloqueados);
-								queue_push(cola_bloqueados, temporalN);
-								pthread_mutex_unlock(&mtx_bloqueados);
-							}
-						}
-
-						int encontreEjec = 0;
-						int largoColaEjec = queue_size(cola_ejecucion);
-
-						//busco pid en cola bloqueados
-						while(encontreEjec == 0 && largoColaEjec != 0){
-							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-							largoColaEjec--;
-							if(temporalN->pid == pidABuscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontreEjec = 1;
-							}else {
-								pthread_mutex_lock(&mtx_ejecucion);
-								queue_push(cola_ejecucion, temporalN);
-								pthread_mutex_unlock(&mtx_ejecucion);
-							}
-						}
-
-					}if(atoi(respuesta_a_kernel[0]) == 399){
-						// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
-						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
-
-						int socket_a_buscar = sd;
-
-						t_pcb * temporalN;
-
-						int largoColaListos = queue_size(cola_listos);
-
-						//busco pid en cola listos
-
-						while(largoColaListos != 0){
-							pthread_mutex_lock(&mtx_listos);
-							temporalN = (t_pcb*) queue_pop(cola_listos);
-							printf("El skt es %d \n", *(temporalN->socket_consola));
-							printf("El skt buscado es %d \n", socket_a_buscar);
-							pthread_mutex_unlock(&mtx_listos);
-							largoColaListos--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, temporalN);
-								pthread_mutex_unlock(&mtx_listos);
-							}
-						}
-
-						int largoColaBloq = queue_size(cola_bloqueados);
-
-						//busco pid en cola bloqueados
-
-						while(largoColaBloq != 0){
-							pthread_mutex_lock(&mtx_bloqueados);
-							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
-							pthread_mutex_unlock(&mtx_bloqueados);
-							largoColaBloq--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_bloqueados);
-								queue_push(cola_bloqueados, temporalN);
-								pthread_mutex_unlock(&mtx_bloqueados);
-							}
-						}
-
-						int largoColaEjec = queue_size(cola_ejecucion);
-
-						//busco pid en cola bloqueados
-
-						while(largoColaEjec != 0){
-							pthread_mutex_lock(&mtx_ejecucion);
-							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-							pthread_mutex_unlock(&mtx_ejecucion);
-							largoColaEjec--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_ejecucion);
-								queue_push(cola_ejecucion, temporalN);
-								pthread_mutex_unlock(&mtx_ejecucion);
-							}
-						}
+						case 399:
+							cerrarConsola(socketCliente);
+							break;
 					}
+
 					free(respuesta_a_kernel);
 				}
 			}
@@ -1027,255 +864,52 @@ void * handler_conexion_cpu(void * sock) {
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
 
-
-		if(codigo == 530){
-			recv(* socketCliente, message, sizeof(message), 0);
-
-			t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
-			pcb_deserializado = deserializar_pcb(message);
-
-			int pid_a_buscar = pcb_deserializado->pid;
-
-			int encontrado = 0;
-
-			int size = queue_size(cola_ejecucion);
-
-			int iter = 0;
-
-			while(encontrado == 0 && iter < size){
-
-				pthread_mutex_lock(&mtx_ejecucion);
-				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-				pthread_mutex_unlock(&mtx_ejecucion);
-
-				if(pcb_a_cambiar->pid == pid_a_buscar){
-
-					pcb_a_cambiar = pcb_deserializado;
-
-					pthread_mutex_lock(&mtx_listos);
-					queue_push(cola_listos, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_listos);
-
-					encontrado = 1;
-
-				}else{
-
-					pthread_mutex_lock(&mtx_ejecucion);
-					queue_push(cola_ejecucion, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_ejecucion);
-
-				}
-
-				iter++;
-			}
-
-			encontrado = 0;
-
-			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
-
-			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
-
-				pthread_mutex_lock(&mtx_cpu);
-				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-				if(temporalCpu->pid_asignado == pid_a_buscar){
-					encontrado = 1;
-				}
-
-				temporalCpu->pid_asignado = -1;
-
-				pthread_mutex_lock(&mtx_cpu);
-				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-			}
-
-		}else if(codigo == 531){
-			int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
-
-			int encontrado = 0;
-
-			int size = queue_size(cola_ejecucion);
-
-			int iter = 0;
-
-			while(encontrado == 0 && iter < size){
-
-				pthread_mutex_lock(&mtx_ejecucion);
-				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-				pthread_mutex_unlock(&mtx_ejecucion);
-
-				if(pcb_a_cambiar->pid == pid_a_buscar){
-
-					encontrado = 1;
-
-				}else{
-
-					pthread_mutex_lock(&mtx_ejecucion);
-					queue_push(cola_ejecucion, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_ejecucion);
-
-				}
-
-				iter++;
-			}
-
-			encontrado = 0;
-
-			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
-
-			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
-
-				pthread_mutex_lock(&mtx_cpu);
-				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-				if(temporalCpu->pid_asignado == pid_a_buscar){
-					encontrado = 1;
-				}
-
-				temporalCpu->pid_asignado = -1;
-
-				pthread_mutex_lock(&mtx_cpu);
-				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
-			}
-		}else if(codigo == 570){ //WAIT DE SEMAFORO
-
-			char* semaforo_buscado = string_new();
-			semaforo_buscado = mensajeDesdeCPU[1];
-
-			int logrado = 0;
-
-			while(logrado == 0){
-
-				int encontrar_sem(t_globales* glo){
-					return string_starts_with(semaforo_buscado, glo->nombre);
-				}
-
-				t_globales* sem = list_find(lista_semaforos, encontrar_sem);
-
-				if(sem->valor > 0){
-					pthread_mutex_lock(&mtx_semaforos);
-					sem->valor--;
-					pthread_mutex_unlock(&mtx_semaforos);
-
-					char* mensajeACPU = string_new();
-					string_append(&mensajeACPU, "570");
-					string_append(&mensajeACPU, ";");
-
-					enviarMensaje(socketCliente, mensajeACPU);
-					logrado = 1;
-
-					free(mensajeACPU);
-				}
-			}
-
-			free(semaforo_buscado);
-
-		}else if(codigo == 571){//SIGNAL DE SEMAFORO
-
-			char* semaforo_buscado = string_new();
-			semaforo_buscado = mensajeDesdeCPU[1];
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(semaforo_buscado, glo->nombre);
-			}
-
-			t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
-
-			pthread_mutex_lock(&mtx_semaforos);
-			sem->valor++;
-			pthread_mutex_unlock(&mtx_semaforos);
-
-			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, "571");
-			string_append(&mensajeACPU, ";");
-
-			enviarMensaje(socketCliente, mensajeACPU);
-
-			free(mensajeACPU);
-
-		}else if(codigo == 515){
-
-			char* var_comp = string_new();
-			string_append(&var_comp, "!");
-			string_append(&var_comp, mensajeDesdeCPU[1]);
-			int valor_asignar = atoi(mensajeDesdeCPU[2]);
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(var_comp, glo->nombre);
-			}
-
-			t_globales *var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
-
-			pthread_mutex_lock(&mtx_globales);
-			var_glo->valor = valor_asignar;
-			pthread_mutex_unlock(&mtx_globales);
-
-		}else if(codigo == 514){
-
-			char* var_comp = string_new();
-			string_append(&var_comp, "!");
-			string_append(&var_comp, mensajeDesdeCPU[1]);
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(var_comp, glo->nombre);
-			}
-
-			t_globales* var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
-
-			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, string_itoa(var_glo->valor));
-			string_append(&mensajeACPU, ";");
-
-			enviarMensaje(socketCliente, mensajeACPU);
-
-			free(mensajeACPU);
-
-		}else if(codigo == 575){
-
-			char* info = string_new();
-			int fd = atoi(mensajeDesdeCPU[1]);
-			info = mensajeDesdeCPU[3];
-			int pid_mensaje = atoi(mensajeDesdeCPU[2]);
-
-			if(fd == 1){
-				t_pcb* temporalN;
-				int encontreEjec = 0;
-				int largoColaEjec = queue_size(cola_ejecucion);
-
-				//busco pid en cola bloqueados
-				while(encontreEjec == 0 && largoColaEjec != 0){
-					temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-					largoColaEjec--;
-					if(temporalN->pid == pid_mensaje){
-						pthread_mutex_lock(&mtx_terminados);
-						queue_push(cola_terminados, temporalN);
-						pthread_mutex_unlock(&mtx_terminados);
-						encontreEjec = 1;
-					}else {
-						pthread_mutex_lock(&mtx_ejecucion);
-						queue_push(cola_ejecucion, temporalN);
-						pthread_mutex_unlock(&mtx_ejecucion);
-					}
-				}
-
-				char* mensajeAConso = string_new();
-				string_append(&mensajeAConso, "575");
-				string_append(&mensajeAConso, ";");
-				string_append(&mensajeAConso, string_itoa(pid_mensaje));
-				string_append(&mensajeAConso, ";");
-				string_append(&mensajeAConso, info);
-				string_append(&mensajeAConso, ";");
-
-				enviarMensaje(temporalN->socket_consola, mensajeAConso);
-
-				free(mensajeAConso);
-
-			}//TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
-			//Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
+		switch (codigo){
+			case 530:
+				finDeQuantum(socketCliente);
+				break;
+
+			case 531:
+				;
+				int pid = atoi(mensajeDesdeCPU[1]);
+				finDePrograma(pid);
+				break;
+
+			case 570:
+				;
+				char* semaforo_buscado = string_new();
+				semaforo_buscado = mensajeDesdeCPU[1];
+				waitSemaforo(socketCliente, semaforo_buscado);
+				break;
+
+			case 571:
+				;
+				char* otro_semaforo_buscado = string_new();
+				otro_semaforo_buscado = mensajeDesdeCPU[1];
+				signalSemaforo(socketCliente, otro_semaforo_buscado);
+				break;
+
+			case 515:
+				;
+				char * variable = mensajeDesdeCPU[1];
+				int valor = atoi(mensajeDesdeCPU[2]);
+				asignarValorCompartida(variable, valor);
+				break;
+
+			case 514:
+				;
+				char * otra_variable = mensajeDesdeCPU[1];
+				obtenerValorCompartida(otra_variable, socketCliente);
+				break;
+
+			case 575:
+				;
+				char * info = string_new();
+				int fd = atoi(mensajeDesdeCPU[1]);
+				int pid_mensaje = atoi(mensajeDesdeCPU[2]);
+				info = mensajeDesdeCPU[3];
+				escribir(fd, pid_mensaje, info);
+				break;
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
@@ -1347,10 +981,11 @@ void flush_cola_pcb(t_queue* queue){
 	 queue_destroy_and_destroy_elements(queue, (void*) eliminar_pcb);
 }
 
-void eliminar_pcb(t_pcb *self){
+//void eliminar_pcb(t_pcb *self){
+void eliminar_pcb(void * voidSelf){
+	t_pcb * self = (t_pcb *) voidSelf;
 	free(self->tabla_archivos);
 	free(self);
-
 }
 
 void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
@@ -1501,7 +1136,7 @@ char * limpioCodigo(char * codigo){
 		   return codigoLimpio;
 	}
 
-void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
+void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 	t_metadata_program * metadataProgram;
 
 	metadataProgram = metadata_desde_literal(codigo);
@@ -1671,8 +1306,7 @@ void * multiprogramar(){
 
 			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
 			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-			cargoIndiceCodigo(new_pcb, nue->codigo);
-			//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
+			cargoIndicesPCB(new_pcb, nue->codigo);
 
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, new_pcb);
@@ -1701,4 +1335,509 @@ void * multiprogramar(){
 	}
 
 	}
+}
+
+//ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES
+//SI RECIBIERA EL PID HABRIA QUE BUSCAR EL PCB A PARTIR DE UN PID
+void reservarMemoriaHeap(t_pcb * pcb, int bytes){
+	int numeroDePagina = pcb->cantidadPaginas;
+
+
+}
+
+void liberarMemoriaHeap(){
+
+}
+
+void heapElementDestroyer(void * heapElement){
+	free(heapElement);
+}
+
+void iniciarPrograma(char * codigo, int socketCliente, int pid) {
+	//validacion de nivel de multiprogramacion
+	if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion) {
+		t_nuevo* nue = malloc(sizeof(t_nuevo));
+		nue->codigo = string_new();
+		nue->codigo = limpioCodigo(codigo);
+		nue->skt = socketCliente;
+
+		pthread_mutex_lock(&mtx_nuevos);
+		queue_push(cola_nuevos, nue);
+		pthread_mutex_unlock(&mtx_nuevos);
+	} else {
+		//Se crea programa nuevo
+		t_pcb * new_pcb = nuevo_pcb(pid, &socketCliente);
+
+		char * mensajeInicioPrograma = string_new();
+		char * codigoLimpio = limpioCodigo(codigo);
+		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
+		string_append(&mensajeInicioPrograma, ";");
+		string_append(&mensajeInicioPrograma, codigoLimpio);
+		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
+
+		char message[MAXBUF];
+		recv(skt_memoria, message, sizeof(message), 0);
+
+		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
+		char** respuesta_Memoria = string_split(message, ";");
+
+		if (atoi(respuesta_Memoria[0]) == 298) {
+			puts("Se rechaza programa por falta de espacio en memoria");
+
+			//Decremento el numero de pid global del kernel
+			pthread_mutex_lock(&mutex_numerador_pcb);
+			numerador_pcb--;
+			pthread_mutex_unlock(&mutex_numerador_pcb);
+
+			char message2[MAXBUF];
+			strcpy(message2, "197;");
+			enviarMensaje(&socketCliente, message2);
+		} else {
+			//Si hay espacio suficiente en la memoria
+			//Agrego el programa a la cola de listos
+			printf("Se creo el programa %d \n", new_pcb->pid);
+
+			puts("");
+			//printf("%s", buffer);
+			printf("%s", codigo);
+			puts("");
+
+			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
+			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
+			cargoIndicesPCB(new_pcb, codigoLimpio);
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, new_pcb);
+			pthread_mutex_unlock(&mtx_listos);
+
+			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
+			char* info_pid = string_new();
+			char* respuestaAConsola = string_new();
+			string_append(&info_pid, "103");
+			string_append(&info_pid, ";");
+			string_append(&info_pid, string_itoa(new_pcb->pid));
+			string_append(&respuestaAConsola, info_pid);
+			enviarMensaje(&socketCliente, respuestaAConsola);
+
+			free(info_pid);
+			free(respuestaAConsola);
+		}
+
+		free(respuesta_Memoria);
+		free(mensajeInicioPrograma);
+	}
+}
+
+void finalizarPrograma(int pidACerrar) {
+	t_pcb * temporalN;
+
+	int encontre = 0;
+
+	int largoCola = queue_size(cola_listos);
+
+	//busco pid en cola listos
+	while (encontre == 0 && largoCola != 0) {
+
+		pthread_mutex_lock(&mtx_listos);
+		temporalN = (t_pcb*) queue_pop(cola_listos);
+		pthread_mutex_unlock(&mtx_listos);
+		largoCola--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontre = 1;
+			printf("Se termino el proceso: %d\n", temporalN->pid);
+
+		} else {
+
+			//puts("Me llego el 398 y el proceso no existe");
+			printf("Se intento cerrar un programa que no existe\n");
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, temporalN);
+			pthread_mutex_unlock(&mtx_listos);
+
+		}
+	}
+
+	int encontreBloq = 0;
+	int largoColaBloq = queue_size(cola_bloqueados);
+
+	//busco pid en cola bloqueados
+	while (encontreBloq == 0 && largoColaBloq != 0) {
+
+		pthread_mutex_lock(&mtx_bloqueados);
+		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+		largoColaBloq--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontreBloq = 1;
+			printf("Se termino el proceso: %d\n", temporalN->pid);
+
+		} else {
+
+			pthread_mutex_lock(&mtx_bloqueados);
+			queue_push(cola_bloqueados, temporalN);
+			pthread_mutex_unlock(&mtx_bloqueados);
+			printf("Se intento cerrar un programa que no existe\n");
+
+		}
+	}
+
+	int encontreEjec = 0;
+	int largoColaEjec = queue_size(cola_ejecucion);
+
+	//busco pid en cola bloqueados
+	while (encontreEjec == 0 && largoColaEjec != 0) {
+
+		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+		largoColaEjec--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontreEjec = 1;
+			printf("Se termino el proceso: %d", temporalN->pid);
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, temporalN);
+			pthread_mutex_unlock(&mtx_ejecucion);
+			printf("Se intento cerrar un programa que no existe\n");
+
+		}
+	}
+
+}
+
+void cerrarConsola(int socketCliente) {
+	// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
+	//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
+
+	t_pcb * temporalN;
+
+	int largoColaListos = queue_size(cola_listos);
+
+	//busco pid en cola listos
+
+	while (largoColaListos != 0) {
+		pthread_mutex_lock(&mtx_listos);
+		temporalN = (t_pcb*) queue_pop(cola_listos);
+		printf("El skt es %d \n", *(temporalN->socket_consola));
+		printf("El skt buscado es %d \n", socketCliente);
+		pthread_mutex_unlock(&mtx_listos);
+		largoColaListos--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, temporalN);
+			pthread_mutex_unlock(&mtx_listos);
+		}
+	}
+
+	int largoColaBloq = queue_size(cola_bloqueados);
+
+	//busco pid en cola bloqueados
+
+	while (largoColaBloq != 0) {
+		pthread_mutex_lock(&mtx_bloqueados);
+		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+		largoColaBloq--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_bloqueados);
+			queue_push(cola_bloqueados, temporalN);
+			pthread_mutex_unlock(&mtx_bloqueados);
+		}
+	}
+
+	int largoColaEjec = queue_size(cola_ejecucion);
+
+	//busco pid en cola bloqueados
+
+	while (largoColaEjec != 0) {
+		pthread_mutex_lock(&mtx_ejecucion);
+		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+		largoColaEjec--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, temporalN);
+			pthread_mutex_unlock(&mtx_ejecucion);
+		}
+	}
+}
+
+void finDeQuantum(int * socketCliente){
+	char message[MAXBUF];
+	recv(* socketCliente, &message, sizeof(message), 0);
+
+	t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
+	pcb_deserializado = deserializar_pcb(message);
+
+	int pid_a_buscar = pcb_deserializado->pid;
+
+	int encontrado = 0;
+
+	int size = queue_size(cola_ejecucion);
+
+	int iter = 0;
+
+	while (encontrado == 0 && iter < size) {
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		if (pcb_a_cambiar->pid == pid_a_buscar) {
+
+			pcb_a_cambiar = pcb_deserializado;
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_listos);
+
+			encontrado = 1;
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+		}
+
+		iter++;
+	}
+
+	encontrado = 0;
+
+	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+		pthread_mutex_lock(&mtx_cpu);
+		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->pid_asignado == pid_a_buscar) {
+			encontrado = 1;
+		}
+
+		temporalCpu->pid_asignado = -1;
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+	}
+}
+
+void finDePrograma(int pid_a_buscar){
+	int encontrado = 0;
+
+	int size = queue_size(cola_ejecucion);
+
+	int iter = 0;
+
+	while (encontrado == 0 && iter < size) {
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		if (pcb_a_cambiar->pid == pid_a_buscar) {
+
+			encontrado = 1;
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+		}
+
+		iter++;
+	}
+
+	encontrado = 0;
+
+	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+		pthread_mutex_lock(&mtx_cpu);
+		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->pid_asignado == pid_a_buscar) {
+			encontrado = 1;
+		}
+
+		temporalCpu->pid_asignado = -1;
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+	}
+
+}
+
+void waitSemaforo(int * socketCliente, char * semaforo_buscado){
+	int logrado = 0;
+
+	while (logrado == 0) {
+
+		int encontrar_sem(t_globales* glo) {
+			return string_starts_with(semaforo_buscado, glo->nombre);
+		}
+
+		t_globales* sem = list_find(lista_semaforos, encontrar_sem);
+
+		if (sem->valor > 0) {
+			pthread_mutex_lock(&mtx_semaforos);
+			sem->valor--;
+			pthread_mutex_unlock(&mtx_semaforos);
+
+			char* mensajeACPU = string_new();
+			string_append(&mensajeACPU, "570");
+			string_append(&mensajeACPU, ";");
+
+			enviarMensaje(socketCliente, mensajeACPU);
+			logrado = 1;
+
+			free(mensajeACPU);
+		}
+	}
+
+	free(semaforo_buscado);
+}
+
+void signalSemaforo(int * socketCliente, char * semaforo_buscado){
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(semaforo_buscado, glo->nombre);
+	}
+
+	t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
+
+	pthread_mutex_lock(&mtx_semaforos);
+	sem->valor++;
+	pthread_mutex_unlock(&mtx_semaforos);
+
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, "571");
+	string_append(&mensajeACPU, ";");
+
+	enviarMensaje(socketCliente, mensajeACPU);
+
+	free(mensajeACPU);
+
+}
+
+void asignarValorCompartida(char * variable, int valor){
+
+	char* var_comp = string_new();
+	string_append(&var_comp, "!");
+	string_append(&var_comp, variable);
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(var_comp, glo->nombre);
+	}
+
+	t_globales *var_glo = list_find(lista_variables_globales,
+			(void *) encontrar_sem);
+
+	pthread_mutex_lock(&mtx_globales);
+	var_glo->valor = valor;
+	pthread_mutex_unlock(&mtx_globales);
+
+}
+
+void obtenerValorCompartida(char * variable, int * socketCliente){
+	char* var_comp = string_new();
+	string_append(&var_comp, "!");
+	string_append(&var_comp, variable);
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(var_comp, glo->nombre);
+	}
+
+	t_globales* var_glo = list_find(lista_variables_globales,
+			(void *) encontrar_sem);
+
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, string_itoa(var_glo->valor));
+	string_append(&mensajeACPU, ";");
+
+	enviarMensaje(socketCliente, mensajeACPU);
+
+	free(mensajeACPU);
+}
+
+void escribir(int fd, int pid_mensaje, char * info){
+	/*
+	char* info = string_new();
+	int fd = atoi(mensajeDesdeCPU[1]);
+	info = mensajeDesdeCPU[3];
+	int pid_mensaje = atoi(mensajeDesdeCPU[2]);
+	*/
+
+	if (fd == 1) {
+		t_pcb* temporalN;
+		int encontreEjec = 0;
+		int largoColaEjec = queue_size(cola_ejecucion);
+
+		//busco pid en cola bloqueados
+		while (encontreEjec == 0 && largoColaEjec != 0) {
+			temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+			largoColaEjec--;
+			if (temporalN->pid == pid_mensaje) {
+				pthread_mutex_lock(&mtx_terminados);
+				queue_push(cola_terminados, temporalN);
+				pthread_mutex_unlock(&mtx_terminados);
+				encontreEjec = 1;
+			} else {
+				pthread_mutex_lock(&mtx_ejecucion);
+				queue_push(cola_ejecucion, temporalN);
+				pthread_mutex_unlock(&mtx_ejecucion);
+			}
+		}
+
+		char* mensajeAConso = string_new();
+		string_append(&mensajeAConso, "575");
+		string_append(&mensajeAConso, ";");
+		string_append(&mensajeAConso, string_itoa(pid_mensaje));
+		string_append(&mensajeAConso, ";");
+		string_append(&mensajeAConso, info);
+		string_append(&mensajeAConso, ";");
+
+		enviarMensaje(temporalN->socket_consola, mensajeAConso);
+
+		free(mensajeAConso);
+
+	} //TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
+	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
 }

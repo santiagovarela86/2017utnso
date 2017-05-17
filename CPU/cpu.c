@@ -619,6 +619,9 @@ void signal(t_nombre_semaforo identificador_semaforo){
 }
 
 t_puntero reservar(t_valor_variable espacio){
+
+
+
 	puts("Reservar");
 	puts("");
 	return 0;
