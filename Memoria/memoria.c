@@ -960,7 +960,8 @@ char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 	return entrada_stack;
 }
 
+void crearPaginaHeap(int pid, int numeroDePagina){
+	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, numeroDePagina);
 
 
-
-
+}
