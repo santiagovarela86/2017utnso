@@ -23,6 +23,7 @@
 #include "kernel.h"
 #include "helperFunctions.h"
 #include <parser/metadata_program.h>
+#include <semaphore.h>
 
 #define MAXCON 10
 #define MAXCPU 10
@@ -56,6 +57,8 @@ int skt_memoria;
 int skt_filesystem;
 int plan;
 t_list * heap;
+sem_t semaforoMemoria;
+sem_t semaforoFileSystem;
 
 int main(int argc, char **argv) {
 
@@ -74,6 +77,8 @@ int main(int argc, char **argv) {
 
 	char * pathConfig = argv[1];
 	inicializarEstructuras(pathConfig);
+
+	imprimirConfiguracion(configuracion);
 
 	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
 	creoThread(&thread_id_memoria, manejo_memoria, NULL);
@@ -106,20 +111,30 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mtx_globales, NULL);
 	pthread_mutex_init(&mtx_semaforos, NULL);
 
+	sem_init(&semaforoMemoria, 0, 0);
+	sem_init(&semaforoFileSystem, 0, 0);
+
 	heap = list_create();
+
+	lista_semaforos = list_create();
+	lista_variables_globales = list_create();
+	lista_File_global = list_create();
+	lista_File_proceso = list_create();
+
+	cola_listos = crear_cola_pcb();
+	cola_bloqueados = crear_cola_pcb();
+	cola_ejecucion = crear_cola_pcb();
+	cola_terminados = crear_cola_pcb();
+	cola_nuevos = crear_cola_pcb();
 
 	cola_cpu = crear_cola_pcb();
 
 	configuracion = leerConfiguracion(pathConfig);
-
 	if(configuracion->algoritmo[0] != 'R'){
 		configuracion->quantum = 999;
 	}
-	lista_semaforos = list_create();
-	lista_variables_globales = list_create();
 
-	lista_File_global = list_create();
-	lista_File_proceso = list_create();
+	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
 	int w = 0;
 	plan = 0;
@@ -145,19 +160,9 @@ void inicializarEstructuras(char * pathConfig){
 		w++;
 	}
 
-	imprimirConfiguracion(configuracion);
-
-	grado_multiprogramacion = configuracion->grado_multiprogramacion;
-
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
-
-	cola_listos = crear_cola_pcb();
-	cola_bloqueados = crear_cola_pcb();
-	cola_ejecucion = crear_cola_pcb();
-	cola_terminados = crear_cola_pcb();
-	cola_nuevos = crear_cola_pcb();
 }
 
 void liberarEstructuras(){
@@ -186,21 +191,8 @@ void liberarEstructuras(){
 	queue_destroy_and_destroy_elements(cola_ejecucion, eliminar_pcb);
 	queue_destroy_and_destroy_elements(cola_terminados, eliminar_pcb);
 
-	/*
-
-	free(cola_cpu);
-	free(configuracion);
-	free(lista_semaforos);
-	free(lista_variables_globales);
-
-	free(lista_File_global);
-	free(lista_File_proceso);
-
-	free(cola_listos);
-	free(cola_bloqueados);
-	free(cola_ejecucion);
-	free(cola_terminados);
-	*/
+	sem_destroy(&semaforoMemoria);
+	sem_destroy(&semaforoFileSystem);
 }
 
 void * inicializar_consola(void* args){
@@ -508,7 +500,9 @@ void* manejo_filesystem(void *args) {
 
 	handShakeSend(&socketFS, "100", "401", "File System");
 
-	pause();
+	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
+	//se cierren los sockets
+	sem_wait(&semaforoFileSystem);
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -529,7 +523,9 @@ void* manejo_memoria(void *args) {
 
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
-	pause();
+	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
+	//se cierren los sockets
+	sem_wait(&semaforoMemoria);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -543,7 +539,7 @@ void * hilo_conexiones_consola(void *args) {
 	int max_sd;
 	struct sockaddr_in address;
 
-	char buffer[MAXBUF];  //data buffer of 1K
+	char buffer[MAXBUF];
 
 	//set of socket descriptors
 	fd_set readfds;
@@ -684,7 +680,7 @@ void * hilo_conexiones_consola(void *args) {
 
 								new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
 								new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-								cargoIndiceCodigo(new_pcb, codigo);
+								cargoIndicesPCB(new_pcb, codigo);
 								//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
 
 								pthread_mutex_lock(&mtx_listos);
@@ -1473,7 +1469,7 @@ char * limpioCodigo(char * codigo){
 		   return codigoLimpio;
 	}
 
-void cargoIndiceCodigo(t_pcb * pcb, char * codigo){
+void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 	t_metadata_program * metadataProgram;
 
 	metadataProgram = metadata_desde_literal(codigo);
@@ -1643,8 +1639,7 @@ void * multiprogramar(){
 
 			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
 			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-			cargoIndiceCodigo(new_pcb, nue->codigo);
-			//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
+			cargoIndicesPCB(new_pcb, nue->codigo);
 
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, new_pcb);
@@ -1675,7 +1670,11 @@ void * multiprogramar(){
 	}
 }
 
-void reservarMemoriaHeap(int pid, int bytes){
+//ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES
+//SI RECIBIERA EL PID HABRIA QUE BUSCAR EL PCB A PARTIR DE UN PID
+void reservarMemoriaHeap(t_pcb * pcb, int bytes){
+	int numeroDePagina = pcb->cantidadPaginas + 1;
+
 
 }
 

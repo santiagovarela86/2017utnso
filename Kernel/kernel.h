@@ -114,7 +114,7 @@ void heapElementDestroyer(void * heapElement);
 bool esComentario(char* linea);
 bool esNewLine(char* linea);
 char * limpioCodigo(char * codigo);
-void cargoIndiceCodigo(t_pcb * pcb, char * codigo);
+void cargoIndicesPCB(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
 void * multiprogramar();
 
