@@ -122,6 +122,14 @@ void iniciarPrograma(char * codigo, int socket, int pid);
 void finalizarPrograma(int pidACerrar);
 void cerrarConsola(int socketCliente);
 
+void finDeQuantum(int * socketCliente);
+void finDePrograma(int pid);
+void waitSemaforo(int * socketCliente, char * semaforo_buscado);
+void signalSemaforo(int * socketCliente, char * otro_semaforo_buscado);
+void asignarValorCompartida(char * variable, int valor);
+void obtenerValorCompartida(char * otra_variable, int * socketCliente);
+void escribir(int fd, int pid_mensaje, char * info);
+
 #define CONST_SIN_NOMBRE_FUNCION -1
 
 #endif /* KERNEL_H_ */

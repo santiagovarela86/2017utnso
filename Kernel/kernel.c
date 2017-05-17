@@ -797,255 +797,52 @@ void * handler_conexion_cpu(void * sock) {
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
 
-
-		if(codigo == 530){
-			recv(* socketCliente, message, sizeof(message), 0);
-
-			t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
-			pcb_deserializado = deserializar_pcb(message);
-
-			int pid_a_buscar = pcb_deserializado->pid;
-
-			int encontrado = 0;
-
-			int size = queue_size(cola_ejecucion);
-
-			int iter = 0;
-
-			while(encontrado == 0 && iter < size){
-
-				pthread_mutex_lock(&mtx_ejecucion);
-				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-				pthread_mutex_unlock(&mtx_ejecucion);
-
-				if(pcb_a_cambiar->pid == pid_a_buscar){
-
-					pcb_a_cambiar = pcb_deserializado;
-
-					pthread_mutex_lock(&mtx_listos);
-					queue_push(cola_listos, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_listos);
-
-					encontrado = 1;
-
-				}else{
-
-					pthread_mutex_lock(&mtx_ejecucion);
-					queue_push(cola_ejecucion, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_ejecucion);
-
-				}
-
-				iter++;
-			}
-
-			encontrado = 0;
-
-			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
-
-			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
-
-				pthread_mutex_lock(&mtx_cpu);
-				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-				if(temporalCpu->pid_asignado == pid_a_buscar){
-					encontrado = 1;
-				}
-
-				temporalCpu->pid_asignado = -1;
-
-				pthread_mutex_lock(&mtx_cpu);
-				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-			}
-
-		}else if(codigo == 531){
-			int pid_a_buscar = atoi(mensajeDesdeCPU[1]);
-
-			int encontrado = 0;
-
-			int size = queue_size(cola_ejecucion);
-
-			int iter = 0;
-
-			while(encontrado == 0 && iter < size){
-
-				pthread_mutex_lock(&mtx_ejecucion);
-				t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
-				pthread_mutex_unlock(&mtx_ejecucion);
-
-				if(pcb_a_cambiar->pid == pid_a_buscar){
-
-					encontrado = 1;
-
-				}else{
-
-					pthread_mutex_lock(&mtx_ejecucion);
-					queue_push(cola_ejecucion, pcb_a_cambiar);
-					pthread_mutex_unlock(&mtx_ejecucion);
-
-				}
-
-				iter++;
-			}
-
-			encontrado = 0;
-
-			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
-
-			while (encontrado == 0){ //Libero la CPU que estaba ejecutando al programa
-
-				pthread_mutex_lock(&mtx_cpu);
-				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
-
-				if(temporalCpu->pid_asignado == pid_a_buscar){
-					encontrado = 1;
-				}
-
-				temporalCpu->pid_asignado = -1;
-
-				pthread_mutex_lock(&mtx_cpu);
-				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
-			}
-		}else if(codigo == 570){ //WAIT DE SEMAFORO
-
-			char* semaforo_buscado = string_new();
-			semaforo_buscado = mensajeDesdeCPU[1];
-
-			int logrado = 0;
-
-			while(logrado == 0){
-
-				int encontrar_sem(t_globales* glo){
-					return string_starts_with(semaforo_buscado, glo->nombre);
-				}
-
-				t_globales* sem = list_find(lista_semaforos, encontrar_sem);
-
-				if(sem->valor > 0){
-					pthread_mutex_lock(&mtx_semaforos);
-					sem->valor--;
-					pthread_mutex_unlock(&mtx_semaforos);
-
-					char* mensajeACPU = string_new();
-					string_append(&mensajeACPU, "570");
-					string_append(&mensajeACPU, ";");
-
-					enviarMensaje(socketCliente, mensajeACPU);
-					logrado = 1;
-
-					free(mensajeACPU);
-				}
-			}
-
-			free(semaforo_buscado);
-
-		}else if(codigo == 571){//SIGNAL DE SEMAFORO
-
-			char* semaforo_buscado = string_new();
-			semaforo_buscado = mensajeDesdeCPU[1];
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(semaforo_buscado, glo->nombre);
-			}
-
-			t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
-
-			pthread_mutex_lock(&mtx_semaforos);
-			sem->valor++;
-			pthread_mutex_unlock(&mtx_semaforos);
-
-			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, "571");
-			string_append(&mensajeACPU, ";");
-
-			enviarMensaje(socketCliente, mensajeACPU);
-
-			free(mensajeACPU);
-
-		}else if(codigo == 515){
-
-			char* var_comp = string_new();
-			string_append(&var_comp, "!");
-			string_append(&var_comp, mensajeDesdeCPU[1]);
-			int valor_asignar = atoi(mensajeDesdeCPU[2]);
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(var_comp, glo->nombre);
-			}
-
-			t_globales *var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
-
-			pthread_mutex_lock(&mtx_globales);
-			var_glo->valor = valor_asignar;
-			pthread_mutex_unlock(&mtx_globales);
-
-		}else if(codigo == 514){
-
-			char* var_comp = string_new();
-			string_append(&var_comp, "!");
-			string_append(&var_comp, mensajeDesdeCPU[1]);
-
-			int encontrar_sem(t_globales* glo){
-				return string_starts_with(var_comp, glo->nombre);
-			}
-
-			t_globales* var_glo = list_find(lista_variables_globales, (void *) encontrar_sem);
-
-			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, string_itoa(var_glo->valor));
-			string_append(&mensajeACPU, ";");
-
-			enviarMensaje(socketCliente, mensajeACPU);
-
-			free(mensajeACPU);
-
-		}else if(codigo == 575){
-
-			char* info = string_new();
-			int fd = atoi(mensajeDesdeCPU[1]);
-			info = mensajeDesdeCPU[3];
-			int pid_mensaje = atoi(mensajeDesdeCPU[2]);
-
-			if(fd == 1){
-				t_pcb* temporalN;
-				int encontreEjec = 0;
-				int largoColaEjec = queue_size(cola_ejecucion);
-
-				//busco pid en cola bloqueados
-				while(encontreEjec == 0 && largoColaEjec != 0){
-					temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-					largoColaEjec--;
-					if(temporalN->pid == pid_mensaje){
-						pthread_mutex_lock(&mtx_terminados);
-						queue_push(cola_terminados, temporalN);
-						pthread_mutex_unlock(&mtx_terminados);
-						encontreEjec = 1;
-					}else {
-						pthread_mutex_lock(&mtx_ejecucion);
-						queue_push(cola_ejecucion, temporalN);
-						pthread_mutex_unlock(&mtx_ejecucion);
-					}
-				}
-
-				char* mensajeAConso = string_new();
-				string_append(&mensajeAConso, "575");
-				string_append(&mensajeAConso, ";");
-				string_append(&mensajeAConso, string_itoa(pid_mensaje));
-				string_append(&mensajeAConso, ";");
-				string_append(&mensajeAConso, info);
-				string_append(&mensajeAConso, ";");
-
-				enviarMensaje(temporalN->socket_consola, mensajeAConso);
-
-				free(mensajeAConso);
-
-			}//TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
-			//Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
+		switch (codigo){
+			case 530:
+				finDeQuantum(socketCliente);
+				break;
+
+			case 531:
+				;
+				int pid = atoi(mensajeDesdeCPU[1]);
+				finDePrograma(pid);
+				break;
+
+			case 570:
+				;
+				char* semaforo_buscado = string_new();
+				semaforo_buscado = mensajeDesdeCPU[1];
+				waitSemaforo(socketCliente, semaforo_buscado);
+				break;
+
+			case 571:
+				;
+				char* otro_semaforo_buscado = string_new();
+				otro_semaforo_buscado = mensajeDesdeCPU[1];
+				signalSemaforo(socketCliente, otro_semaforo_buscado);
+				break;
+
+			case 515:
+				;
+				char * variable = mensajeDesdeCPU[1];
+				int valor = atoi(mensajeDesdeCPU[2]);
+				asignarValorCompartida(variable, valor);
+				break;
+
+			case 514:
+				;
+				char * otra_variable = mensajeDesdeCPU[1];
+				obtenerValorCompartida(otra_variable, socketCliente);
+				break;
+
+			case 575:
+				;
+				char * info = string_new();
+				int fd = atoi(mensajeDesdeCPU[1]);
+				int pid_mensaje = atoi(mensajeDesdeCPU[2]);
+				info = mensajeDesdeCPU[3];
+				escribir(fd, pid_mensaje, info);
+				break;
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
@@ -1502,7 +1299,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 		pthread_mutex_unlock(&mtx_nuevos);
 	} else {
 		//Se crea programa nuevo
-		t_pcb * new_pcb = nuevo_pcb(pid, &socket);
+		t_pcb * new_pcb = nuevo_pcb(pid, &socketCliente);
 
 		char * mensajeInicioPrograma = string_new();
 		char * codigoLimpio = limpioCodigo(codigo);
@@ -1723,4 +1520,257 @@ void cerrarConsola(int socketCliente) {
 			pthread_mutex_unlock(&mtx_ejecucion);
 		}
 	}
+}
+
+void finDeQuantum(int * socketCliente){
+	char message[MAXBUF];
+	recv(* socketCliente, &message, sizeof(message), 0);
+
+	t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
+	pcb_deserializado = deserializar_pcb(message);
+
+	int pid_a_buscar = pcb_deserializado->pid;
+
+	int encontrado = 0;
+
+	int size = queue_size(cola_ejecucion);
+
+	int iter = 0;
+
+	while (encontrado == 0 && iter < size) {
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		if (pcb_a_cambiar->pid == pid_a_buscar) {
+
+			pcb_a_cambiar = pcb_deserializado;
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_listos);
+
+			encontrado = 1;
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+		}
+
+		iter++;
+	}
+
+	encontrado = 0;
+
+	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+		pthread_mutex_lock(&mtx_cpu);
+		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->pid_asignado == pid_a_buscar) {
+			encontrado = 1;
+		}
+
+		temporalCpu->pid_asignado = -1;
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+	}
+}
+
+void finDePrograma(int pid_a_buscar){
+	int encontrado = 0;
+
+	int size = queue_size(cola_ejecucion);
+
+	int iter = 0;
+
+	while (encontrado == 0 && iter < size) {
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		if (pcb_a_cambiar->pid == pid_a_buscar) {
+
+			encontrado = 1;
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+		}
+
+		iter++;
+	}
+
+	encontrado = 0;
+
+	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+		pthread_mutex_lock(&mtx_cpu);
+		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->pid_asignado == pid_a_buscar) {
+			encontrado = 1;
+		}
+
+		temporalCpu->pid_asignado = -1;
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+	}
+
+}
+
+void waitSemaforo(int * socketCliente, char * semaforo_buscado){
+	int logrado = 0;
+
+	while (logrado == 0) {
+
+		int encontrar_sem(t_globales* glo) {
+			return string_starts_with(semaforo_buscado, glo->nombre);
+		}
+
+		t_globales* sem = list_find(lista_semaforos, encontrar_sem);
+
+		if (sem->valor > 0) {
+			pthread_mutex_lock(&mtx_semaforos);
+			sem->valor--;
+			pthread_mutex_unlock(&mtx_semaforos);
+
+			char* mensajeACPU = string_new();
+			string_append(&mensajeACPU, "570");
+			string_append(&mensajeACPU, ";");
+
+			enviarMensaje(socketCliente, mensajeACPU);
+			logrado = 1;
+
+			free(mensajeACPU);
+		}
+	}
+
+	free(semaforo_buscado);
+}
+
+void signalSemaforo(int * socketCliente, char * semaforo_buscado){
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(semaforo_buscado, glo->nombre);
+	}
+
+	t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
+
+	pthread_mutex_lock(&mtx_semaforos);
+	sem->valor++;
+	pthread_mutex_unlock(&mtx_semaforos);
+
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, "571");
+	string_append(&mensajeACPU, ";");
+
+	enviarMensaje(socketCliente, mensajeACPU);
+
+	free(mensajeACPU);
+
+}
+
+void asignarValorCompartida(char * variable, int valor){
+
+	char* var_comp = string_new();
+	string_append(&var_comp, "!");
+	string_append(&var_comp, variable);
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(var_comp, glo->nombre);
+	}
+
+	t_globales *var_glo = list_find(lista_variables_globales,
+			(void *) encontrar_sem);
+
+	pthread_mutex_lock(&mtx_globales);
+	var_glo->valor = valor;
+	pthread_mutex_unlock(&mtx_globales);
+
+}
+
+void obtenerValorCompartida(char * variable, int * socketCliente){
+	char* var_comp = string_new();
+	string_append(&var_comp, "!");
+	string_append(&var_comp, variable);
+
+	int encontrar_sem(t_globales* glo) {
+		return string_starts_with(var_comp, glo->nombre);
+	}
+
+	t_globales* var_glo = list_find(lista_variables_globales,
+			(void *) encontrar_sem);
+
+	char* mensajeACPU = string_new();
+	string_append(&mensajeACPU, string_itoa(var_glo->valor));
+	string_append(&mensajeACPU, ";");
+
+	enviarMensaje(socketCliente, mensajeACPU);
+
+	free(mensajeACPU);
+}
+
+void escribir(int fd, int pid_mensaje, char * info){
+	/*
+	char* info = string_new();
+	int fd = atoi(mensajeDesdeCPU[1]);
+	info = mensajeDesdeCPU[3];
+	int pid_mensaje = atoi(mensajeDesdeCPU[2]);
+	*/
+
+	if (fd == 1) {
+		t_pcb* temporalN;
+		int encontreEjec = 0;
+		int largoColaEjec = queue_size(cola_ejecucion);
+
+		//busco pid en cola bloqueados
+		while (encontreEjec == 0 && largoColaEjec != 0) {
+			temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+			largoColaEjec--;
+			if (temporalN->pid == pid_mensaje) {
+				pthread_mutex_lock(&mtx_terminados);
+				queue_push(cola_terminados, temporalN);
+				pthread_mutex_unlock(&mtx_terminados);
+				encontreEjec = 1;
+			} else {
+				pthread_mutex_lock(&mtx_ejecucion);
+				queue_push(cola_ejecucion, temporalN);
+				pthread_mutex_unlock(&mtx_ejecucion);
+			}
+		}
+
+		char* mensajeAConso = string_new();
+		string_append(&mensajeAConso, "575");
+		string_append(&mensajeAConso, ";");
+		string_append(&mensajeAConso, string_itoa(pid_mensaje));
+		string_append(&mensajeAConso, ";");
+		string_append(&mensajeAConso, info);
+		string_append(&mensajeAConso, ";");
+
+		enviarMensaje(temporalN->socket_consola, mensajeAConso);
+
+		free(mensajeAConso);
+
+	} //TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
+	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
 }
