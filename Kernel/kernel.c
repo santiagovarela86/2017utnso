@@ -1173,6 +1173,7 @@ void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 	}
 	pcb->etiquetas_size = metadataProgram->etiquetas_size;
 	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_etiquetas;
+	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_funciones;
 
 	metadata_destruir(metadataProgram);
 

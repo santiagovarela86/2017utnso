@@ -538,13 +538,18 @@ void irAlLabel(t_nombre_etiqueta identificador_variable){
 	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
 
 	    pcb->program_counter = instruccion;
-		printf("tamaño Etiquetas BIS: %d\n", pcb->program_counter);
+		printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 	puts("Llamar Sin Retorno");
 	puts("");
+
+	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	    pcb->program_counter = instruccion;
+		printf("ahora el program counter es: %d\n", pcb->program_counter);
+	return;
 	return;
 }
 
