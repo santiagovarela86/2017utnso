@@ -261,20 +261,6 @@ void * inicializar_consola(void* args){
 				char message[MAXBUF];
 				recv(skt_filesystem, message, sizeof(message), 0);
 
-				char** respuesta_filesystem = string_split(message, ";");
-
-				int i= 0;
-				while (i < ((int)atoi(respuesta_filesystem[1]))){
-					t_fileProceso * elem = malloc(sizeof(elem));
-					elem->fileDescriptor = atoi(message[i]);
-					i++;
-					elem->flags = (message[i]);
-					i++;
-					elem->global_fd = atoi(message[i]);
-					i++;
-					list_add(lista_File_proceso, elem);
-				}
-
 				log_console_in_disk(mensaje);
 				break;
 			case 5:
@@ -308,7 +294,7 @@ void * inicializar_consola(void* args){
 				char** fileTablaProcesSerial = string_split(message, ";");
 
 				int j= 0;
-				while (i < ((int)atoi(fileTablaProcesSerial[1]))){
+				while (j < ((int)atoi(fileTablaProcesSerial[1]))){
 					t_fileGlobal * elem = malloc(sizeof(elem));
 					elem->cantidadDeAperturas = atoi(message[j]);
 					j++;
@@ -861,6 +847,7 @@ void * handler_conexion_cpu(void * sock) {
 
 	while (result > 0) {
 
+		char* mensajeFileSystem = string_new();
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
 
@@ -880,6 +867,33 @@ void * handler_conexion_cpu(void * sock) {
 				char* semaforo_buscado = string_new();
 				semaforo_buscado = mensajeDesdeCPU[1];
 				waitSemaforo(socketCliente, semaforo_buscado);
+				break;
+
+			case 803: //de CPU a File system (abrir)
+
+
+
+				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, ";");
+
+				enviarMensaje(&skt_filesystem, mensajeFileSystem);
+				break;
+
+			case 802:  //de CPU a File system (borrar)
+
+
+				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, ";");
+
+				enviarMensaje(&skt_filesystem, mensajeFileSystem);
+				break;
+
+			case 801://de CPU a File system (cerrar)
+
+				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, ";");
+
+				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
 			case 571:
