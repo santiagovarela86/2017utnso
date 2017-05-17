@@ -221,7 +221,19 @@ void * inicializar_consola(void* args){
 				break;
 			case 7:
 				accion_correcta = 1;
-				string_append(&mensaje, "Tabla global de archivos");
+
+				puts("Se busca la Tabla global de archivos");
+				string_append(&mensaje, "820");
+
+				string_append(&mensaje, ";");
+				//enviarMensaje(&skt_memoria, mensaje);
+
+				/*char message[MAXBUF];
+				recv(skt_memoria, message, sizeof(message), 0);
+				char** respuesta_Memoria = string_split(message, ";");
+
+				enviarMensaje(manejo_filesystem);*/
+
 				log_console_in_disk(mensaje);
 				break;
 			case 8:

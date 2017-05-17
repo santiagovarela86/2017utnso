@@ -158,7 +158,7 @@ void atender_peticiones(int socket){
 	}
 }
 
-/*char* abrir_archivo(char** directorio, char permiso){
+char* abrir_archivo(char* directorio, char permiso){
 
 
 	int fd_script = open(directorio, O_RDWR);
@@ -177,9 +177,9 @@ void atender_peticiones(int socket){
 
 	t_fileGlobal* archAbrir = list_find(lista_File_global, encontrar_arch);
 
-	archAbrir->cantidadDeAperturas = 1;
+	//archAbrir->cantidadDeAperturas = 1;
 
-	list_add()
+	//list_add()
 	if(permiso == 'r'){
 		char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 		close(fd_script);
@@ -195,8 +195,7 @@ void atender_peticiones(int socket){
 	close(fd_script);
 	char* extra = string_new();
 	return extra;
-
-}*/
+}
 
 int validar_archivo(char* directorio){
 
@@ -296,3 +295,4 @@ char* guardar_datos(char* directorio, int offset, int size, char* buffer, char p
 	return 0;
 
 }
+
