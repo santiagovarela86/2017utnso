@@ -542,7 +542,7 @@ void * hilo_conexiones_consola(void *args) {
 					char** respuesta_a_kernel = string_split(buffer, ";");
 					if(atoi(respuesta_a_kernel[0]) == 303){
 						//validacion de nivel de multiprogramacion
-						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == configuracion->grado_multiprogramacion){
+						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion){
 							t_nuevo* nue = malloc(sizeof(t_nuevo));
 							nue->codigo = string_new();
 							nue->codigo = limpioCodigo(respuesta_a_kernel[1]);
@@ -1506,7 +1506,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 void * multiprogramar(){
 	//validacion de nivel de multiprogramacion
 	while(1){
-		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < configuracion->grado_multiprogramacion){
+		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion){
 		//Se crea programa nuevo
 
 		if(queue_size(cola_nuevos) > 0){
