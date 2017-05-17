@@ -151,6 +151,17 @@ void atender_peticiones(int socket){
 
 	}else{
 	puts("El archivo no existe");
+					int i= 0;
+				while (i < atoi(message[1])){
+					t_fileProceso * elem = malloc(sizeof(elem));
+					elem->fileDescriptor = atoi(message[i]);
+					i++;
+					elem->flags = (message[i]);
+					i++;
+					elem->global_fd = atoi(message[i]);
+					i++;
+					list_add(lista_File_proceso, elem);
+				}
 	}
 */
 	while(1){
@@ -177,7 +188,7 @@ char* abrir_archivo(char* directorio, char permiso){
 
 	t_fileGlobal* archAbrir = list_find(lista_File_global, encontrar_arch);
 
-	//archAbrir->cantidadDeAperturas = 1;
+	archAbrir->cantidadDeAperturas = 1;
 
 	//list_add()
 	if(permiso == 'r'){

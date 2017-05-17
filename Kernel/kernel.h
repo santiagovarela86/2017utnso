@@ -76,6 +76,18 @@ typedef struct {
 } t_bloque_heap;
 
 typedef struct {
+	int fileDescriptor;
+	char* flags;
+	int global_fd;
+} t_fileProceso;
+
+typedef struct {
+	int fileDescriptor;
+	char* path;
+	int cantidadDeAperturas;
+} t_fileGlobal;
+
+typedef struct {
 	t_bloque_heap** bloques;
 	int pid;
 	int nro_pagina;

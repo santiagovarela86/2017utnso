@@ -49,8 +49,11 @@ t_queue* cola_nuevos;
 t_queue* cola_cpu;
 t_list* lista_variables_globales;
 t_list* lista_semaforos;
+t_list* lista_File_global;
+t_list* lista_File_proceso;
 int numerador_pcb = 1000;
 int skt_memoria;
+int skt_filesystem;
 int plan;
 
 int main(int argc, char **argv) {
@@ -86,6 +89,9 @@ int main(int argc, char **argv) {
 	}
 	lista_semaforos = list_create();
 	lista_variables_globales = list_create();
+
+	lista_File_global = list_create();
+	lista_File_proceso = list_create();
 
 	int w = 0;
 	plan = 0;
@@ -155,7 +161,7 @@ void * inicializar_consola(void* args){
 		puts("1)  Listado de procesos del sistema");
 		puts("2)  Cantidad de rafagas ejecutadas");
 		puts("3)  Cantidad de operaciones privilegiadas");
-		puts("4)  Tabla de archivos abiertos");
+		puts("4)  Tabla de archivos abiertos por proceso");
 		puts("5)  Cantidad de paginas de heap utilizadas");
 		puts("6)  Cantidad de syscalls ejecutadas");
 		puts("7)  Tabla global de archivos");
@@ -201,8 +207,31 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Tabla de archivos abiertos por el proceso ");
+				string_append(&mensaje, "821");
+
+				string_append(&mensaje, ";");
 				string_append(&mensaje, string_itoa(pid_buscado));
+				string_append(&mensaje, ";");
+				enviarMensaje(&skt_filesystem, mensaje);
+
+
+				char message[MAXBUF];
+				recv(skt_filesystem, message, sizeof(message), 0);
+
+				char** respuesta_filesystem = string_split(message, ";");
+
+				int i= 0;
+				while (i < ((int)atoi(respuesta_filesystem[1]))){
+					t_fileProceso * elem = malloc(sizeof(elem));
+					elem->fileDescriptor = atoi(message[i]);
+					i++;
+					elem->flags = (message[i]);
+					i++;
+					elem->global_fd = atoi(message[i]);
+					i++;
+					list_add(lista_File_proceso, elem);
+				}
+
 				log_console_in_disk(mensaje);
 				break;
 			case 5:
@@ -228,14 +257,24 @@ void * inicializar_consola(void* args){
 				string_append(&mensaje, "820");
 
 				string_append(&mensaje, ";");
-				//enviarMensaje(&skt_memoria, mensaje);
+				enviarMensaje(&skt_filesystem, mensaje);
 
-				/*char message[MAXBUF];
-				recv(skt_memoria, message, sizeof(message), 0);
-				char** respuesta_Memoria = string_split(message, ";");
 
-				enviarMensaje(manejo_filesystem);*/
+				recv(skt_filesystem, message, sizeof(message), 0);
 
+				char** fileTablaProcesSerial = string_split(message, ";");
+
+				int j= 0;
+				while (i < ((int)atoi(fileTablaProcesSerial[1]))){
+					t_fileGlobal * elem = malloc(sizeof(elem));
+					elem->cantidadDeAperturas = atoi(message[j]);
+					j++;
+					elem->fileDescriptor = atoi(message[j]);
+					j++;
+					elem->path = message[j];
+					j++;
+					list_add(lista_File_global, elem);
+				}
 				log_console_in_disk(mensaje);
 				break;
 			case 8:
@@ -426,6 +465,8 @@ void* manejo_filesystem(void *args) {
 
 	conectarSocket(&socketFS, &direccionFS);
 	puts("Conectado al File System\n");
+
+	skt_filesystem = socketFS;
 
 	handShakeSend(&socketFS, "100", "401", "File System");
 
