@@ -51,6 +51,7 @@ t_list* lista_variables_globales;
 t_list* lista_semaforos;
 int numerador_pcb = 1000;
 int skt_memoria;
+int plan;
 
 int main(int argc, char **argv) {
 
@@ -87,6 +88,7 @@ int main(int argc, char **argv) {
 	lista_variables_globales = list_create();
 
 	int w = 0;
+	plan = 0;
 	while(configuracion->sem_ids[w] != NULL){
 		t_globales* sem_aux = malloc(sizeof(t_globales));
 		sem_aux->nombre = string_new();
@@ -257,8 +259,16 @@ void * inicializar_consola(void* args){
 				break;
 			case 10:
 				accion_correcta = 1;
-				string_append(&mensaje, "Se finalizo la planificacion de los procesos");
-				log_console_in_disk(mensaje);
+				if(plan == 0){
+					plan = 1;
+					string_append(&mensaje, "Se finalizo la planificacion de los procesos");
+					log_console_in_disk(mensaje);
+				}else{
+					plan = 0;
+					string_append(&mensaje, "Se reinicio la planificacion de los procesos");
+					log_console_in_disk(mensaje);
+				}
+
 				break;
 			default:
 				accion_correcta = 0;
@@ -1288,6 +1298,8 @@ void * planificar(){
 	int corte, i, encontrado;
 
 	while (1){
+
+		if(plan == 0){
 		usleep(configuracion->quantum_sleep);
 
 		pthread_mutex_lock(&mtx_cpu);
@@ -1340,6 +1352,7 @@ void * planificar(){
 					free(mensajeACPUPlan);
 				}
 			}
+		}
 		}
 	}
 }
