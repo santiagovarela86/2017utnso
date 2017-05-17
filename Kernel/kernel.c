@@ -535,7 +535,7 @@ void* manejo_memoria(void *args) {
 void * hilo_conexiones_consola(void *args) {
 
 	struct sockaddr_in direccionKernel;
-	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , sd;
+	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , socketCliente;
 	int max_sd;
 	struct sockaddr_in address;
 
@@ -571,16 +571,16 @@ void * hilo_conexiones_consola(void *args) {
 		//add child sockets to set
 		for ( i = 0 ; i < max_clients ; i++) {
 			//socket descriptor
-			sd = client_socket[i];
+			socketCliente = client_socket[i];
 
 			//if valid socket descriptor then add to read list
-			if(sd > 0){
-				FD_SET( sd , &readfds);
+			if(socketCliente > 0){
+				FD_SET( socketCliente , &readfds);
 			}
 
 			//highest file descriptor number, need it for the select function
-			if(sd > max_sd){
-				max_sd = sd;
+			if(socketCliente > max_sd){
+				max_sd = socketCliente;
 			}
 		}
 
@@ -615,237 +615,40 @@ void * hilo_conexiones_consola(void *args) {
 
 		//else its some IO operation on some other socket :)
 		for (i = 0; i < max_clients; i++){
-			sd = client_socket[i];
+			socketCliente = client_socket[i];
 
-			if (FD_ISSET( sd , &readfds)){
+			if (FD_ISSET( socketCliente , &readfds)){
 				//Check if it was for closing , and also read the incoming message
-				if ((valread = read( sd , buffer, 1024)) == 0){
+				if ((valread = read( socketCliente , buffer, MAXBUF)) == 0){
 					//Somebody disconnected
 					puts("Se desconectó una consola");
 					//Close the socket and mark as 0 in list for reuse
-					close( sd );
+					close( socketCliente );
 					client_socket[i] = 0;
 				}else{
 					//set the string terminating NULL byte on the end of the data read
 					buffer[valread] = '\0';
 					char** respuesta_a_kernel = string_split(buffer, ";");
-					if(atoi(respuesta_a_kernel[0]) == 303){
-						//validacion de nivel de multiprogramacion
-						if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion){
-							t_nuevo* nue = malloc(sizeof(t_nuevo));
-							nue->codigo = string_new();
-							nue->codigo = limpioCodigo(respuesta_a_kernel[1]);
-							nue->skt = client_socket[i];
+					int operacion = atoi(respuesta_a_kernel[0]);
 
-							pthread_mutex_lock(&mtx_nuevos);
-							queue_push(cola_nuevos, nue);
-							pthread_mutex_unlock(&mtx_nuevos);
+					switch(operacion){
+						case 303:
+							; //https://goo.gl/y7nI85
+							char * codigo = respuesta_a_kernel[1];
+							iniciarPrograma(codigo, socketCliente, numerador_pcb);
+							break;
 
-						}else{
-							//Se crea programa nuevo
+						case 398:
+							; //https://goo.gl/y7nI85
+							int pidACerrar = atoi(respuesta_a_kernel[1]);
+							finalizarPrograma(pidACerrar);
+							break;
 
-							t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(client_socket[i]));
-
-							char* mensajeInicioPrograma = string_new();
-							char * codigo = limpioCodigo(respuesta_a_kernel[1]);
-							string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
-							string_append(&mensajeInicioPrograma, ";");
-							string_append(&mensajeInicioPrograma, codigo);
-							enviarMensaje(&skt_memoria, mensajeInicioPrograma);
-
-							char message[MAXBUF];
-							recv(skt_memoria, message, sizeof(message), 0);
-
-							//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
-							char** respuesta_Memoria = string_split(message, ";");
-
-							if(atoi(respuesta_Memoria[0]) == 298){
-								puts("Se rechaza programa por falta de espacio en memoria");
-
-								//Decremento el numero de pid global del kernel
-								pthread_mutex_lock(&mutex_numerador_pcb);
-								numerador_pcb--;
-								pthread_mutex_unlock(&mutex_numerador_pcb);
-
-								char message2[MAXBUF];
-								strcpy(message2, "197;");
-								enviarMensaje(&sd, message2);
-							}else{
-								//Si hay espacio suficiente en la memoria
-								//Agrego el programa a la cola de listos
-								printf("Se creo el programa %d \n", new_pcb->pid);
-								puts("");
-								printf("%s", buffer);
-								puts("");
-
-								new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
-								new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-								cargoIndicesPCB(new_pcb, codigo);
-								//ACA HABRIA QUE INICIALIZAR EL STACK Y LAS ETIQUETAS TAMBIEN***
-
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, new_pcb);
-								pthread_mutex_unlock(&mtx_listos);
-
-								// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
-								char* info_pid = string_new();
-								char* respuestaAConsola = string_new();
-								string_append(&info_pid, "103");
-								string_append(&info_pid, ";");
-								string_append(&info_pid, string_itoa(new_pcb->pid));
-								string_append(&respuestaAConsola, info_pid);
-								enviarMensaje(&sd, respuestaAConsola);
-
-								free(info_pid);
-								free(respuestaAConsola);
-
-							}
-
-							free(respuesta_Memoria);
-							free(mensajeInicioPrograma);
-						}
-					}else if(atoi(respuesta_a_kernel[0]) == 398){
-
-						t_pcb * temporalN;
-						int pidABuscar = (atoi(respuesta_a_kernel[1]));
-
-						int encontre = 0;
-
-						int largoCola = queue_size(cola_listos);
-
-						//busco pid en cola listos
-						while(encontre == 0 && largoCola != 0){
-
-							pthread_mutex_lock(&mtx_listos);
-							temporalN = (t_pcb*) queue_pop(cola_listos);
-
-							pthread_mutex_unlock(&mtx_listos);
-
-							largoCola--;
-							if(temporalN->pid == pidABuscar){
-
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontre = 1;
-							}else {
-								puts("Me llego el 398");
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, temporalN);
-								pthread_mutex_unlock(&mtx_listos);
-							}
-						}
-
-						int encontreBloq = 0;
-						int largoColaBloq = queue_size(cola_bloqueados);
-
-						//busco pid en cola bloqueados
-						while(encontreBloq == 0 && largoColaBloq != 0){
-							pthread_mutex_lock(&mtx_bloqueados);
-							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
-							pthread_mutex_unlock(&mtx_bloqueados);
-							largoColaBloq--;
-							if(temporalN->pid == pidABuscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontreBloq = 1;
-							}else {
-								pthread_mutex_lock(&mtx_bloqueados);
-								queue_push(cola_bloqueados, temporalN);
-								pthread_mutex_unlock(&mtx_bloqueados);
-							}
-						}
-
-						int encontreEjec = 0;
-						int largoColaEjec = queue_size(cola_ejecucion);
-
-						//busco pid en cola bloqueados
-						while(encontreEjec == 0 && largoColaEjec != 0){
-							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-							largoColaEjec--;
-							if(temporalN->pid == pidABuscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-								encontreEjec = 1;
-							}else {
-								pthread_mutex_lock(&mtx_ejecucion);
-								queue_push(cola_ejecucion, temporalN);
-								pthread_mutex_unlock(&mtx_ejecucion);
-							}
-						}
-
-					}if(atoi(respuesta_a_kernel[0]) == 399){
-						// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
-						//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
-
-						int socket_a_buscar = sd;
-
-						t_pcb * temporalN;
-
-						int largoColaListos = queue_size(cola_listos);
-
-						//busco pid en cola listos
-
-						while(largoColaListos != 0){
-							pthread_mutex_lock(&mtx_listos);
-							temporalN = (t_pcb*) queue_pop(cola_listos);
-							printf("El skt es %d \n", *(temporalN->socket_consola));
-							printf("El skt buscado es %d \n", socket_a_buscar);
-							pthread_mutex_unlock(&mtx_listos);
-							largoColaListos--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_listos);
-								queue_push(cola_listos, temporalN);
-								pthread_mutex_unlock(&mtx_listos);
-							}
-						}
-
-						int largoColaBloq = queue_size(cola_bloqueados);
-
-						//busco pid en cola bloqueados
-
-						while(largoColaBloq != 0){
-							pthread_mutex_lock(&mtx_bloqueados);
-							temporalN = (t_pcb*) queue_pop(cola_bloqueados);
-							pthread_mutex_unlock(&mtx_bloqueados);
-							largoColaBloq--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_bloqueados);
-								queue_push(cola_bloqueados, temporalN);
-								pthread_mutex_unlock(&mtx_bloqueados);
-							}
-						}
-
-						int largoColaEjec = queue_size(cola_ejecucion);
-
-						//busco pid en cola bloqueados
-
-						while(largoColaEjec != 0){
-							pthread_mutex_lock(&mtx_ejecucion);
-							temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-							pthread_mutex_unlock(&mtx_ejecucion);
-							largoColaEjec--;
-							if(*(temporalN->socket_consola) == socket_a_buscar){
-								pthread_mutex_lock(&mtx_terminados);
-								queue_push(cola_terminados, temporalN);
-								pthread_mutex_unlock(&mtx_terminados);
-							}else {
-								pthread_mutex_lock(&mtx_ejecucion);
-								queue_push(cola_ejecucion, temporalN);
-								pthread_mutex_unlock(&mtx_ejecucion);
-							}
-						}
+						case 399:
+							cerrarConsola(socketCliente);
+							break;
 					}
+
 					free(respuesta_a_kernel);
 				}
 			}
@@ -1684,4 +1487,240 @@ void liberarMemoriaHeap(){
 
 void heapElementDestroyer(void * heapElement){
 	free(heapElement);
+}
+
+void iniciarPrograma(char * codigo, int socketCliente, int pid) {
+	//validacion de nivel de multiprogramacion
+	if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) == grado_multiprogramacion) {
+		t_nuevo* nue = malloc(sizeof(t_nuevo));
+		nue->codigo = string_new();
+		nue->codigo = limpioCodigo(codigo);
+		nue->skt = socketCliente;
+
+		pthread_mutex_lock(&mtx_nuevos);
+		queue_push(cola_nuevos, nue);
+		pthread_mutex_unlock(&mtx_nuevos);
+	} else {
+		//Se crea programa nuevo
+		t_pcb * new_pcb = nuevo_pcb(pid, &socket);
+
+		char * mensajeInicioPrograma = string_new();
+		char * codigoLimpio = limpioCodigo(codigo);
+		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
+		string_append(&mensajeInicioPrograma, ";");
+		string_append(&mensajeInicioPrograma, codigoLimpio);
+		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
+
+		char message[MAXBUF];
+		recv(skt_memoria, message, sizeof(message), 0);
+
+		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
+		char** respuesta_Memoria = string_split(message, ";");
+
+		if (atoi(respuesta_Memoria[0]) == 298) {
+			puts("Se rechaza programa por falta de espacio en memoria");
+
+			//Decremento el numero de pid global del kernel
+			pthread_mutex_lock(&mutex_numerador_pcb);
+			numerador_pcb--;
+			pthread_mutex_unlock(&mutex_numerador_pcb);
+
+			char message2[MAXBUF];
+			strcpy(message2, "197;");
+			enviarMensaje(&socketCliente, message2);
+		} else {
+			//Si hay espacio suficiente en la memoria
+			//Agrego el programa a la cola de listos
+			printf("Se creo el programa %d \n", new_pcb->pid);
+
+			puts("");
+			//printf("%s", buffer);
+			printf("%s", codigo);
+			puts("");
+
+			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
+			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
+			cargoIndicesPCB(new_pcb, codigoLimpio);
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, new_pcb);
+			pthread_mutex_unlock(&mtx_listos);
+
+			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
+			char* info_pid = string_new();
+			char* respuestaAConsola = string_new();
+			string_append(&info_pid, "103");
+			string_append(&info_pid, ";");
+			string_append(&info_pid, string_itoa(new_pcb->pid));
+			string_append(&respuestaAConsola, info_pid);
+			enviarMensaje(&socketCliente, respuestaAConsola);
+
+			free(info_pid);
+			free(respuestaAConsola);
+		}
+
+		free(respuesta_Memoria);
+		free(mensajeInicioPrograma);
+	}
+}
+
+void finalizarPrograma(int pidACerrar) {
+	t_pcb * temporalN;
+
+	int encontre = 0;
+
+	int largoCola = queue_size(cola_listos);
+
+	//busco pid en cola listos
+	while (encontre == 0 && largoCola != 0) {
+
+		pthread_mutex_lock(&mtx_listos);
+		temporalN = (t_pcb*) queue_pop(cola_listos);
+		pthread_mutex_unlock(&mtx_listos);
+		largoCola--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontre = 1;
+			printf("Se termino el proceso: %d\n", temporalN->pid);
+
+		} else {
+
+			//puts("Me llego el 398 y el proceso no existe");
+			printf("Se intento cerrar un programa que no existe\n");
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, temporalN);
+			pthread_mutex_unlock(&mtx_listos);
+
+		}
+	}
+
+	int encontreBloq = 0;
+	int largoColaBloq = queue_size(cola_bloqueados);
+
+	//busco pid en cola bloqueados
+	while (encontreBloq == 0 && largoColaBloq != 0) {
+
+		pthread_mutex_lock(&mtx_bloqueados);
+		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+		largoColaBloq--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontreBloq = 1;
+			printf("Se termino el proceso: %d\n", temporalN->pid);
+
+		} else {
+
+			pthread_mutex_lock(&mtx_bloqueados);
+			queue_push(cola_bloqueados, temporalN);
+			pthread_mutex_unlock(&mtx_bloqueados);
+			printf("Se intento cerrar un programa que no existe\n");
+
+		}
+	}
+
+	int encontreEjec = 0;
+	int largoColaEjec = queue_size(cola_ejecucion);
+
+	//busco pid en cola bloqueados
+	while (encontreEjec == 0 && largoColaEjec != 0) {
+
+		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+		largoColaEjec--;
+
+		if (temporalN->pid == pidACerrar) {
+
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+			encontreEjec = 1;
+			printf("Se termino el proceso: %d", temporalN->pid);
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, temporalN);
+			pthread_mutex_unlock(&mtx_ejecucion);
+			printf("Se intento cerrar un programa que no existe\n");
+
+		}
+	}
+
+}
+
+void cerrarConsola(int socketCliente) {
+	// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
+	//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
+
+	t_pcb * temporalN;
+
+	int largoColaListos = queue_size(cola_listos);
+
+	//busco pid en cola listos
+
+	while (largoColaListos != 0) {
+		pthread_mutex_lock(&mtx_listos);
+		temporalN = (t_pcb*) queue_pop(cola_listos);
+		printf("El skt es %d \n", *(temporalN->socket_consola));
+		printf("El skt buscado es %d \n", socketCliente);
+		pthread_mutex_unlock(&mtx_listos);
+		largoColaListos--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, temporalN);
+			pthread_mutex_unlock(&mtx_listos);
+		}
+	}
+
+	int largoColaBloq = queue_size(cola_bloqueados);
+
+	//busco pid en cola bloqueados
+
+	while (largoColaBloq != 0) {
+		pthread_mutex_lock(&mtx_bloqueados);
+		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+		largoColaBloq--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_bloqueados);
+			queue_push(cola_bloqueados, temporalN);
+			pthread_mutex_unlock(&mtx_bloqueados);
+		}
+	}
+
+	int largoColaEjec = queue_size(cola_ejecucion);
+
+	//busco pid en cola bloqueados
+
+	while (largoColaEjec != 0) {
+		pthread_mutex_lock(&mtx_ejecucion);
+		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+		largoColaEjec--;
+		if (*(temporalN->socket_consola) == socketCliente) {
+			pthread_mutex_lock(&mtx_terminados);
+			queue_push(cola_terminados, temporalN);
+			pthread_mutex_unlock(&mtx_terminados);
+		} else {
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, temporalN);
+			pthread_mutex_unlock(&mtx_ejecucion);
+		}
+	}
 }

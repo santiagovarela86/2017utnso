@@ -118,6 +118,10 @@ void cargoIndicesPCB(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
 void * multiprogramar();
 
+void iniciarPrograma(char * codigo, int socket, int pid);
+void finalizarPrograma(int pidACerrar);
+void cerrarConsola(int socketCliente);
+
 #define CONST_SIN_NOMBRE_FUNCION -1
 
 #endif /* KERNEL_H_ */
