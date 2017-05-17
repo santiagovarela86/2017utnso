@@ -1476,7 +1476,7 @@ void * multiprogramar(){
 //ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES
 //SI RECIBIERA EL PID HABRIA QUE BUSCAR EL PCB A PARTIR DE UN PID
 void reservarMemoriaHeap(t_pcb * pcb, int bytes){
-	int numeroDePagina = pcb->cantidadPaginas + 1;
+	int numeroDePagina = pcb->cantidadPaginas;
 
 
 }
