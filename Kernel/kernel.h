@@ -108,16 +108,18 @@ void* manejo_memoria(void* args);
 void* manejo_filesystem(void* args);
 void* inicializar_consola(void* args);
 void log_console_in_disk(char*);
-void eliminar_pcb(t_pcb*);
+//void eliminar_pcb(t_pcb*);
+void eliminar_pcb(void * voidSelf);
 void flush_cola_pcb(t_queue*);
 void * planificar();
+void inicializarEstructuras(char * pathConfig);
 
 t_queue* crear_cola_pcb();
 t_pcb* nuevo_pcb(int, int *);
 char* serializar_pcb(t_pcb* pcb);
 void inicializar_variables_globales();
 void inicializar_semaforos();
-void liberar_estructuras();
+void liberarEstructuras();
 
 
 bool esComentario(char* linea);

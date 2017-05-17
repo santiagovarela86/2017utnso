@@ -55,6 +55,7 @@ int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
 int plan;
+t_list * heap;
 
 int main(int argc, char **argv) {
 
@@ -63,6 +64,38 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
+	pthread_t thread_id_filesystem;
+	pthread_t thread_id_memoria;
+	pthread_t thread_proceso_consola;
+	pthread_t thread_proceso_cpu;
+	pthread_t thread_consola_kernel;
+	pthread_t thread_planificador;
+	pthread_t thread_multiprogramacion;
+
+	char * pathConfig = argv[1];
+	inicializarEstructuras(pathConfig);
+
+	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
+	creoThread(&thread_id_memoria, manejo_memoria, NULL);
+	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
+	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
+	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
+	creoThread(&thread_planificador, planificar, NULL);
+	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
+
+	pthread_join(thread_id_filesystem, NULL);
+	pthread_join(thread_id_memoria, NULL);
+	pthread_join(thread_proceso_consola, NULL);
+	pthread_join(thread_proceso_cpu, NULL);
+	pthread_join(thread_consola_kernel, NULL);
+	pthread_join(thread_planificador, NULL);
+
+	liberarEstructuras();
+
+	return EXIT_SUCCESS;
+}
+
+void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_grado_multiprog, NULL);
 	pthread_mutex_init(&mtx_bloqueados, NULL);
 	pthread_mutex_init(&mtx_ejecucion, NULL);
@@ -74,15 +107,8 @@ int main(int argc, char **argv) {
 	pthread_mutex_init(&mtx_semaforos, NULL);
 
 	cola_cpu = crear_cola_pcb();
-	pthread_t thread_id_filesystem;
-	pthread_t thread_id_memoria;
-	pthread_t thread_proceso_consola;
-	pthread_t thread_proceso_cpu;
-	pthread_t thread_consola_kernel;
-	pthread_t thread_planificador;
-	pthread_t thread_multiprogramacion;
 
-	configuracion = leerConfiguracion(argv[1]);
+	configuracion = leerConfiguracion(pathConfig);
 
 	if(configuracion->algoritmo[0] != 'R'){
 		configuracion->quantum = 999;
@@ -130,26 +156,47 @@ int main(int argc, char **argv) {
 	cola_ejecucion = crear_cola_pcb();
 	cola_terminados = crear_cola_pcb();
 	cola_nuevos = crear_cola_pcb();
+}
 
-	creoThread(&thread_id_filesystem, manejo_filesystem, NULL);
-	creoThread(&thread_id_memoria, manejo_memoria, NULL);
-	creoThread(&thread_proceso_consola, hilo_conexiones_consola, NULL);
-	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
-	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
-	creoThread(&thread_planificador, planificar, NULL);
-	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
+void liberarEstructuras(){
+	pthread_mutex_destroy(&mutex_grado_multiprog);
+	pthread_mutex_destroy(&mtx_bloqueados);
+	pthread_mutex_destroy(&mtx_ejecucion);
+	pthread_mutex_destroy(&mtx_listos);
+	pthread_mutex_destroy(&mtx_nuevos);
+	pthread_mutex_destroy(&mtx_terminados);
+	pthread_mutex_destroy(&mtx_cpu);
+	pthread_mutex_destroy(&mtx_globales);
+	pthread_mutex_destroy(&mtx_semaforos);
 
-	pthread_join(thread_id_filesystem, NULL);
-	pthread_join(thread_id_memoria, NULL);
-	pthread_join(thread_proceso_consola, NULL);
-	pthread_join(thread_proceso_cpu, NULL);
-	pthread_join(thread_consola_kernel, NULL);
-	pthread_join(thread_planificador, NULL);
-
-	liberar_estructuras();
+	queue_destroy_and_destroy_elements(cola_cpu, eliminar_pcb);
 	free(configuracion);
+	list_destroy_and_destroy_elements(lista_semaforos, free);
+	list_destroy_and_destroy_elements(lista_variables_globales, free);
 
-	return EXIT_SUCCESS;
+	list_destroy_and_destroy_elements(lista_File_global, free);
+	list_destroy_and_destroy_elements(lista_File_proceso, free);
+
+	queue_destroy_and_destroy_elements(cola_listos, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_bloqueados, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_ejecucion, eliminar_pcb);
+	queue_destroy_and_destroy_elements(cola_terminados, eliminar_pcb);
+
+	/*
+
+	free(cola_cpu);
+	free(configuracion);
+	free(lista_semaforos);
+	free(lista_variables_globales);
+
+	free(lista_File_global);
+	free(lista_File_proceso);
+
+	free(cola_listos);
+	free(cola_bloqueados);
+	free(cola_ejecucion);
+	free(cola_terminados);
+	*/
 }
 
 void * inicializar_consola(void* args){
@@ -423,19 +470,6 @@ void inicializar_variables_globales(){
 		list_add(lista_variables_globales, var_global);
 		i++;
 	}
-}
-
-void liberar_estructuras(){
-	//YA QUE HAY UN LIBERAR ESTRUCTURAS
-	//PODRIAMOS ARMAR UN INICIALIZAR ESTRUCTURAS
-	free(configuracion);
-	free(lista_variables_globales);
-	free(lista_semaforos);
-	free(cola_cpu);
-	free(cola_listos);
-	free(cola_bloqueados);
-	free(cola_ejecucion);
-	free(cola_terminados);
 }
 
 void inicializar_semaforos(){
@@ -1280,10 +1314,11 @@ void flush_cola_pcb(t_queue* queue){
 	 queue_destroy_and_destroy_elements(queue, (void*) eliminar_pcb);
 }
 
-void eliminar_pcb(t_pcb *self){
+//void eliminar_pcb(t_pcb *self){
+void eliminar_pcb(void * voidSelf){
+	t_pcb * self = (t_pcb *) voidSelf;
 	free(self->tabla_archivos);
 	free(self);
-
 }
 
 void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
@@ -1634,4 +1669,8 @@ void * multiprogramar(){
 	}
 
 	}
+}
+
+void reservarMemoria(){
+
 }
