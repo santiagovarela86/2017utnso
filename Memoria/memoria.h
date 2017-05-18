@@ -70,15 +70,16 @@ void log_cache_in_disk(t_list*);
 void log_estructuras_memoria_in_disk();
 void log_contenido_memoria_in_disk();
 void limpiar_memoria_cache();
-void * hilo_conexiones_kernel(void * args);
-void * hilo_conexiones_cpu(void * args);
+void * hilo_conexiones_kernel();
+void * hilo_conexiones_cpu();
 void * handler_conexiones_cpu(void * args);
 void iniciar_programa(int pid, int paginas);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
 char* leer_memoria(int posicion_de_la_Variable, int off);
 void grabar_valor(int direccion, int valor);
-
+void inicializarEstructuras(char * pathConfig);
+void liberarEstructuras();
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_tabla_paginas(Memoria_Config* config);
 t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
@@ -97,5 +98,6 @@ void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo);
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio);
 t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina);
 char* serializar_entrada_indice_stack(t_Stack* indice_stack);
+void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 
 #endif /* MEMORIA_H_ */

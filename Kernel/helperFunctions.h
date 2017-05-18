@@ -11,11 +11,6 @@
 #define MAXBUF 2048
 #define MAXLIST 20
 
-typedef struct threadSocketInfo {
-	int sock;
-	struct sockaddr_in direccion;
-} threadSocketInfo;
-
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto);
 void bindSocket(int * sock, struct sockaddr_in * direccion);
 void escuchoSocket(int * sock);

@@ -130,6 +130,11 @@ void asignarValorCompartida(char * variable, int valor);
 void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 void escribir(int fd, int pid_mensaje, char * info);
 
+void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
+void rechazoFaltaMemoria(int socketConsola);
+void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantidadPaginas);
+void informoAConsola(int socketConsola, int pid);
+
 #define CONST_SIN_NOMBRE_FUNCION -1
 
 #endif /* KERNEL_H_ */

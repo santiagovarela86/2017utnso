@@ -595,7 +595,7 @@ void* manejo_memoria(void *args) {
 void * hilo_conexiones_consola(void *args) {
 
 	struct sockaddr_in direccionKernel;
-	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , socketCliente;
+	int master_socket , addrlen , new_socket , client_socket[MAXCON] , max_clients = MAXCON , activity, i , valread , socketConsola;
 	int max_sd;
 	struct sockaddr_in address;
 
@@ -631,16 +631,16 @@ void * hilo_conexiones_consola(void *args) {
 		//add child sockets to set
 		for ( i = 0 ; i < max_clients ; i++) {
 			//socket descriptor
-			socketCliente = client_socket[i];
+			socketConsola = client_socket[i];
 
 			//if valid socket descriptor then add to read list
-			if(socketCliente > 0){
-				FD_SET( socketCliente , &readfds);
+			if(socketConsola > 0){
+				FD_SET( socketConsola , &readfds);
 			}
 
 			//highest file descriptor number, need it for the select function
-			if(socketCliente > max_sd){
-				max_sd = socketCliente;
+			if(socketConsola > max_sd){
+				max_sd = socketConsola;
 			}
 		}
 
@@ -675,15 +675,15 @@ void * hilo_conexiones_consola(void *args) {
 
 		//else its some IO operation on some other socket :)
 		for (i = 0; i < max_clients; i++){
-			socketCliente = client_socket[i];
+			socketConsola = client_socket[i];
 
-			if (FD_ISSET( socketCliente , &readfds)){
+			if (FD_ISSET( socketConsola , &readfds)){
 				//Check if it was for closing , and also read the incoming message
-				if ((valread = read( socketCliente , buffer, MAXBUF)) == 0){
+				if ((valread = read( socketConsola , buffer, MAXBUF)) == 0){
 					//Somebody disconnected
 					puts("Se desconectó una consola");
 					//Close the socket and mark as 0 in list for reuse
-					close( socketCliente );
+					close( socketConsola );
 					client_socket[i] = 0;
 				}else{
 					//set the string terminating NULL byte on the end of the data read
@@ -695,7 +695,7 @@ void * hilo_conexiones_consola(void *args) {
 						case 303:
 							; //https://goo.gl/y7nI85
 							char * codigo = respuesta_a_kernel[1];
-							iniciarPrograma(codigo, socketCliente, numerador_pcb);
+							iniciarPrograma(codigo, socketConsola, numerador_pcb);
 							break;
 
 						case 398:
@@ -705,7 +705,7 @@ void * hilo_conexiones_consola(void *args) {
 							break;
 
 						case 399:
-							cerrarConsola(socketCliente);
+							cerrarConsola(socketConsola);
 							break;
 					}
 
@@ -1285,78 +1285,98 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	return pcb;
 }
 
-void * multiprogramar(){
+void * multiprogramar() {
 	//validacion de nivel de multiprogramacion
-	while(1){
-		if((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion){
-		//Se crea programa nuevo
+	while (1) {
+		if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
+			//Se crea programa nuevo
 
-		if(queue_size(cola_nuevos) > 0){
-		t_nuevo* nue = queue_pop(cola_nuevos);
+			if (queue_size(cola_nuevos) > 0) {
+				t_nuevo* nue = queue_pop(cola_nuevos);
+				t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
+				envioProgramaAMemoria(new_pcb, nue);
+				free(nue);
+			}
+		}
+	}
+}
 
-		t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
+void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
+	char* mensajeInicioPrograma = string_new();
+	string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
+	string_append(&mensajeInicioPrograma, ";");
+	string_append(&mensajeInicioPrograma, nue->codigo);
+	enviarMensaje(&skt_memoria, mensajeInicioPrograma);
 
-		char* mensajeInicioPrograma = string_new();
+	char message[MAXBUF];
 
-		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
-		string_append(&mensajeInicioPrograma, ";");
-		string_append(&mensajeInicioPrograma, nue->codigo);
-		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
+	int result = recv(skt_memoria, message, sizeof(message), 0);
 
-		char message[MAXBUF];
-		recv(skt_memoria, message, sizeof(message), 0);
-
+	if (result > 0){
 		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
 		char** respuesta_Memoria = string_split(message, ";");
 
-		if(atoi(respuesta_Memoria[0]) == 298){
-			puts("Se rechaza programa por falta de espacio en memoria");
-			puts("aquie entre");
-			//Decremento el numero de pid global del kernel
-			pthread_mutex_lock(&mutex_numerador_pcb);
-			numerador_pcb--;
-			pthread_mutex_unlock(&mutex_numerador_pcb);
+		int operacion = atoi(respuesta_Memoria[0]);
+		int socketConsola = nue->skt;
 
-			char message2[MAXBUF];
-			strcpy(message2, "197;");
-			enviarMensaje(&(nue->skt), message2);
-		}else{
-			//Si hay espacio suficiente en la memoria
-			//Agrego el programa a la cola de listos
-			printf("Se creo el programa %d \n", new_pcb->pid);
-			puts("");
+		switch (operacion) {
+		case 298:
 
-			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
-			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
-			cargoIndicesPCB(new_pcb, nue->codigo);
+			rechazoFaltaMemoria(socketConsola);
+			break;
 
-			pthread_mutex_lock(&mtx_listos);
-			queue_push(cola_listos, new_pcb);
-			pthread_mutex_unlock(&mtx_listos);
-
-			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
-			char* info_pid = string_new();
-			char* respuestaAConsola = string_new();
-			string_append(&info_pid, "103");
-			string_append(&info_pid, ";");
-			string_append(&info_pid, string_itoa(new_pcb->pid));
-			string_append(&respuestaAConsola, info_pid);
-			enviarMensaje(&(nue->skt), respuestaAConsola);
-
-			free(nue);
-			free(info_pid);
-			free(respuestaAConsola);
-
+		case 203:
+			;
+			int inicio_codigo = atoi(respuesta_Memoria[1]);
+			int cantidadPaginas = atoi(respuesta_Memoria[2]);
+			creoPrograma(new_pcb, nue->codigo, inicio_codigo, cantidadPaginas);
+			informoAConsola(socketConsola, new_pcb->pid);
+			break;
 		}
 
 		free(respuesta_Memoria);
 		free(mensajeInicioPrograma);
-
-		}
-
+	} else {
+		printf("Error al enviar Programa a Memoria\n");
 	}
+}
 
-	}
+void rechazoFaltaMemoria(int socketConsola){
+	puts("Se rechaza programa por falta de espacio en memoria\n");
+	//Decremento el numero de pid global del kernel
+	pthread_mutex_lock(&mutex_numerador_pcb);
+	numerador_pcb--;
+	pthread_mutex_unlock(&mutex_numerador_pcb);
+	enviarMensaje(&socketConsola, "197;");
+}
+
+void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantidadPaginas){
+	//Si hay espacio suficiente en la memoria
+	//Agrego el programa a la cola de listos
+	printf("Se creo el programa %d \n", new_pcb->pid);
+	puts("");
+
+	new_pcb->inicio_codigo = inicio_codigo;
+	new_pcb->cantidadPaginas = cantidadPaginas;
+	cargoIndicesPCB(new_pcb, codigo);
+
+	pthread_mutex_lock(&mtx_listos);
+	queue_push(cola_listos, new_pcb);
+	pthread_mutex_unlock(&mtx_listos);
+}
+
+void informoAConsola(int socketConsola, int pid){
+	// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
+	char* info_pid = string_new();
+	char* respuestaAConsola = string_new();
+	string_append(&info_pid, "103");
+	string_append(&info_pid, ";");
+	string_append(&info_pid, string_itoa(pid));
+	string_append(&respuestaAConsola, info_pid);
+	enviarMensaje(&socketConsola, respuestaAConsola);
+
+	free(info_pid);
+	free(respuestaAConsola);
 }
 
 //ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES

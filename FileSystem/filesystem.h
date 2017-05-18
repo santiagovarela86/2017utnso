@@ -28,4 +28,7 @@ typedef struct {
 
 void * handler_conexion_kernel(void * sock);
 
+void inicializarEstructuras(char * pathConfig);
+void liberarEstructuras();
+
 #endif /* FILESYSTEM_H_ */

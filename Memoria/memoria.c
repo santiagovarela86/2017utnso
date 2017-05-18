@@ -16,6 +16,7 @@
 #include <errno.h>
 #include "helperFunctions.h"
 #include <time.h>
+#include <semaphore.h>
 
 int conexionesKernel = 0;
 int conexionesCPU = 0;
@@ -23,21 +24,20 @@ int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
-int semaforo = 0;
+//int semaforo = 0;
 t_list* tabla_paginas;
 t_list* tabla_cache;
 int stack_size = 2; //TODO: Al realizar el handshake con Kernel le deberia pasar a memoria el stack_size
-
 char* bloque_memoria;
 char* bloque_cache;
-
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
 t_list* tabla_programas;
 char* script_programa;
 int skt_kernel;
-
-void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
+int socketMemoria;
+struct sockaddr_in direccionMemoria;
+sem_t semaforoKernel;
 
 int main(int argc, char **argv) {
 
@@ -46,25 +46,46 @@ int main(int argc, char **argv) {
 		return EXIT_FAILURE;
 	}
 
+	char * pathConfig = argv[1];
+	inicializarEstructuras(pathConfig);
+
+	imprimirConfiguracion(configuracion);
+
+	/*PRUEBAS FHASH*/
+	//pruebas_f_hash();
+
+	pthread_t thread_consola;
+	pthread_t thread_kernel;
+	pthread_t thread_cpu;
+
+	creoThread(&thread_consola, inicializar_consola, configuracion);
+	creoThread(&thread_kernel, hilo_conexiones_kernel, NULL);
+
+	sem_wait(&semaforoKernel);
+
+	creoThread(&thread_cpu, hilo_conexiones_cpu, NULL);
+
+	pthread_join(thread_consola, NULL);
+	pthread_join(thread_kernel, NULL);
+	pthread_join(thread_cpu, NULL);
+
+	liberarEstructuras();
+
+	return EXIT_SUCCESS;
+}
+
+void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
 
 	bloque_memoria = string_new();
 	bloque_cache = string_new();
-	configuracion = leerConfiguracion(argv[1]);
-	imprimirConfiguracion(configuracion);
+	configuracion = leerConfiguracion(pathConfig);
 
-	int socketMemoria;
-	struct sockaddr_in direccionMemoria;
 	creoSocket(&socketMemoria, &direccionMemoria, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketMemoria, &direccionMemoria);
 	escuchoSocket(&socketMemoria);
-
-	threadSocketInfo * threadSocketInfoMemoria;
-	threadSocketInfoMemoria = malloc(sizeof(struct threadSocketInfo));
-	threadSocketInfoMemoria->sock = socketMemoria;
-	threadSocketInfoMemoria->direccion = direccionMemoria;
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
 	tiempo_retardo = configuracion->retardo_memoria;
@@ -72,53 +93,34 @@ int main(int argc, char **argv) {
 
 	inicializar_estructuras_administrativas(configuracion);
 
-	/*PRUEBAS FHASH*/
-	//pruebas_f_hash();
+	sem_init(&semaforoKernel, 0, 0);
+}
 
-
-	pthread_t thread_consola;
-	pthread_t thread_kernel;
-	pthread_t thread_cpu;
-
-	creoThread(&thread_consola, inicializar_consola, configuracion);
-	creoThread(&thread_kernel, hilo_conexiones_kernel, threadSocketInfoMemoria);
-
-	while(semaforo == 0){}
-
-	creoThread(&thread_cpu, hilo_conexiones_cpu, threadSocketInfoMemoria);
-
-	pthread_join(thread_consola, NULL);
-	pthread_join(thread_kernel, NULL);
-	pthread_join(thread_cpu, NULL);
-
+void liberarEstructuras(){
 	free(configuracion);
 	free(tamanio_maximo);
-	free(threadSocketInfoMemoria);
 	free(bloque_memoria);
 	free(bloque_cache);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
-
-	return EXIT_SUCCESS;
 }
 
-void * hilo_conexiones_kernel(void * args){
-	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
+void * hilo_conexiones_kernel(){
 
-	int socketCliente;
-	struct sockaddr_in direccionCliente;
-	socklen_t length = sizeof direccionCliente;
+	int socketKernel;
+	struct sockaddr_in direccionKernel;
+	socklen_t length = sizeof direccionKernel;
 
-	socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length);
+	socketKernel = accept(socketMemoria, (struct sockaddr *) &direccionKernel, &length);
 
-	if (socketCliente > 0) {
-		semaforo = 1;
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-		handShakeListen(&socketCliente, "100", "201", "299", "Kernel");
+	if (socketKernel > 0) {
+		sem_post(&semaforoKernel);
+		printf("%s:%d conectado\n", inet_ntoa(direccionKernel.sin_addr), ntohs(direccionKernel.sin_port));
+		handShakeListen(&socketKernel, "100", "201", "299", "Kernel");
 		char message[MAXBUF];
 
-		int result = recv(socketCliente, message, sizeof(message), 0);
+		int result = recv(socketKernel, message, sizeof(message), 0);
 
 		while (result > 0) {
 
@@ -132,13 +134,13 @@ void * hilo_conexiones_kernel(void * args){
 
 
 			script_programa = codigo_programa;
-			skt_kernel = socketCliente;
+			skt_kernel = socketKernel;
 
 			retardo_acceso_memoria();
 
 			iniciar_programa(pid, cant_paginas);
 
-			result = recv(socketCliente, message, sizeof(message), 0);
+			result = recv(socketKernel, message, sizeof(message), 0);
 		}
 
 		if (result <= 0) {
@@ -150,34 +152,33 @@ void * hilo_conexiones_kernel(void * args){
 		return EXIT_FAILURE;
 	}
 
-	shutdown(socketCliente, 0);
-	close(socketCliente);
+	shutdown(socketKernel, 0);
+	close(socketKernel);
 
 	return EXIT_SUCCESS;
 }
 
-void * hilo_conexiones_cpu(void * args){
-	threadSocketInfo * threadSocketInfoMemoria = (threadSocketInfo *) args;
+void * hilo_conexiones_cpu(){
 
-	int socketCliente;
-	struct sockaddr_in direccionCliente;
-	socklen_t length = sizeof direccionCliente;
+	int socketCPU;
+	struct sockaddr_in direccionCPU;
+	socklen_t length = sizeof direccionCPU;
 
-	while (socketCliente = accept(threadSocketInfoMemoria->sock, (struct sockaddr *) &direccionCliente, &length)){
+	while (socketCPU = accept(socketMemoria, (struct sockaddr *) &direccionCPU, &length)){
 		pthread_t thread_cpu;
 
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
+		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
 
-		creoThread(&thread_cpu, handler_conexiones_cpu, (void *) socketCliente);
+		creoThread(&thread_cpu, handler_conexiones_cpu, (void *) socketCPU);
 	}
 
-	if (socketCliente <= 0){
+	if (socketCPU <= 0){
 		printf("Error al aceptar conexiones de CPU\n");
 		exit(errno);
 	}
 
-	shutdown(socketCliente, 0);
-	close(socketCliente);
+	shutdown(socketCPU, 0);
+	close(socketCPU);
 
 	return EXIT_SUCCESS;
 }

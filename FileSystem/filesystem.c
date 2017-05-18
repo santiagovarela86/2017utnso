@@ -23,6 +23,10 @@
 char* montaje;
 t_list* lista_File_global;
 t_list* lista_File_proceso;
+FileSystem_Config * configuracion;
+
+int socketFileSystem;
+struct sockaddr_in direccionSocket;
 
 int main(int argc, char** argv) {
 
@@ -31,71 +35,56 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
+	char * pathConfig = argv[1];
+	inicializarEstructuras(pathConfig);
+
+	imprimirConfiguracion(configuracion);
+
+	pthread_t thread_kernel;
+	creoThread(&thread_kernel, hilo_conexiones_kernel, NULL);
+
+	pthread_join(thread_kernel, NULL);
+
+	liberarEstructuras();
+
+	return EXIT_SUCCESS;
+}
+
+void inicializarEstructuras(char * pathConfig){
+	configuracion = leerConfiguracion(pathConfig);
 
 	lista_File_global = list_create();
 	lista_File_proceso = list_create();
 
 	montaje = string_new();
 
-	FileSystem_Config * configuracion;
-	configuracion = leerConfiguracion(argv[1]);
-	imprimirConfiguracion(configuracion);
-
-	/*montaje = configuracion->punto_montaje;
-
-	metadata_Config* metadata;
-	metadata = leerMetaData(configuracion->punto_montaje);
-	imprimirMetadata(metadata);
-
-	size_t tamanio_bitmap = (metadata->cantidad_bloques);
-	t_bitarray* bitmap = crearBitmap(configuracion->punto_montaje, tamanio_bitmap);*/
-
-	int socketFileSystem;
-	struct sockaddr_in direccionSocket;
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
+}
 
-	threadSocketInfo * threadSocketInfoKernel;
-	threadSocketInfoKernel = malloc(sizeof(struct threadSocketInfo));
-	threadSocketInfoKernel->sock = socketFileSystem;
-	threadSocketInfoKernel->direccion = direccionSocket;
-
-	pthread_t thread_kernel;
-	creoThread(&thread_kernel, hilo_conexiones_kernel, threadSocketInfoKernel);
-
-
-	pthread_join(thread_kernel, NULL);
-
+void liberarEstructuras(){
 	free(configuracion);
-	free(threadSocketInfoKernel);
 	free(montaje);
-	//free(metadata);
-	//free(bitmap);
 
 	shutdown(socketFileSystem, 0);
 	close(socketFileSystem);
-
-	return EXIT_SUCCESS;
 }
 
 void * hilo_conexiones_kernel(void * args){
 
+	int socketKernel;
+	struct sockaddr_in direccionKernel;
+	socklen_t length = sizeof direccionKernel;
 
-	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
+	socketKernel = accept(socketFileSystem, (struct sockaddr *) &direccionKernel, &length);
 
-	int socketCliente;
-	struct sockaddr_in direccionCliente;
-	socklen_t length = sizeof direccionCliente;
-
-	socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
-
-	if (socketCliente > 0) {
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-		handShakeListen(&socketCliente, "100", "401", "499", "Kernel");
+	if (socketKernel > 0) {
+		printf("%s:%d conectado\n", inet_ntoa(direccionKernel.sin_addr), ntohs(direccionKernel.sin_port));
+		handShakeListen(&socketKernel, "100", "401", "499", "Kernel");
 		char message[MAXBUF];
 
-		int result = recv(socketCliente, message, sizeof(message), 0);
+		int result = recv(socketKernel, message, sizeof(message), 0);
 
 		while (result > 0) {
 			printf("%s", message);
@@ -127,7 +116,7 @@ void * hilo_conexiones_kernel(void * args){
 
 			}
 
-			result = recv(socketCliente, message, sizeof(message), 0);
+			result = recv(socketKernel, message, sizeof(message), 0);
 		}
 
 			if (result <= 0) {
@@ -137,9 +126,16 @@ void * hilo_conexiones_kernel(void * args){
 			perror("Fallo en el manejo del hilo Kernel");
 			return EXIT_FAILURE;
    	}
+
+	shutdown(socketKernel, 0);
+	close(socketKernel);
+
+	return EXIT_SUCCESS;
+}
+
 		/*int socketCliente;
 		struct sockaddr_in direccionCliente;
-		socklen_t length = sizeof direccionCliente;
+		socklen_t length = sizeof direccionKernel;
 
 		socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
 
@@ -157,11 +153,6 @@ void * hilo_conexiones_kernel(void * args){
 		//entre el kernel y el FS
 		//atender_peticiones(socketCliente);*/
 
-	shutdown(socketCliente, 0);
-	close(socketCliente);
-
-	return EXIT_SUCCESS;
-}
 
 void atender_peticiones(int socket){
 /*
