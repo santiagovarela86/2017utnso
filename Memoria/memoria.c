@@ -12,6 +12,7 @@
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
 //600 KER A MEM - RESERVAR MEMORIA HEAP
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
+//612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -177,6 +178,10 @@ void * hilo_conexiones_kernel(){
 					int paginaActual = atoi(mensajeDelKernel[2]);
 					int bytes = atoi(mensajeDelKernel[3]);
 					crearPaginaHeap(pid, paginaActual, bytes);
+					break;
+
+				case 612:
+					stack_size = atoi(mensajeDelKernel[1]);
 					break;
 			}
 

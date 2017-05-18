@@ -12,6 +12,7 @@
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //500 CPU A KER - HANDSHAKE DEL CPU
 //600 CPU A KER - RESERVAR MEMORIA HEAP
+//612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 
 #include <stdio.h>
 #include <string.h>
@@ -587,6 +588,8 @@ void* manejo_memoria(void *args) {
 	skt_memoria = socketMemoria;
 
 	handShakeSend(&socketMemoria, "100", "201", "Memoria");
+
+	asignarCantidadMaximaStackPorProceso();
 
 	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
 	//se cierren los sockets
@@ -1396,6 +1399,17 @@ t_pcb * pcbFromPid(int pid){
 	}
 
 	return list_find(lista_procesos, mismoPid);
+}
+
+void asignarCantidadMaximaStackPorProceso(){
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "612");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(configuracion->stack_size));
+	string_append(&mensajeAMemoria, ";");
+	enviarMensaje(&skt_memoria, mensajeAMemoria);
+
+	free(mensajeAMemoria);
 }
 
 void reservarMemoriaHeap(t_pcb * pcb, int bytes){
