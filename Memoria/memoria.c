@@ -95,16 +95,43 @@ void inicializarEstructuras(char * pathConfig){
 	tiempo_retardo = configuracion->retardo_memoria;
 	pthread_mutex_unlock(&mutex_tiempo_retardo);
 
-	inicializar_estructuras_administrativas(configuracion);
+	//Alocacion de bloque de memoria contigua
+	//Seria el tamanio del marco * la cantidad de marcos
+
+	bloque_memoria = calloc(configuracion->marcos, configuracion->marco_size);
+	if (bloque_memoria == NULL){
+		perror("No se pudo reservar el bloque de memoria del Sistema\n");
+	}
+
+	bloque_cache = calloc(configuracion->entradas_cache, configuracion->marco_size);
+	if (bloque_cache == NULL){
+		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
+	}
+
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
+	inicializar_tabla_paginas(configuracion);
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
+	tabla_cache = list_create();
+	tabla_programas = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
 }
 
 void liberarEstructuras(){
+	pthread_mutex_destroy(&mutex_tiempo_retardo);
+	pthread_mutex_destroy(&mutex_estructuras_administrativas);
+	pthread_mutex_destroy(&mutex_bloque_memoria);
+
+	list_destroy_and_destroy_elements(tabla_cache, free);
+	list_destroy_and_destroy_elements(tabla_programas, free);
+
 	free(configuracion);
 	free(tamanio_maximo);
 	free(bloque_memoria);
 	free(bloque_cache);
+
+	sem_destroy(&semaforoKernel);
 
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
@@ -532,29 +559,6 @@ void * inicializar_consola(void* args){
 	}
 
 	return EXIT_SUCCESS;
-}
-
-void inicializar_estructuras_administrativas(Memoria_Config* config){
-
-	//Alocacion de bloque de memoria contigua
-	//Seria el tamanio del marco * la cantidad de marcos
-
-	bloque_memoria = calloc(config->marcos, config->marco_size);
-	if (bloque_memoria == NULL){
-		perror("No se pudo reservar el bloque de memoria del Sistema\n");
-	}
-
-	bloque_cache = calloc(config->entradas_cache, config->marco_size);
-	if (bloque_cache == NULL){
-		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
-	}
-
-	pthread_mutex_lock(&mutex_estructuras_administrativas);
-	inicializar_tabla_paginas(config);
-	pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-	tabla_cache = list_create();
-	tabla_programas = list_create();
 }
 
 void inicializar_tabla_paginas(Memoria_Config* config){
