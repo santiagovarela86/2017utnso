@@ -73,7 +73,7 @@ void limpiar_memoria_cache();
 void * hilo_conexiones_kernel();
 void * hilo_conexiones_cpu();
 void * handler_conexiones_cpu(void * args);
-void iniciar_programa(int pid, int paginas);
+void iniciarPrograma(int pid, int paginas, char * codigo_programa);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
 char* leer_memoria(int posicion_de_la_Variable, int off);
@@ -99,5 +99,6 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio);
 t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina);
 char* serializar_entrada_indice_stack(t_Stack* indice_stack);
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
+void crearPaginaHeap(int pid, int numeroDePagina, int bytes);
 
 #endif /* MEMORIA_H_ */

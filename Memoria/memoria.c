@@ -1,6 +1,7 @@
 //CODIGOS
 //201 MEM A KER - RESPUESTA HANDSHAKE
 //202 MEM A CPU - RESPUESTA HANDSHAKE
+//250 KER A MEM - ENVIO PROGRAMA A MEMORIA
 //203 MEM A KER - ESPACIO SUFICIENTE PARA ALMACENAR PROGRAMA
 //298 MER A KER - ESPACIO INSUFICIENTE PARA ALMACENAR PROGRAMA
 //299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
@@ -33,8 +34,11 @@ char* bloque_cache;
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
 t_list* tabla_programas;
-char* script_programa;
-int skt_kernel;
+
+int socketKernel;
+struct sockaddr_in direccionKernel;
+socklen_t length = sizeof direccionKernel;
+
 int socketMemoria;
 struct sockaddr_in direccionMemoria;
 sem_t semaforoKernel;
@@ -108,10 +112,6 @@ void liberarEstructuras(){
 
 void * hilo_conexiones_kernel(){
 
-	int socketKernel;
-	struct sockaddr_in direccionKernel;
-	socklen_t length = sizeof direccionKernel;
-
 	socketKernel = accept(socketMemoria, (struct sockaddr *) &direccionKernel, &length);
 
 	if (socketKernel > 0) {
@@ -124,21 +124,32 @@ void * hilo_conexiones_kernel(){
 
 		while (result > 0) {
 
-			char**mensajeDelKernel = string_split(message, ";");
-			int pid = atoi(mensajeDelKernel[0]);
-			char* codigo_programa = mensajeDelKernel[1];
-
-			int cant_paginas = string_length(codigo_programa) / configuracion->marco_size;
-			if (cant_paginas == 0)
-				cant_paginas++;
-
-
-			script_programa = codigo_programa;
-			skt_kernel = socketKernel;
-
 			retardo_acceso_memoria();
 
-			iniciar_programa(pid, cant_paginas);
+			char**mensajeDelKernel = string_split(message, ";");
+			int operacion = atoi(mensajeDelKernel[0]);
+			int pid;
+
+			switch(operacion){
+
+				case 250:
+					;
+					pid = atoi(mensajeDelKernel[1]);
+					char * codigo_programa = mensajeDelKernel[2];
+					int cantidadDePaginas = string_length(codigo_programa) / configuracion->marco_size;
+					if (cantidadDePaginas == 0) cantidadDePaginas++;
+					iniciarPrograma(pid, cantidadDePaginas, codigo_programa);
+					break;
+
+				case 600:
+					;
+					pid = atoi(mensajeDelKernel[1]);
+					int numeroDePagina = atoi(mensajeDelKernel[2]);
+					int bytes = atoi(mensajeDelKernel[3]);
+					crearPaginaHeap(pid, numeroDePagina, bytes);
+					break;
+
+			}
 
 			result = recv(socketKernel, message, sizeof(message), 0);
 		}
@@ -156,6 +167,42 @@ void * hilo_conexiones_kernel(){
 	close(socketKernel);
 
 	return EXIT_SUCCESS;
+}
+
+void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
+	if (string_length(bloque_memoria) == 0 || string_length(codigo_programa) <= string_length(bloque_memoria)) {
+
+		pthread_mutex_lock(&mutex_estructuras_administrativas);
+		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
+		pthread_mutex_unlock(&mutex_estructuras_administrativas);
+		char* respuestaAKernel = string_new();
+
+		if (pagina != NULL) {
+
+			printf("MARCO ASIGNADO: %d\n", pagina->nro_marco);
+
+			string_append(&respuestaAKernel, "203;");
+			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
+			string_append(&respuestaAKernel, ";");
+			string_append(&respuestaAKernel, string_itoa(paginas));
+			enviarMensaje(&socketKernel, respuestaAKernel);
+		}
+
+		else {
+			//Si el codigo del programa supera el tamanio del bloque
+			//Le aviso al Kernel que no puede reservar el espacio para el programa
+			string_append(&respuestaAKernel, "298;");
+			enviarMensaje(&socketKernel, respuestaAKernel);
+		}
+
+		free(respuestaAKernel);
+	}
+}
+
+void crearPaginaHeap(int pid, int numeroDePagina, int bytes){
+	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, numeroDePagina);
+
+
 }
 
 void * hilo_conexiones_cpu(){
@@ -557,38 +604,6 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
     return (t_pagina_invertida*)buffer;
 }
 
-void iniciar_programa(int pid, int cant_paginas){
-
-	char* respuestaAKernel = string_new();
-
-	if (string_length(bloque_memoria) == 0 || string_length(script_programa) <= string_length(bloque_memoria)){
-
-		pthread_mutex_lock(&mutex_estructuras_administrativas);
-		t_pagina_invertida* pagina = grabar_en_bloque(pid, cant_paginas, script_programa);
-		pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-		if (pagina != NULL){
-
-			printf("MARCO ASIGNADO: %d\n", pagina->nro_marco);
-
-			string_append(&respuestaAKernel, "203;");
-			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
-			string_append(&respuestaAKernel, ";");
-			string_append(&respuestaAKernel, string_itoa(cant_paginas));
-			enviarMensaje(&skt_kernel, respuestaAKernel);
-		}
-
-		else {
-			//Si el codigo del programa supera el tamanio del bloque
-			//Le aviso al Kernel que no puede reservar el espacio para el programa
-			string_append(&respuestaAKernel, "298;");
-			enviarMensaje(&skt_kernel, respuestaAKernel);
-		}
-	}
-
-	free(respuestaAKernel);
-}
-
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char* datos_pagina = string_new();
 	t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
@@ -961,8 +976,3 @@ char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 	return entrada_stack;
 }
 
-void crearPaginaHeap(int pid, int numeroDePagina){
-	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, numeroDePagina);
-
-
-}
