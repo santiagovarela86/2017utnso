@@ -207,10 +207,10 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 		if (pagina != NULL) {
 
-			printf("MARCO ASIGNADO: %d\n", pagina->nro_marco);
+			printf("MARCO ASIGNADO CODIGO: %d\n", pagina->nro_marco);
 
 			string_append(&respuestaAKernel, "203;");
-			string_append(&respuestaAKernel, string_itoa(pagina->inicio));
+			string_append(&respuestaAKernel, string_itoa(obtener_inicio_pagina(pagina)));
 			string_append(&respuestaAKernel, ";");
 			string_append(&respuestaAKernel, string_itoa(paginas));
 			enviarMensaje(&socketKernel, respuestaAKernel);
@@ -297,7 +297,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 
-			int paginaParaVariables = atoi(mensajeDesdeCPU[3]) + 1;
+			int paginaParaVariables = atoi(mensajeDesdeCPU[3]);
 
 			t_pagina_invertida* pag_encontrada;
 
@@ -310,8 +310,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
+
 				pag_a_cargar->nro_pagina = paginaParaVariables;
-				pag_a_cargar->offset = pag_a_cargar->inicio + 4;
 				pag_a_cargar->pid = pid;
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
@@ -321,6 +321,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
+
+				grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
@@ -335,11 +337,12 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->numero_pagina);
 
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
-				pag_encontrada->offset = pag_encontrada->offset + 4;
 				list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+
+				grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
@@ -431,8 +434,6 @@ t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
 		}
 
 		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
-
-		printf("MARCO VARIABLE: %d\n", pag->nro_marco);
 
 		return pag;
 	}
@@ -582,12 +583,6 @@ void inicializar_tabla_paginas(Memoria_Config* config){
 		t_pagina_invertida* nueva_pagina = malloc(sizeof(t_pagina_invertida));
 		nueva_pagina->nro_marco = i;
 		nueva_pagina->nro_pagina = 0;
-		if (i == 0){
-			nueva_pagina->inicio = i * config->marco_size;
-		}
-		else {
-			nueva_pagina->inicio = i * config->marco_size + 1;
-		}
 
 		//Del 0 al tamanio_maximo->maxima_cant_paginas_administracion (calculado)
 		//Se marcan como ocupadas para que ningun proceso pueda escribir en ellas
@@ -618,8 +613,9 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char* datos_pagina = string_new();
 	t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+	int inicio = obtener_inicio_pagina(pagina_buscada);
 	if (pagina_buscada != NULL){
-		datos_pagina = leer_memoria(pagina_buscada->inicio + offset, tamanio);
+		datos_pagina = leer_memoria(inicio + offset, tamanio);
 	}
 	return datos_pagina;
 }
@@ -794,7 +790,6 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
 		pagina_invertida->nro_pagina = 0;
 		pagina_invertida->pid = pid;
-		pagina_invertida->offset = pagina_invertida->inicio + string_length(codigo);
 
 		grabar_codigo_programa(&j, pagina_invertida, codigo);
 
@@ -814,7 +809,6 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 			//Actualizo la tabla de paginas
 			pagina_invertida->nro_pagina = nro_pagina;
 			pagina_invertida->pid = pid;
-			pagina_invertida->offset = pagina_invertida->inicio + string_length(codigo);
 			list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
 
 			nro_pagina++;
@@ -826,8 +820,8 @@ t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo
 
 void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 
-	int indice_bloque = pagina->inicio;
-	while(codigo[*j] != NULL && indice_bloque < (pagina->inicio * configuracion->marco_size)){
+	int indice_bloque = obtener_inicio_pagina(pagina);
+	while(codigo[*j] != NULL && indice_bloque < (indice_bloque * configuracion->marco_size)){
 		bloque_memoria[indice_bloque] = codigo[*j];
 		indice_bloque++;
 		(*j)++;
@@ -966,7 +960,7 @@ t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina){
 	t_Stack* entrada_stack = malloc(sizeof(t_Stack));
 	entrada_stack->nombre_variable = variable;
 	entrada_stack->direccion.pagina = pagina->nro_pagina;
-	entrada_stack->direccion.offset = pagina->offset;
+	entrada_stack->direccion.offset = obtener_offset_pagina(pagina);
 	entrada_stack->direccion.size = OFFSET_VAR;
 
 	return entrada_stack;
@@ -985,5 +979,30 @@ char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 	string_append(&entrada_stack, ";");
 
 	return entrada_stack;
+}
+
+int obtener_offset_pagina(t_pagina_invertida* pagina){
+
+	int inicio = obtener_inicio_pagina(pagina);
+
+	int offset = 0;
+
+	char* bloque_asignado = string_substring(bloque_memoria, inicio, configuracion->marco_size);
+
+	int longitud_bloque_asignado = string_length(bloque_asignado);
+
+	if(longitud_bloque_asignado == 0){
+		offset = inicio;
+	}
+	else {
+		offset = inicio + longitud_bloque_asignado;
+	}
+
+	return offset;
+}
+
+int obtener_inicio_pagina(t_pagina_invertida* pagina){
+	int inicio = pagina->nro_marco * configuracion->marco_size + 1;
+	return inicio;
 }
 

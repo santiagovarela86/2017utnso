@@ -38,8 +38,6 @@ typedef struct {
 	int nro_marco;
 	int pid;
 	int nro_pagina;
-	int inicio;
-	int offset;
 } t_pagina_invertida;
 
 typedef struct {
@@ -100,5 +98,7 @@ t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina);
 char* serializar_entrada_indice_stack(t_Stack* indice_stack);
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void crearPaginaHeap(int pid, int numeroDePagina, int bytes);
+int obtener_inicio_pagina(t_pagina_invertida* pagina);
+int obtener_offset_pagina(t_pagina_invertida* pagina);
 
 #endif /* MEMORIA_H_ */
