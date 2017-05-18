@@ -561,7 +561,7 @@ void irAlLabel(t_nombre_etiqueta identificador_variable){
 	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
 
 	    pcb->program_counter = instruccion;
-		printf("ahora el program counter es: %d\n", pcb->program_counter);
+		//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
@@ -571,14 +571,19 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 
 	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	    pcb->program_counter = instruccion;
-		printf("ahora el program counter es: %d\n", pcb->program_counter);
-	return;
+	    pcb->program_counter++;
+		//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	puts("Llamar Con Retorno");
 	puts("");
+
+	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	    pcb->program_counter = instruccion;
+	    pcb->program_counter++;
+		//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
@@ -690,9 +695,15 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 
 		enviarMensaje(&sktKernel, mensajeAKernel);
 
-		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 		free(mensajeAKernel);
+
+		if (result > 0){
+			return 0;
+		} else {
+			perror("Error al abrir el archivo \n");
+		}
 
 
 	return 0;
@@ -712,7 +723,16 @@ void borrar(t_descriptor_archivo descriptor){
 
 		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
+		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
 		free(mensajeAKernel);
+
+		if (result > 0){
+			puts("archivo borrado correctamente");
+		} else {
+			perror("Error al abrir el archivo \n");
+		}
+
 
 
 	return;
@@ -731,7 +751,16 @@ void cerrar(t_descriptor_archivo descriptor){
 
 		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
+		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+
 		free(mensajeAKernel);
+
+		if (result > 0){
+			puts("archivo cerrado correctamente");
+		} else {
+			perror("Error al abrir el archivo \n");
+		}
+
 
 
 	return;
