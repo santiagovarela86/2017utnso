@@ -857,9 +857,9 @@ void * handler_conexion_cpu(void * sock) {
 
 		char* mensajeFileSystem = string_new();
 		char**mensajeDesdeCPU = string_split(message, ";");
-		int codigo = atoi(mensajeDesdeCPU[0]);
+		int operacion = atoi(mensajeDesdeCPU[0]);
 
-		switch (codigo){
+		switch (operacion){
 			case 530:
 				finDeQuantum(socketCliente);
 				break;
@@ -881,7 +881,7 @@ void * handler_conexion_cpu(void * sock) {
 
 
 
-				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, string_itoa(operacion));
 				string_append(&mensajeFileSystem, ";");
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
@@ -890,7 +890,7 @@ void * handler_conexion_cpu(void * sock) {
 			case 802:  //de CPU a File system (borrar)
 
 
-				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, string_itoa(operacion));
 				string_append(&mensajeFileSystem, ";");
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
@@ -898,7 +898,7 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 801://de CPU a File system (cerrar)
 
-				string_append(&mensajeFileSystem, string_itoa(codigo));
+				string_append(&mensajeFileSystem, string_itoa(operacion));
 				string_append(&mensajeFileSystem, ";");
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
@@ -1124,7 +1124,7 @@ void * planificar(){
 
 
 bool esComentario(char* linea){
-	//return string_starts_with(linea, TEXT_COMMENT); me pincha porque esta entre comillas simples?
+	//return string_starts_with(linea, TEXT_COMMENT); //me pincha porque esta entre comillas simples?
 	return string_starts_with(linea, "#");
 }
 
@@ -1381,16 +1381,18 @@ void informoAConsola(int socketConsola, int pid){
 //ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES
 //SI RECIBIERA EL PID HABRIA QUE BUSCAR EL PCB A PARTIR DE UN PID
 void reservarMemoriaHeap(t_pcb * pcb, int bytes){
-	int numeroDePagina = pcb->cantidadPaginas;
+	int paginaActual = pcb->cantidadPaginas;
 
 	char * solicitud = string_new();
 	string_append(&solicitud, string_itoa(pcb->pid));
 	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(numeroDePagina));
+	string_append(&solicitud, string_itoa(paginaActual));
 	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(bytes));
 	string_append(&solicitud, ";");
 	enviarMensaje(&skt_memoria, solicitud);
+
+
 }
 
 void liberarMemoriaHeap(){

@@ -83,17 +83,10 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
 
-	bloque_memoria = string_new();
-	bloque_cache = string_new();
 	configuracion = leerConfiguracion(pathConfig);
 
-	creoSocket(&socketMemoria, &direccionMemoria, INADDR_ANY, configuracion->puerto);
-	bindSocket(&socketMemoria, &direccionMemoria);
-	escuchoSocket(&socketMemoria);
-
-	pthread_mutex_lock(&mutex_tiempo_retardo);
-	tiempo_retardo = configuracion->retardo_memoria;
-	pthread_mutex_unlock(&mutex_tiempo_retardo);
+	bloque_memoria = string_new();
+	bloque_cache = string_new();
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
@@ -108,6 +101,10 @@ void inicializarEstructuras(char * pathConfig){
 		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
 	}
 
+	pthread_mutex_lock(&mutex_tiempo_retardo);
+	tiempo_retardo = configuracion->retardo_memoria;
+	pthread_mutex_unlock(&mutex_tiempo_retardo);
+
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	inicializar_tabla_paginas(configuracion);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
@@ -116,6 +113,10 @@ void inicializarEstructuras(char * pathConfig){
 	tabla_programas = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
+
+	creoSocket(&socketMemoria, &direccionMemoria, INADDR_ANY, configuracion->puerto);
+	bindSocket(&socketMemoria, &direccionMemoria);
+	escuchoSocket(&socketMemoria);
 }
 
 void liberarEstructuras(){
@@ -171,11 +172,10 @@ void * hilo_conexiones_kernel(){
 				case 600:
 					;
 					pid = atoi(mensajeDelKernel[1]);
-					int numeroDePagina = atoi(mensajeDelKernel[2]);
+					int paginaActual = atoi(mensajeDelKernel[2]);
 					int bytes = atoi(mensajeDelKernel[3]);
-					crearPaginaHeap(pid, numeroDePagina, bytes);
+					crearPaginaHeap(pid, paginaActual, bytes);
 					break;
-
 			}
 
 			result = recv(socketKernel, message, sizeof(message), 0);
@@ -226,10 +226,16 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 	}
 }
 
-void crearPaginaHeap(int pid, int numeroDePagina, int bytes){
-	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, numeroDePagina);
+void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
+	//POR AHORA HAGO UNA SOLA PAGINA
+	//int cantidadPaginas = bytesPedidos / configuracion->marco_size;
 
-
+	//SI ALCANZA UNA PAGINA PARA GUARDAR LO QUE ME PIDEN
+	if (bytesPedidos < configuracion->marco_size - sizeof(heapMetadata)){
+		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
+	} else {
+		perror("Error al crear Pagina de Heap\n");
+	}
 }
 
 void * hilo_conexiones_cpu(){
