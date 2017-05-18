@@ -371,6 +371,7 @@ void abrir_subconsola_procesos(void* args){
 		puts("3)  Procesos en cola de Bloqueados");
 		puts("4)  Procesos en cola de Terminados");
 		puts("5)  Procesos en cola de Nuevos");
+		puts("6)  Volver");
 		puts("***********************************************************");
 
 		int accion = 0;
@@ -401,6 +402,11 @@ void abrir_subconsola_procesos(void* args){
 				accion_correcta = 1;
 				listarCola(cola_nuevos);
 				break;
+			case 6:
+				accion_correcta = 1;
+				inicializar_consola(args);
+				break;
+
 
 			default:
 				accion_correcta = 0;
@@ -413,6 +419,7 @@ void abrir_subconsola_procesos(void* args){
 				puts("3)  Procesos en cola de Bloqueados");
 				puts("4)  Procesos en cola de Terminados");
 				puts("5)  Procesos en cola de Nuevos");
+				puts("6)  Volver");
 				puts("***********************************************************");
 				break;
 			}
