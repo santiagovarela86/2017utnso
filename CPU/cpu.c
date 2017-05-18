@@ -10,7 +10,7 @@
 //801 CPU A KER - CERRAR ARCHIVO
 //802 CPU A KER - BORRAR ARCHIVO
 //803 CPU A KER - ABRIR ARCHIVO
-
+//600 CPU A KER - RESERVAR MEMORIA HEAP
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -624,12 +624,28 @@ void signal(t_nombre_semaforo identificador_semaforo){
 }
 
 t_puntero reservar(t_valor_variable espacio){
-
-
-
 	puts("Reservar");
 	puts("");
-	return 0;
+
+	char * solicitud = string_new();
+	string_append(&solicitud, "600");
+	string_append(&solicitud, ";");
+	string_append(&solicitud, string_itoa(pcb->pid));
+	string_append(&solicitud, ";");
+	string_append(&solicitud, espacio);
+	string_append(&solicitud, ";");
+	enviarMensaje(&sktKernel, solicitud);
+
+	int result = recv(sktKernel, solicitud, MAXBUF, 0);
+
+	free(solicitud);
+
+	if (result > 0){
+		return 0;
+	} else {
+		perror("Error reservando Memoria de Heap\n");
+		return(EXIT_FAILURE);
+	}
 }
 
 void liberar(t_puntero puntero){

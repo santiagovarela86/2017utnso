@@ -11,6 +11,7 @@
 //300 CON A KER - HANDSHAKE DE LA CONSOLA
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //500 CPU A KER - HANDSHAKE DEL CPU
+//600 CPU A KER - RESERVAR MEMORIA HEAP
 
 #include <stdio.h>
 #include <string.h>
@@ -932,6 +933,13 @@ void * handler_conexion_cpu(void * sock) {
 				info = mensajeDesdeCPU[3];
 				escribir(fd, pid_mensaje, info);
 				break;
+
+			case 600:
+				;
+				int otro_pid = atoi(mensajeDesdeCPU[1]);
+				int bytes = atoi(mensajeDesdeCPU[2]);
+				reservarMemoriaHeap(otro_pid, bytes);
+				break;
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
@@ -1392,7 +1400,15 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes){
 	string_append(&solicitud, ";");
 	enviarMensaje(&skt_memoria, solicitud);
 
+	int result = recv(skt_memoria, solicitud, MAXBUF, 0);
 
+	if (result > 0){
+
+	} else {
+		perror("Error reservando Memoria de Heap\n");
+	}
+
+	free(solicitud);
 }
 
 void liberarMemoriaHeap(){
