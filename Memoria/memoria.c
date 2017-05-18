@@ -11,6 +11,7 @@
 //512 CPU A MEM - DEFINIR VARIABLE
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
 //600 KER A MEM - RESERVAR MEMORIA HEAP
+//601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -367,6 +368,26 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			enviarMensaje(&sock, mensajeACpu);
 
+		} else if (codigo == 601) {
+
+			int pid = atoi(mensajeDesdeCPU[1]);
+			int pagina = atoi(mensajeDesdeCPU[2]);
+			int offset = atoi(mensajeDesdeCPU[3]);
+
+			t_pagina_invertida* pag_a_buscar = buscar_pagina_para_consulta(pid, pagina);
+
+			if (pag_a_buscar != NULL){
+
+				int inicio = obtener_inicio_pagina(pag_a_buscar);
+
+				int direccion_memoria = inicio + offset;
+
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(direccion_memoria));
+				string_append(&mensajeACpu, ";");
+
+				enviarMensaje(&sock, mensajeACpu);
+			}
 		}
 
 		free(mensajeDesdeCPU);
@@ -989,14 +1010,9 @@ int obtener_offset_pagina(t_pagina_invertida* pagina){
 
 	char* bloque_asignado = string_substring(bloque_memoria, inicio, configuracion->marco_size);
 
-	int longitud_bloque_asignado = string_length(bloque_asignado);
+	int longitud_datos_bloque_asignado = string_length(bloque_asignado);
 
-	if(longitud_bloque_asignado == 0){
-		offset = inicio;
-	}
-	else {
-		offset = inicio + longitud_bloque_asignado;
-	}
+	offset = longitud_datos_bloque_asignado;
 
 	return offset;
 }

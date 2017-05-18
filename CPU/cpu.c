@@ -403,10 +403,33 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 	t_Stack* entrada_encontrada = list_find(pcb->indiceStack, (void*) encontrar_var);
 
-	//TODO CAMBIAR EL TIPO DE DATO DE var_encontrada A t_Stack Y LUEGO ENVIARMENSAJE A MEMORIA PIDIENDO LA POSICION EXACTA DE LA VARIABLE
-	//ENVIANDOLE PID, PAGINA Y OFFSET Y ESA DIRECCION ES LA QUEDE ENVIARSE EN EL RETURN.
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "601");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.pagina));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.offset));
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.size));
+	string_append(&mensajeAMemoria, ";");
 
-	return entrada_encontrada->direccion.offset;
+	enviarMensaje(&socketMemoria, mensajeAMemoria);
+
+	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
+
+	if(result > 0){
+		char**mensajeDesdeMemoria = string_split(mensajeAMemoria, ";");
+		int valor = atoi(mensajeDesdeMemoria[0]);
+
+		return valor;
+	}
+	else {
+		return NULL;
+	}
+
+	free(mensajeAMemoria);
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
