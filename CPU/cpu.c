@@ -632,7 +632,7 @@ t_puntero reservar(t_valor_variable espacio){
 	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(pcb->pid));
 	string_append(&solicitud, ";");
-	string_append(&solicitud, espacio);
+	string_append(&solicitud, string_itoa(espacio));
 	string_append(&solicitud, ";");
 	enviarMensaje(&sktKernel, solicitud);
 
@@ -644,7 +644,6 @@ t_puntero reservar(t_valor_variable espacio){
 		return 0;
 	} else {
 		perror("Error reservando Memoria de Heap\n");
-		return(EXIT_FAILURE);
 	}
 }
 

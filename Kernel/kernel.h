@@ -134,6 +134,8 @@ void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
 void rechazoFaltaMemoria(int socketConsola);
 void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantidadPaginas);
 void informoAConsola(int socketConsola, int pid);
+void reservarMemoriaHeap(t_pcb * pcb, int bytes);
+t_pcb * pcbFromPid(int pid);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

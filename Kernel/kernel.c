@@ -54,6 +54,7 @@ t_list* lista_variables_globales;
 t_list* lista_semaforos;
 t_list* lista_File_global;
 t_list* lista_File_proceso;
+t_list* lista_procesos;
 int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
@@ -122,6 +123,7 @@ void inicializarEstructuras(char * pathConfig){
 	lista_variables_globales = list_create();
 	lista_File_global = list_create();
 	lista_File_proceso = list_create();
+	lista_procesos = list_create();
 
 	cola_listos = crear_cola_pcb();
 	cola_bloqueados = crear_cola_pcb();
@@ -187,6 +189,7 @@ void liberarEstructuras(){
 
 	list_destroy_and_destroy_elements(lista_File_global, free);
 	list_destroy_and_destroy_elements(lista_File_proceso, free);
+	list_destroy_and_destroy_elements(lista_procesos, eliminar_pcb);
 
 	queue_destroy_and_destroy_elements(cola_listos, eliminar_pcb);
 	queue_destroy_and_destroy_elements(cola_bloqueados, eliminar_pcb);
@@ -936,9 +939,10 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 600:
 				;
-				int otro_pid = atoi(mensajeDesdeCPU[1]);
+				int un_pid = atoi(mensajeDesdeCPU[1]);
 				int bytes = atoi(mensajeDesdeCPU[2]);
-				reservarMemoriaHeap(otro_pid, bytes);
+				t_pcb * pcb = pcbFromPid(un_pid);
+				reservarMemoriaHeap(pcb, bytes);
 				break;
 		}
 
@@ -1386,12 +1390,20 @@ void informoAConsola(int socketConsola, int pid){
 	free(respuestaAConsola);
 }
 
-//ESTO RECIBE UN PCB POR AHORA Y EL TAMANIO EN BYTES
-//SI RECIBIERA EL PID HABRIA QUE BUSCAR EL PCB A PARTIR DE UN PID
+t_pcb * pcbFromPid(int pid){
+	int mismoPid (t_pcb * pcb){
+		return pcb->pid == pid;
+	}
+
+	return list_find(lista_procesos, mismoPid);
+}
+
 void reservarMemoriaHeap(t_pcb * pcb, int bytes){
 	int paginaActual = pcb->cantidadPaginas;
 
 	char * solicitud = string_new();
+	string_append(&solicitud, "600");
+	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(pcb->pid));
 	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(paginaActual));
@@ -1403,7 +1415,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes){
 	int result = recv(skt_memoria, solicitud, MAXBUF, 0);
 
 	if (result > 0){
-
+		printf("Falsa Alocacion realizada con exito\n");
 	} else {
 		perror("Error reservando Memoria de Heap\n");
 	}
@@ -1477,6 +1489,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, new_pcb);
+			list_add(lista_procesos, new_pcb);
 			pthread_mutex_unlock(&mtx_listos);
 
 			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
@@ -1503,6 +1516,10 @@ void finalizarPrograma(int pidACerrar) {
 	int encontre = 0;
 
 	int largoCola = queue_size(cola_listos);
+
+	int mismoPid (t_pcb * pcb){
+		return pcb->pid == pidACerrar;
+	}
 
 	//busco pid en cola listos
 	while (encontre == 0 && largoCola != 0) {
