@@ -494,12 +494,13 @@ void finalizar_programa(int pid){
 
 	t_pagina_invertida* paginaProceso = NULL;
 	while((paginaProceso = list_remove_by_condition(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
-		destruir_pagina(paginaProceso);
+		liberar_pagina(paginaProceso);
 	}
 }
 
-void destruir_pagina(t_pagina_invertida* pagina){
-	free(pagina);
+void liberar_pagina(t_pagina_invertida* pagina){
+	pagina->pid = 0;
+	list_replace(tabla_paginas, pagina->nro_marco, pagina);
 }
 
 void * inicializar_consola(void* args){

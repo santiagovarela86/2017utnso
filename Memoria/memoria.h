@@ -83,7 +83,7 @@ void inicializar_tabla_paginas(Memoria_Config* config);
 t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
 t_manejo_programa* get_manejo_programa(int pid);
 t_manejo_programa* crear_nuevo_manejo_programa(int pid, int pagina);
-void destruir_pagina(t_pagina_invertida* pagina);
+void liberar_pagina(t_pagina_invertida* pagina);
 int marco_libre_para_variables();
 t_pagina_invertida *memory_read(char *base, int offset, int size);
 t_pagina_invertida* list_encontrar_pag_variables(t_list* lista);
