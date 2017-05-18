@@ -5,6 +5,7 @@
 //102 KER A CPU - RESPUESTA HANDSHAKE DE CPU
 //198 KER A CON - LIMITE GRADO MULTIPROGRAMACION
 //199 KER A OTR - RESPUESTA A CONEXION INCORRECTA
+//250 KER A MEM - ENVIO PROGRAMA A MEMORIA
 //203 MEM A KER - ESPACIO SUFICIENTE PARA ALMACENAR PROGRAMA
 //298 MER A KER - ESPACIO INSUFICIENTE PARA ALMACENAR PROGRAMA
 //300 CON A KER - HANDSHAKE DE LA CONSOLA
@@ -1367,15 +1368,13 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 
 void informoAConsola(int socketConsola, int pid){
 	// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
-	char* info_pid = string_new();
 	char* respuestaAConsola = string_new();
-	string_append(&info_pid, "103");
-	string_append(&info_pid, ";");
-	string_append(&info_pid, string_itoa(pid));
-	string_append(&respuestaAConsola, info_pid);
+	string_append(&respuestaAConsola, "103");
+	string_append(&respuestaAConsola, ";");
+	string_append(&respuestaAConsola, string_itoa(pid));
+	string_append(&respuestaAConsola, ";");
 	enviarMensaje(&socketConsola, respuestaAConsola);
 
-	free(info_pid);
 	free(respuestaAConsola);
 }
 
@@ -1384,7 +1383,14 @@ void informoAConsola(int socketConsola, int pid){
 void reservarMemoriaHeap(t_pcb * pcb, int bytes){
 	int numeroDePagina = pcb->cantidadPaginas;
 
-
+	char * solicitud = string_new();
+	string_append(&solicitud, string_itoa(pcb->pid));
+	string_append(&solicitud, ";");
+	string_append(&solicitud, string_itoa(numeroDePagina));
+	string_append(&solicitud, ";");
+	string_append(&solicitud, string_itoa(bytes));
+	string_append(&solicitud, ";");
+	enviarMensaje(&skt_memoria, solicitud);
 }
 
 void liberarMemoriaHeap(){
@@ -1412,9 +1418,12 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 
 		char * mensajeInicioPrograma = string_new();
 		char * codigoLimpio = limpioCodigo(codigo);
+		string_append(&mensajeInicioPrograma, "250");
+		string_append(&mensajeInicioPrograma, ";");
 		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
 		string_append(&mensajeInicioPrograma, ";");
 		string_append(&mensajeInicioPrograma, codigoLimpio);
+		string_append(&mensajeInicioPrograma, ";");
 		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
 
 		char message[MAXBUF];
