@@ -11,7 +11,8 @@
 void * hilo_conexiones_kernel(void * args);
 void atender_peticiones(int socket);
 int validar_archivo(char* directorio);
-char* abrir_archivo(char* directorio, char permiso);
+char* abrir_archivo(char* directorio);
+char* crear_archivo(char* directorio);
 
 typedef struct {
 	int fileDescriptor;
@@ -25,5 +26,6 @@ typedef struct {
 	int cantidadDeAperturas;
 } t_fileGlobal;
 
+void * handler_conexion_kernel(void * sock);
 
 #endif /* FILESYSTEM_H_ */

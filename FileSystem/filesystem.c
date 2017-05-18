@@ -80,6 +80,8 @@ int main(int argc, char** argv) {
 }
 
 void * hilo_conexiones_kernel(void * args){
+
+
 	threadSocketInfo * threadSocketInfoKernel = (threadSocketInfo *) args;
 
 	int socketCliente;
@@ -97,19 +99,45 @@ void * hilo_conexiones_kernel(void * args){
 
 		while (result > 0) {
 			printf("%s", message);
+
+			char**mensajeAFileSystem = string_split(message, ";");
+			int codigo = atoi(mensajeAFileSystem[0]);
+
+			switch (codigo){
+
+				case 803: //de CPU a File system (abrir)
+
+					if("r" == mensajeAFileSystem[1]){
+						abrir_archivo(mensajeAFileSystem[0]);
+					}
+					if("c" == mensajeAFileSystem[1]){
+						crear_archivo(mensajeAFileSystem[0]);
+					}
+
+					break;
+
+				case 802:  //de CPU a File system (borrar)
+
+					break;
+
+				case 801://de CPU a File system (cerrar)
+
+
+					break;
+
+			}
+
 			result = recv(socketCliente, message, sizeof(message), 0);
 		}
 
-		if (result <= 0) {
-			printf("Se desconecto el Kernel\n");
-		}
-	} else {
-		perror("Fallo en el manejo del hilo Kernel");
-		return EXIT_FAILURE;
-	}
-
-	/*
-		int socketCliente;
+			if (result <= 0) {
+				printf("Se desconecto el Kernel\n");
+			}
+		} else {
+			perror("Fallo en el manejo del hilo Kernel");
+			return EXIT_FAILURE;
+   	}
+		/*int socketCliente;
 		struct sockaddr_in direccionCliente;
 		socklen_t length = sizeof direccionCliente;
 
@@ -123,12 +151,11 @@ void * hilo_conexiones_kernel(void * args){
 
 		shutdown(socketCliente, 0);
 		close(socketCliente);
-	*/
 
-	//Lo comento porque es un while 1
-	//La idea seria usar el message en el while de arriba para transmitirse mensajes
-	//entre el kernel y el FS
-	//atender_peticiones(socketCliente);
+		//Lo comento porque es un while 1
+		//La idea seria usar el message en el while de arriba para transmitirse mensajes
+		//entre el kernel y el FS
+		//atender_peticiones(socketCliente);*/
 
 	shutdown(socketCliente, 0);
 	close(socketCliente);
@@ -169,39 +196,45 @@ void atender_peticiones(int socket){
 	}
 }
 
-char* abrir_archivo(char* directorio, char permiso){
+
+char* abrir_archivo(char* directorio){
 
 
 	int fd_script = open(directorio, O_RDWR);
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 
-	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
-	archNuevo->cantidadDeAperturas = 0;
-	archNuevo->fileDescriptor = fd_script;
-	archNuevo->path = directorio;
+	t_fileGlobal* archReemplazar = malloc(sizeof(t_fileGlobal));
+	archReemplazar->cantidadDeAperturas = 0;
+	archReemplazar->fileDescriptor = fd_script;
+	archReemplazar->path = directorio;
 
 	int encontrar_arch(t_fileGlobal* glo){
 		return string_equals_ignore_case(directorio, glo->path);
 	}
-
-
-	t_fileGlobal* archAbrir = list_find(lista_File_global, encontrar_arch);
+	t_fileGlobal* archAbrir = malloc(sizeof(t_fileGlobal));
+	archAbrir = list_find(lista_File_global,(void*) encontrar_arch);
+	list_remove_by_condition(lista_File_global,(void*) encontrar_arch);
+	list_add(lista_File_global,archAbrir);
 
 	archAbrir->cantidadDeAperturas = 1;
+	archAbrir->fileDescriptor = fd_script;
+	archAbrir->path = directorio;
 
-	//list_add()
-	if(permiso == 'r'){
-		char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-		close(fd_script);
-		return arch;
-	}else if(permiso == 'w'){
-		char* arch = mmap(0, scriptFileStat.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
-		close(fd_script);
-		return arch;
-	}else{
-		puts("Permiso incorrecto");
-	}
+	list_add(lista_File_global, archAbrir);
+
+		//list_add()
+	/*	if(permiso == 'r'){
+			char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
+			close(fd_script);
+			return arch;
+		}else if(permiso == 'w'){
+			char* arch = mmap(0, scriptFileStat.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
+			close(fd_script);
+			return arch;
+		}else{
+			puts("Permiso incorrecto");
+		}*/
 
 	close(fd_script);
 	char* extra = string_new();
@@ -226,7 +259,7 @@ int validar_archivo(char* directorio){
 	}
 
 }
-char* crear_archivo(char* directorio, char permiso){
+char* crear_archivo(char* directorio){
 	  FILE * pFile;
 	  pFile = fopen (directorio,"w"); //por defecto lo crea
 	  if (pFile!=NULL)
