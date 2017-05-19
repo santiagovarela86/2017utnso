@@ -1,0 +1,8 @@
+#!/bin/sh
+clear 
+echo "Ejecutando Proceso Consola..."
+cd /home/utnso/git/tp-2017-1c-Nene-Malloc/Consola/Debug
+
+./Consola /home/utnso/git/tp-2017-1c-Nene-Malloc/Configuraciones/Consola
+
+exit 0
