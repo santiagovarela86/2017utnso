@@ -128,7 +128,9 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado);
 void signalSemaforo(int * socketCliente, char * otro_semaforo_buscado);
 void asignarValorCompartida(char * variable, int valor);
 void obtenerValorCompartida(char * otra_variable, int * socketCliente);
-void escribir(int fd, int pid_mensaje, char * info);
+void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio);
+void abrirArchivo(int pid_mensaje, char* direccion, char flag);
+void borrarArchivo(int pid_mensaje, char* direccion, char flag);
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
 void rechazoFaltaMemoria(int socketConsola);

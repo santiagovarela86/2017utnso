@@ -880,7 +880,12 @@ void * handler_conexion_cpu(void * sock) {
 		char* mensajeFileSystem = string_new();
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int operacion = atoi(mensajeDesdeCPU[0]);
-
+		int pid_mensaje;
+		int fd;
+		int tamanio;
+		char flag;
+		char* direccion;
+		char* infofile;
 		switch (operacion){
 			case 530:
 				finDeQuantum(socketCliente);
@@ -898,19 +903,44 @@ void * handler_conexion_cpu(void * sock) {
 				semaforo_buscado = mensajeDesdeCPU[1];
 				waitSemaforo(socketCliente, semaforo_buscado);
 				break;
+			case 804: //escribir archivo
+
+
+			     fd = atoi(mensajeDesdeCPU[1]);
+				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
+				 infofile = mensajeDesdeCPU[2];
+				 tamanio = atoi(mensajeDesdeCPU[3]);
+
+				escribirArchivo(fd, pid_mensaje, infofile, tamanio);
+
+				break;
 
 			case 803: //de CPU a File system (abrir)
 
+				//validar();
+				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
+				 direccion = mensajeDesdeCPU[2];
+				 flag = mensajeDesdeCPU[3];
 
-
-				string_append(&mensajeFileSystem, string_itoa(operacion));
-				string_append(&mensajeFileSystem, ";");
+				abrirArchivo(pid_mensaje, direccion, flag);
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
 			case 802:  //de CPU a File system (borrar)
 
+				 infofile = string_new();
+			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
+				 fd = atoi(mensajeDesdeCPU[2]);
+
+				 //lista_File_global
+
+				//borrarArchivo(pid_mensaje, direccion, flag);
+
+				enviarMensaje(&skt_filesystem, mensajeFileSystem);
+				break;
+
+			case 801://de CPU a File system (cerrar)
 
 				string_append(&mensajeFileSystem, string_itoa(operacion));
 				string_append(&mensajeFileSystem, ";");
@@ -918,7 +948,7 @@ void * handler_conexion_cpu(void * sock) {
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
-			case 801://de CPU a File system (cerrar)
+			case 800://de CPU a File system (cerrar)
 
 				string_append(&mensajeFileSystem, string_itoa(operacion));
 				string_append(&mensajeFileSystem, ";");
@@ -944,15 +974,6 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				char * otra_variable = mensajeDesdeCPU[1];
 				obtenerValorCompartida(otra_variable, socketCliente);
-				break;
-
-			case 575:
-				;
-				char * info = string_new();
-				int fd = atoi(mensajeDesdeCPU[1]);
-				int pid_mensaje = atoi(mensajeDesdeCPU[2]);
-				info = mensajeDesdeCPU[3];
-				escribir(fd, pid_mensaje, info);
 				break;
 
 			case 600:
@@ -1939,7 +1960,7 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 	free(mensajeACPU);
 }
 
-void escribir(int fd, int pid_mensaje, char * info){
+void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
 	/*
 	char* info = string_new();
 	int fd = atoi(mensajeDesdeCPU[1]);
@@ -1969,7 +1990,7 @@ void escribir(int fd, int pid_mensaje, char * info){
 		}
 
 		char* mensajeAConso = string_new();
-		string_append(&mensajeAConso, "575");
+		string_append(&mensajeAConso, "802");
 		string_append(&mensajeAConso, ";");
 		string_append(&mensajeAConso, string_itoa(pid_mensaje));
 		string_append(&mensajeAConso, ";");
@@ -1982,4 +2003,12 @@ void escribir(int fd, int pid_mensaje, char * info){
 
 	} //TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
 	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
+}
+
+void abrirArchivo(int pid_mensaje, char* direccion, char flag)
+{
+
+}
+void borrarArchivo(int pid_mensaje, char* direccion, char flag)
+{
 }
