@@ -342,20 +342,27 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->numero_pagina);
 
-				pthread_mutex_lock(&mutex_estructuras_administrativas);
-				list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
-				pthread_mutex_unlock(&mutex_estructuras_administrativas);
+				if (!pagina_llena(pag_encontrada)) {
 
-				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+					pthread_mutex_lock(&mutex_estructuras_administrativas);
+					list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
+					pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
-				grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+					t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
 
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+					grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
 
-				string_append(&mensajeACpu, ";");
+					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 
-				enviarMensaje(&sock, mensajeACpu);
+					string_append(&mensajeACpu, ";");
+
+					enviarMensaje(&sock, mensajeACpu);
+				}
+				else {
+					//TODO Verificar que el proceso no exceda el stack_size enviado por Kernel
+					//Y asignarle una nueva pagina de stack si no excede
+				}
 			}
 
 		} else if (codigo == 513) {
@@ -1026,5 +1033,20 @@ int obtener_offset_pagina(t_pagina_invertida* pagina){
 int obtener_inicio_pagina(t_pagina_invertida* pagina){
 	int inicio = pagina->nro_marco * configuracion->marco_size + 1;
 	return inicio;
+}
+
+bool pagina_llena(t_pagina_invertida* pagina){
+
+	bool pagina_llena = false;
+
+	int inicio = obtener_inicio_pagina(pagina);
+
+	char* bloque_asignado = string_substring(bloque_memoria, inicio, configuracion->marco_size);
+	int longitud_datos_bloque_asignado = string_length(bloque_asignado);
+
+	if (longitud_datos_bloque_asignado == configuracion ->marco_size)
+		pagina_llena = true;
+
+	return pagina_llena;
 }
 
