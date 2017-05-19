@@ -663,16 +663,30 @@ t_puntero reservar(t_valor_variable espacio){
 	string_append(&solicitud, string_itoa(espacio));
 	string_append(&solicitud, ";");
 	enviarMensaje(&sktKernel, solicitud);
-
-	int result = recv(sktKernel, solicitud, MAXBUF, 0);
-
 	free(solicitud);
 
+	char * message = string_new();
+	int result = recv(sktKernel, message, MAXBUF, 0);
+
 	if (result > 0){
+		char ** respuesta = string_split(message, ";");
+
+		printf("Falsa Reserva de Heap\n");
+
+		printf("PID: %d\n", atoi(respuesta[0]));
+		printf("Nro Pagina: %d\n", atoi(respuesta[1]));
+		printf("Free Space: %d\n", atoi(respuesta[2]));
+
+		free(respuesta);
 		return 0;
+
 	} else {
 		perror("Error reservando Memoria de Heap\n");
+
+		return -1;
 	}
+
+	free(message);
 }
 
 void liberar(t_puntero puntero){

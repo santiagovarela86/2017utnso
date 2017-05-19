@@ -945,7 +945,7 @@ void * handler_conexion_cpu(void * sock) {
 				int un_pid = atoi(mensajeDesdeCPU[1]);
 				int bytes = atoi(mensajeDesdeCPU[2]);
 				t_pcb * pcb = pcbFromPid(un_pid);
-				reservarMemoriaHeap(pcb, bytes);
+				reservarMemoriaHeap(pcb, bytes, * socketCliente);
 				break;
 		}
 
@@ -1196,7 +1196,7 @@ void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 	}
 	pcb->etiquetas_size = metadataProgram->etiquetas_size;
 	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_etiquetas;
-	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_funciones;
+	pcb->cantidadEtiquetas = metadataProgram->cantidad_de_funciones; //ACA NO FALTA UN cantidadFunciones?
 
 	metadata_destruir(metadataProgram);
 
@@ -1412,10 +1412,10 @@ void asignarCantidadMaximaStackPorProceso(){
 	free(mensajeAMemoria);
 }
 
-void reservarMemoriaHeap(t_pcb * pcb, int bytes){
+void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 	int paginaActual = pcb->cantidadPaginas;
 
-	char * solicitud = string_new();
+	/*
 	string_append(&solicitud, "600");
 	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(pcb->pid));
@@ -1424,17 +1424,37 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes){
 	string_append(&solicitud, ";");
 	string_append(&solicitud, string_itoa(bytes));
 	string_append(&solicitud, ";");
-	enviarMensaje(&skt_memoria, solicitud);
+	*/
+	enviarMensaje(&skt_memoria, serializarMensaje(4, 600, pcb->pid, paginaActual, bytes));
 
-	int result = recv(skt_memoria, solicitud, MAXBUF, 0);
+	char * message = string_new();
+
+	int result = recv(skt_memoria, message, MAXBUF, 0);
 
 	if (result > 0){
-		printf("Falsa Alocacion realizada con exito\n");
+		heapElement * heapElem = malloc(sizeof(heapElement));
+
+		char ** respuesta = string_split(message, ";");
+
+		heapElem->pid = atoi(respuesta[0]);
+		heapElem->nro_pagina = atoi(respuesta[1]);
+		heapElem->tamanio_disponible = atoi(respuesta[2]);
+
+		list_add(heap, heapElem);
+
+		printf("Se agregó una página al Heap\n");
+
+		printf("PID: %d\n", heapElem->pid);
+		printf("Nro Pagina: %d\n", heapElem->nro_pagina);
+		printf("Free Space: %d\n", heapElem->tamanio_disponible);
+
+		enviarMensaje(&socketCPU, serializarMensaje(3, heapElem->pid, heapElem->nro_pagina, heapElem->tamanio_disponible));
+
 	} else {
 		perror("Error reservando Memoria de Heap\n");
 	}
 
-	free(solicitud);
+	free(message);
 }
 
 void liberarMemoriaHeap(){

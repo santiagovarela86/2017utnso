@@ -238,8 +238,29 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 	//int cantidadPaginas = bytesPedidos / configuracion->marco_size;
 
 	//SI ALCANZA UNA PAGINA PARA GUARDAR LO QUE ME PIDEN
-	if (bytesPedidos < configuracion->marco_size - sizeof(heapMetadata)){
+	int freeSpace = configuracion->marco_size - sizeof(heapMetadata);
+	if (bytesPedidos < freeSpace){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
+		//ESTO ME ESTA DEVOLVIENDO PAGINA CERO
+
+		char * respuestaAKernel = string_new();
+
+		//FALTA UN CODIGO DE OPERACION?
+		string_append(&respuestaAKernel, string_itoa(pagina->pid));
+		string_append(&respuestaAKernel, ";");
+		string_append(&respuestaAKernel, string_itoa(pagina->nro_pagina));
+		string_append(&respuestaAKernel, ";");
+		string_append(&respuestaAKernel, string_itoa(freeSpace));
+		string_append(&respuestaAKernel, ";");
+		enviarMensaje(&socketKernel, respuestaAKernel);
+
+		printf("Se creo una pagina de Heap\n");
+
+		printf("PID: %d\n", pagina->pid);
+		printf("Nro Pagina: %d\n", pagina->nro_pagina);
+		printf("Free Space: %d\n", freeSpace);
+
+		free(respuestaAKernel);
 	} else {
 		perror("Error al crear Pagina de Heap\n");
 	}
