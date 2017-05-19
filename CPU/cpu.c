@@ -11,6 +11,7 @@
 //802 CPU A KER - BORRAR ARCHIVO
 //803 CPU A KER - ABRIR ARCHIVO
 //600 CPU A KER - RESERVAR MEMORIA HEAP
+//615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -482,26 +483,35 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 	if(result > 0){
 
-		t_Stack* entrada_stack = deserializar_entrada_stack(mensajeAMemoria);
+		char** mensajeSplit = string_split(mensajeAMemoria, ";");
 
-		list_add(pcb->indiceStack, entrada_stack);
+		int codigo = atoi(mensajeSplit[0]);
 
-		//char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
-		//int posicion = atoi(mensajeDesdeCPU[0]);
-		/*variables* var = malloc(sizeof(variables));
-		var->direcion = posicion;
-		var->nro_variable = (list_size(variables_locales) + 1);
-		var->variable = identificador_variable;
-		var->pid = pcb->pid;
+		if (codigo == ASIGNACION_MEMORIA_OK){
 
-		list_add(variables_locales, var);
-		*/
+			t_Stack* entrada_stack = deserializar_entrada_stack(mensajeSplit);
 
-		printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
+			list_add(pcb->indiceStack, entrada_stack);
 
-		free(mensajeAMemoria);
+			printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
 
-		return entrada_stack->direccion.offset;
+			free(mensajeAMemoria);
+
+			return entrada_stack->direccion.offset;
+		}
+		else {
+
+			//Se asigna el exit code -9 (No se pueden asignar mas paginas al proceso)
+			char* mensajeAKernel = string_new();
+			string_append(&mensajeAKernel, "615");
+			string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, string_itoa(pcb->pid));
+			string_append(&mensajeAKernel, ";");
+
+			enviarMensaje(&sktKernel, mensajeAKernel);
+			free(mensajeAKernel);
+
+		}
 	}
 
 	return -1;
@@ -903,15 +913,13 @@ char* serializar_pcb(t_pcb* pcb){
 
 }
 
-t_Stack* deserializar_entrada_stack(char* mensajeRecibido){
+t_Stack* deserializar_entrada_stack(char** mensajeRecibido){
 	t_Stack* entrada_stack = malloc(sizeof(t_Stack));
 
-	char** mensajeSplit = string_split(mensajeRecibido, ";");
-
-	entrada_stack->nombre_variable = mensajeSplit[0][0];
-	entrada_stack->direccion.pagina = atoi(mensajeSplit[1]);
-	entrada_stack->direccion.offset = atoi(mensajeSplit[2]);
-	entrada_stack->direccion.size = atoi(mensajeSplit[3]);
+	entrada_stack->nombre_variable = mensajeRecibido[1][0];
+	entrada_stack->direccion.pagina = atoi(mensajeRecibido[2]);
+	entrada_stack->direccion.offset = atoi(mensajeRecibido[3]);
+	entrada_stack->direccion.size = atoi(mensajeRecibido[4]);
 
 	return entrada_stack;
 }

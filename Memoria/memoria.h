@@ -24,6 +24,8 @@
 
 
 #define OFFSET_VAR 4
+#define ASIGNACION_MEMORIA_OK 0
+#define ASIGNACION_MEMORIA_ERROR 1
 
 typedef struct {
 	int pid;
@@ -52,6 +54,11 @@ typedef struct {
 } t_Stack;
 
 typedef struct {
+	int pid;
+	int pagina;
+} t_pagina_proceso;
+
+typedef struct {
 	uint32_t size;
 	bool isFree;
 } heapMetadata;
@@ -60,6 +67,7 @@ typedef struct {
 	heapMetadata metadata;
 	char* data;
 } t_pagina_heap;
+
 
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);

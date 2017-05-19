@@ -31,12 +31,13 @@ pthread_mutex_t mutex_bloque_memoria;
 //int semaforo = 0;
 t_list* tabla_paginas;
 t_list* tabla_cache;
-int stack_size = 2; //TODO: Al realizar el handshake con Kernel le deberia pasar a memoria el stack_size
+int stack_size = 0;
 char* bloque_memoria;
 char* bloque_cache;
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
 t_list* tabla_programas;
+t_list* lista_paginas_stack;
 
 int socketKernel;
 struct sockaddr_in direccionKernel;
@@ -114,6 +115,7 @@ void inicializarEstructuras(char * pathConfig){
 
 	tabla_cache = list_create();
 	tabla_programas = list_create();
+	lista_paginas_stack = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
 
@@ -129,6 +131,7 @@ void liberarEstructuras(){
 
 	list_destroy_and_destroy_elements(tabla_cache, free);
 	list_destroy_and_destroy_elements(tabla_programas, free);
+	list_destroy_and_destroy_elements(lista_paginas_stack, free);
 
 	free(configuracion);
 	free(tamanio_maximo);
@@ -338,12 +341,28 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
 
+				if (pag_a_cargar == NULL){
+					//No hay pagina para asignar
+					//Se avisa a la CPU que no se pudo asignar Memoria
+					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
+					string_append(&mensajeACpu, ";");
+					enviarMensaje(&sock, mensajeACpu);
+					break;
+				}
+
+				t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
+
 				pag_a_cargar->nro_pagina = paginaParaVariables;
 				pag_a_cargar->pid = pid;
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 				manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
 				list_add(tabla_programas, manejo_programa);
+
+				pag_stack->pagina = paginaParaVariables;
+				pag_stack->pid = pid;
+				list_add(lista_paginas_stack, pag_stack);
 
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
@@ -352,12 +371,14 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
 
 				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+				string_append(&mensajeACpu, ";");
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				enviarMensaje(&sock, mensajeACpu);
 
 				free(entrada_stack);
 
-			}else{
+			} else {
 
 				//puts("ya existen otras variables de ese programa");
 
@@ -374,15 +395,59 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
 
 					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+					string_append(&mensajeACpu, ";");
 					string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
-
 					string_append(&mensajeACpu, ";");
 
 					enviarMensaje(&sock, mensajeACpu);
 				}
 				else {
-					//TODO Verificar que el proceso no exceda el stack_size enviado por Kernel
-					//Y asignarle una nueva pagina de stack si no excede
+
+					bool _paginas_stack_de_proceso(void *pagina) {
+		                return ((t_pagina_proceso *)pagina)->pid == pid;
+		            }
+
+					int cantPaginasStackAsignadas = list_count_satisfying(lista_paginas_stack, _paginas_stack_de_proceso);
+
+					if (cantPaginasStackAsignadas < stack_size){
+						//El proceso no supera el limite de stack
+						//Se le asigna una nueva pagina
+
+						pag_encontrada = buscar_pagina_para_insertar(pid, cantPaginasStackAsignadas + 1);
+
+						pthread_mutex_lock(&mutex_estructuras_administrativas);
+						list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
+
+						t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
+
+						pag_stack->pagina = pag_encontrada->nro_pagina;
+						pag_stack->pid = pid;
+						list_add(lista_paginas_stack, pag_stack);
+
+						t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+						grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+
+						pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
+						char* mensajeACpu = string_new();
+						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+						string_append(&mensajeACpu, ";");
+						string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+						string_append(&mensajeACpu, ";");
+						enviarMensaje(&sock, mensajeACpu);
+
+						free(entrada_stack);
+
+					}
+					else {
+						//Entonces llego al limite de paginas de stack
+						//Se envia mensaje a CPU informando que no puede continuar la ejecucion
+						char* mensajeACpu = string_new();
+						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
+						string_append(&mensajeACpu, ";");
+						enviarMensaje(&sock, mensajeACpu);
+					}
 				}
 			}
 

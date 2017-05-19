@@ -13,6 +13,7 @@
 //500 CPU A KER - HANDSHAKE DEL CPU
 //600 CPU A KER - RESERVAR MEMORIA HEAP
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
+//615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
 
 #include <stdio.h>
 #include <string.h>
@@ -947,6 +948,13 @@ void * handler_conexion_cpu(void * sock) {
 				t_pcb * pcb = pcbFromPid(un_pid);
 				reservarMemoriaHeap(pcb, bytes, * socketCliente);
 				break;
+
+			case 615:
+				;
+				int pid_msg = atoi(mensajeDesdeCPU[1]);
+				finalizarPrograma(pid_msg);
+				break;
+
 		}
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
