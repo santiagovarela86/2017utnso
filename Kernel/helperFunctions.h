@@ -22,5 +22,6 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 char *trim(char *s);
 char *rtrim(char *s);
 char *ltrim(char *s);
+char * serializarMensaje(int cant, ... );
 
 #endif /* HELPERFUNCTIONS_H_ */

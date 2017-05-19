@@ -7,6 +7,7 @@
 #include "helperFunctions.h"
 #include <pthread.h>
 #include <ctype.h>
+#include <stdarg.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -144,3 +145,19 @@ char *trim(char *s)
     return rtrim(ltrim(s));
 }
 
+//mensaje = serializarMensaje(cantArgumentos, arg1, arg2, ... )
+char * serializarMensaje(int cant, ... ){
+	va_list valist;
+	va_start(valist, cant);
+
+	int i;
+	char * message = string_new();
+
+	for (i = 0; i < cant; i++){
+		int valor = va_arg(valist, int);
+		string_append(&message, string_itoa(valor));
+		string_append(&message, ";");
+	}
+
+	return message;
+}
