@@ -76,7 +76,7 @@ enum exit_codes {
 	FIN_POR_CONSOLA = -7,
 	FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA = -8,
 	FIN_ERROR_SUPERO_MAXIMO_PAGINAS = -9,
-	ERROR_SIN_DEFINICION = -20
+	FIN_ERROR_SIN_DEFINICION = -20
 };
 
 int main(int argc, char **argv) {
@@ -1056,37 +1056,37 @@ void logExitCode(int code)
 {
 	char* errorLog = string_new();
 	switch(code){
-	case 0:
+	case FIN_OK:
 		errorLog = "El programa finalizó correctamente";
 		break;
-	case -1:
+	case FIN_ERROR_RESERVA_RECURSOS:
 		errorLog = "No se pudieron reservar recursos para ejecutar el programa";
 		break;
-	case -2:
+	case FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE:
 		errorLog = "El programa intentó acceder a un archivo que no existe.";
 		break;
-	case -3:
+	case FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS:
 		errorLog = "El programa intentó leer un archivo sin permisos.";
 		break;
-	case -4:
+	case FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS:
 		errorLog = "El programa intentó escribir un archivo sin permisos.";
 		break;
-	case -5:
+	case FIN_ERROR_EXCEPCION_MEMORIA:
 		errorLog = "Excepción de memoria";
 		break;
-	case -6:
+	case FIN_POR_DESCONEXION_CONSOLA:
 		errorLog = "Finalizado a través de desconexión de consola";
 		break;
-	case -7:
+	case FIN_POR_CONSOLA:
 		errorLog = "Finalizado a través de comando Finalizar Programa de la consola";
 		break;
-	case -8:
+	case FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA:
 		errorLog = "Se intento reservar mas memoria que el tamaño de una página";
 		break;
-	case -9:
+	case FIN_ERROR_SUPERO_MAXIMO_PAGINAS:
 		errorLog = "No se pueden asignar mas páginas al proceso";
 		break;
-	case -20:
+	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
 		break;
 	}
