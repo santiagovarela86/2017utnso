@@ -2048,12 +2048,12 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 				p = queue_pop(cola_ejecucion);
 				pthread_mutex_unlock(&mtx_ejecucion);
 
-				if(*(p->socket_consola) == *(socketCliente)){
+				if(*(p->socket_cpu) == *(socketCliente)){
 					t_bloqueo* bloq = malloc(sizeof(t_bloqueo));
 					bloq->pid = p->pid;
 					bloq->sem = string_new();
 					bloq->sem = sem->nombre;
-
+					puts("entre");
 					list_add(registro_bloqueados, bloq);
 
 					encontrado = 1;
@@ -2102,6 +2102,54 @@ void signalSemaforo(int * socketCliente, char * semaforo_buscado){
 	}
 
 	t_globales* sem = list_find(lista_semaforos, (void*) encontrar_sem);
+
+	int encontrar_bloqueado(t_bloqueo* bloq){
+
+		return string_starts_with(sem->nombre,bloq->sem);
+	}
+
+	t_bloqueo* bloq = list_find(registro_bloqueados, (void *) encontrar_bloqueado);
+
+	if(bloq != NULL){
+
+		int fin = queue_size(cola_bloqueados);
+		int encontrado = 0;
+		t_pcb* p;
+
+		while(fin > 0 && encontrado == 0){
+
+		pthread_mutex_lock(&mtx_bloqueados);
+		p = queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+
+		if(p->pid == bloq->pid){
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, p);
+			pthread_mutex_unlock(&mtx_listos);
+
+			int indice = 0;
+			while(encontrado == 0){
+				t_bloqueo* b = list_get(registro_bloqueados, indice);
+				if(b->pid == bloq->pid){
+					list_remove(registro_bloqueados, indice);
+					free(b);
+					encontrado = 1;
+				}else{
+					indice++;
+				}
+			}
+
+		}else{
+			pthread_mutex_lock(&mtx_bloqueados);
+			queue_push(cola_bloqueados, p);
+			pthread_mutex_unlock(&mtx_bloqueados);
+		}
+
+		fin --;
+
+		}
+	}
 
 	pthread_mutex_lock(&mtx_semaforos);
 	sem->valor++;
