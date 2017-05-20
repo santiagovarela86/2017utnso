@@ -16,6 +16,7 @@ void destruir_entrada_cache(t_entrada_cache *self){
 
 void flush_memoria_cache(t_list* cache){
 	 list_destroy_and_destroy_elements(cache, (void*)destruir_entrada_cache);
+	 cache = list_create();
 }
 
 

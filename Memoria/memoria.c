@@ -21,6 +21,7 @@
 #include "helperFunctions.h"
 #include <time.h>
 #include <semaphore.h>
+#include "cache.h"
 
 int conexionesKernel = 0;
 int conexionesCPU = 0;
@@ -28,6 +29,7 @@ int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
+pthread_mutex_t mutex_cache;
 //int semaforo = 0;
 t_list* tabla_paginas;
 t_list* tabla_cache;
@@ -86,6 +88,7 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
+	pthread_mutex_init(&mutex_cache, NULL);
 
 	configuracion = leerConfiguracion(pathConfig);
 
@@ -849,7 +852,41 @@ void log_contenido_memoria_in_disk() {
 
 	t_log* logger = log_create("contenido_memoria.log", "contenido_memoria", true, LOG_LEVEL_INFO);
 
-	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA %s", "INFO");
+	char* dump = string_new();
+
+	int i = 0;
+	string_append(&dump, "\n");
+	string_append(&dump, "BLOQUE DE MEMORIA \n");
+	for(i = 0; i < configuracion->marcos; i++){
+
+		char * contenido_marco = string_new();
+		char * subBloqueMarco = string_new();
+		string_append(&contenido_marco, "Contenido del Marco ");
+		string_append(&contenido_marco, string_itoa(i));
+		string_append(&contenido_marco, ": \n");
+		if (i == 0)
+			subBloqueMarco = string_substring(bloque_memoria, i * configuracion->marco_size, configuracion->marco_size);
+		else
+			subBloqueMarco = string_substring(bloque_memoria, i * configuracion->marco_size + 1, configuracion->marco_size);
+
+		if (string_length(subBloqueMarco) == 0) {
+			string_append(&contenido_marco, "Marco Vacio");
+		}
+		else {
+			string_append(&contenido_marco, subBloqueMarco);
+		}
+		string_append(&contenido_marco, "\n");
+
+		string_append(&dump, contenido_marco);
+
+		free(subBloqueMarco);
+		free(contenido_marco);
+	}
+	puts("***********************************************************");
+
+	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA %s", dump);
+
+	free(dump);
 
     log_destroy(logger);
 }

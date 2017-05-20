@@ -75,7 +75,7 @@ void inicializar_estructuras_administrativas(Memoria_Config* config);
 void log_cache_in_disk(t_list*);
 void log_estructuras_memoria_in_disk();
 void log_contenido_memoria_in_disk();
-void limpiar_memoria_cache();
+void log_contenido_memoria_cache();
 void * hilo_conexiones_kernel();
 void * hilo_conexiones_cpu();
 void * handler_conexiones_cpu(void * args);
