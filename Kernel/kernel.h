@@ -141,6 +141,12 @@ t_pcb * pcbFromPid(int pid);
 void asignarCantidadMaximaStackPorProceso();
 void abrir_subconsola_procesos();
 void listarCola(t_queue * cola);
+void listar_terminados();
+void listar_listos();
+void listar_bloqueados();
+void listar_ejecucion();
+
+void matarProceso(int pidAMatar);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
