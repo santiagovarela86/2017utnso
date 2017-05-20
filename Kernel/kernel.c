@@ -872,15 +872,20 @@ void * handler_conexion_cpu(void * sock) {
 		char flag;
 		char* direccion;
 		char* infofile;
-		int pid_531;
+		int pid_recibido;
 		switch (operacion){
 			case 530:
 				finDeQuantum(socketCliente);
 				break;
 
 			case 531:
-				pid_531 = atoi(mensajeDesdeCPU[1]);
-				finDePrograma(pid_531);
+				pid_recibido = atoi(mensajeDesdeCPU[1]);
+				finDePrograma(pid_recibido);
+				break;
+
+			case 532:
+				pid_recibido = atoi(mensajeDesdeCPU[1]);
+				bloqueoDePrograma(pid_recibido);
 				break;
 
 			case 570:
@@ -1898,6 +1903,65 @@ void listar_ejecucion(){
 	}
 
 	return;
+}
+
+void bloqueoDePrograma(int pid_a_buscar){
+	int encontrado = 0;
+
+	int size = queue_size(cola_ejecucion);
+
+	int iter = 0;
+
+	t_pcb* pcb_a_cambiar;
+
+	while (encontrado == 0 && iter < size) {
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		if (pcb_a_cambiar->pid == pid_a_buscar) {
+
+			encontrado = 1;
+
+		} else {
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+		}
+
+		iter++;
+	}
+
+	if(encontrado == 1){
+		pthread_mutex_lock(&mtx_bloqueados);
+		queue_push(cola_bloqueados, pcb_a_cambiar);
+		pthread_mutex_unlock(&mtx_bloqueados);
+	}
+
+	encontrado = 0;
+
+	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+		pthread_mutex_lock(&mtx_cpu);
+		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->pid_asignado == pid_a_buscar) {
+			encontrado = 1;
+		}
+
+		temporalCpu->pid_asignado = -1;
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+	}
+
 }
 
 void finDePrograma(int pid_a_buscar){
