@@ -145,7 +145,7 @@ void listar_terminados();
 void listar_listos();
 void listar_bloqueados();
 void listar_ejecucion();
-
+void bloqueoDePrograma(int pid_a_buscar);
 void matarProceso(int pidAMatar);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
