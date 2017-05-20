@@ -779,11 +779,59 @@ t_manejo_programa* get_manejo_programa(int pid){
 }
 
 void log_cache_in_disk(t_list* cache) {
+
 	t_log* logger = log_create("cache.log", "cache",true, LOG_LEVEL_INFO);
 
-    log_info(logger, "LOGUEO DE INFO DE CACHE %s", "INFO");
+	char* dump_memoria = string_new();
+
+	t_list* listado_procesos_cache = list_create();
+
+	char* dump_procesos_activos = string_new();
+
+	string_append(&dump_memoria, "\n");
+	string_append(&dump_memoria, "MEMORIA CACHE \n");
+
+	void agregar_registro_dump(t_entrada_cache* ent_cache){
+
+		bool _encontrar_procesos_activo(int valor){
+			return valor == ent_cache->pid;
+		}
+
+		if (ent_cache != NULL){
+			string_append(&dump_memoria, "PID: ");
+			string_append(&dump_memoria, string_itoa(ent_cache->pid));
+			string_append(&dump_memoria, " ");
+			string_append(&dump_memoria, "PAGINA: ");
+			string_append(&dump_memoria, string_itoa(ent_cache->nro_pagina));
+			string_append(&dump_memoria, " ");
+			string_append(&dump_memoria, "CONTENIDO: ");
+			string_append(&dump_memoria, ent_cache->contenido_pagina);
+			string_append(&dump_memoria, "\n");
+		}
+	}
+
+	if (list_size(tabla_cache) > 0){
+
+		list_iterate(tabla_cache, (void*) agregar_registro_dump);
+
+		if (string_length(dump_procesos_activos) > 0){
+			string_append(&dump_memoria, "\n");
+			string_append(&dump_memoria, "LISTADO DE PROCESOS ACTIVOS EN CACHE \n");
+			string_append(&dump_memoria, dump_procesos_activos);
+		}
+
+		log_info(logger, dump_memoria, "INFO");
+	}
+	else {
+		printf("ESTRUCTURA DE CACHE VACIA");
+	}
+
+	list_destroy(listado_procesos_cache);
+	free(dump_procesos_activos);
+	free(dump_memoria);
 
     log_destroy(logger);
+
 }
 
 void log_estructuras_memoria_in_disk() {
@@ -885,7 +933,7 @@ void log_contenido_memoria_in_disk() {
 	}
 	puts("***********************************************************");
 
-	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA %s", dump);
+	log_info(logger, dump, "INFO");
 
 	free(dump);
 
@@ -931,7 +979,7 @@ void log_contenido_memoria_in_disk_for_pid(int pid){
 
 	list_iterate(paginas_proceso, (void*) _appendToDump);
 
-	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA DE PID %s", dump);
+	log_info(logger, dump, "INFO");
 
 	free(nombre_archivo);
 	free(dump);
