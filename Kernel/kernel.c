@@ -381,9 +381,9 @@ void * inicializar_consola(void* args){
 	}
 }
 
-void abrir_subconsola_procesos(void* args){
+void abrir_subconsola_procesos(){
 
-	while(1){
+
 		puts("");
 		puts("***********************************************************");
 		puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
@@ -391,8 +391,6 @@ void abrir_subconsola_procesos(void* args){
 		puts("2)  Procesos en cola de Ejecucion");
 		puts("3)  Procesos en cola de Bloqueados");
 		puts("4)  Procesos en cola de Terminados");
-		puts("5)  Procesos en cola de Nuevos");
-		puts("6)  Volver");
 		puts("***********************************************************");
 
 		int accion = 0;
@@ -405,29 +403,20 @@ void abrir_subconsola_procesos(void* args){
 			switch(accion){
 			case 1:
 				accion_correcta = 1;
-				listarCola(cola_listos);
+				listar_listos();
 				break;
 			case 2:
 				accion_correcta = 1;
-				listarCola(cola_ejecucion);
+				listar_ejecucion();
 				break;
 			case 3:
 				accion_correcta = 1;
-				listarCola(cola_bloqueados);
+				listar_bloqueados();
 				break;
 			case 4:
 				accion_correcta = 1;
-				listarCola(cola_terminados);
+				listar_terminados();
 				break;
-			case 5:
-				accion_correcta = 1;
-				listarCola(cola_nuevos);
-				break;
-			case 6:
-				accion_correcta = 1;
-				inicializar_consola(args);
-				break;
-
 
 			default:
 				accion_correcta = 0;
@@ -440,17 +429,14 @@ void abrir_subconsola_procesos(void* args){
 				puts("3)  Procesos en cola de Bloqueados");
 				puts("4)  Procesos en cola de Terminados");
 				puts("5)  Procesos en cola de Nuevos");
-				puts("6)  Volver");
 				puts("***********************************************************");
 				break;
 			}
 
 
-		}
+
 	}
 }
-
-
 
 void matarProceso(int pidAMatar){
 
@@ -886,15 +872,15 @@ void * handler_conexion_cpu(void * sock) {
 		char flag;
 		char* direccion;
 		char* infofile;
+		int pid_531;
 		switch (operacion){
 			case 530:
 				finDeQuantum(socketCliente);
 				break;
 
 			case 531:
-				;
-				int pid = atoi(mensajeDesdeCPU[1]);
-				finDePrograma(pid);
+				pid_531 = atoi(mensajeDesdeCPU[1]);
+				finDePrograma(pid_531);
 				break;
 
 			case 570:
@@ -1817,6 +1803,103 @@ void finDeQuantum(int * socketCliente){
 	}
 }
 
+void listar_terminados(){
+	int fin = queue_size((cola_terminados));
+
+	if(fin == 0){
+		puts("No hay programas terminados");
+	}
+
+	while(fin > 0){
+		pthread_mutex_lock(&mtx_terminados);
+		t_pcb* aux = queue_pop(cola_terminados);
+		pthread_mutex_unlock(&mtx_terminados);
+
+		printf("Programa: %d \n", aux->pid);
+
+		pthread_mutex_lock(&mtx_terminados);
+		queue_push(cola_terminados, aux);
+		pthread_mutex_unlock(&mtx_terminados);
+
+		fin--;
+	}
+
+	return;
+}
+
+void listar_listos(){
+	int fin = queue_size((cola_listos));
+
+	if(fin == 0){
+		puts("No hay programas listos");
+	}
+
+	while(fin > 0){
+		pthread_mutex_lock(&mtx_listos);
+		t_pcb* aux = queue_pop(cola_listos);
+		pthread_mutex_unlock(&mtx_listos);
+
+		printf("Programa: %d \n", aux->pid);
+
+		pthread_mutex_lock(&mtx_listos);
+		queue_push(cola_listos, aux);
+		pthread_mutex_unlock(&mtx_listos);
+
+		fin--;
+	}
+
+	return;
+}
+
+void listar_bloqueados(){
+	int fin = queue_size((cola_bloqueados));
+
+	if(fin == 0){
+		puts("No hay programas bloqueados");
+	}
+
+	while(fin > 0){
+		pthread_mutex_lock(&mtx_bloqueados);
+		t_pcb* aux = queue_pop(cola_bloqueados);
+		pthread_mutex_unlock(&mtx_bloqueados);
+
+		printf("Programa: %d \n", aux->pid);
+
+		pthread_mutex_lock(&mtx_bloqueados);
+		queue_push(cola_bloqueados, aux);
+		pthread_mutex_unlock(&mtx_bloqueados);
+
+		fin--;
+	}
+
+	return;
+}
+
+void listar_ejecucion(){
+	int fin = queue_size((cola_ejecucion));
+
+	if(fin == 0){
+		puts("No hay programas terminados");
+	}
+
+	while(fin > 0){
+		pthread_mutex_lock(&mtx_ejecucion);
+		t_pcb* aux = queue_pop(cola_ejecucion);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		puts("Programas Terminados:");
+		printf("%d \n", aux->pid);
+
+		pthread_mutex_lock(&mtx_ejecucion);
+		queue_push(cola_ejecucion, aux);
+		pthread_mutex_unlock(&mtx_ejecucion);
+
+		fin--;
+	}
+
+	return;
+}
+
 void finDePrograma(int pid_a_buscar){
 	int encontrado = 0;
 
@@ -1824,10 +1907,12 @@ void finDePrograma(int pid_a_buscar){
 
 	int iter = 0;
 
+	t_pcb* pcb_a_cambiar;
+
 	while (encontrado == 0 && iter < size) {
 
 		pthread_mutex_lock(&mtx_ejecucion);
-		t_pcb* pcb_a_cambiar = queue_pop(cola_ejecucion);
+		pcb_a_cambiar = queue_pop(cola_ejecucion);
 		pthread_mutex_unlock(&mtx_ejecucion);
 
 		if (pcb_a_cambiar->pid == pid_a_buscar) {
@@ -1843,6 +1928,12 @@ void finDePrograma(int pid_a_buscar){
 		}
 
 		iter++;
+	}
+
+	if(encontrado == 1){
+		pthread_mutex_lock(&mtx_terminados);
+		queue_push(cola_terminados, pcb_a_cambiar);
+		pthread_mutex_unlock(&mtx_terminados);
 	}
 
 	encontrado = 0;
