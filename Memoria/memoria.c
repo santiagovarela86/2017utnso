@@ -672,7 +672,8 @@ void * inicializar_consola(void* args){
 					accion_correcta = 1;
 					printf("Ingrese PID de proceso: ");
 					scanf("%d", &pid_buscado);
-					printf("El tamanio total del proceso %d es: %d", pid_buscado, tamanio_proceso_buscado);
+					tamanio_proceso_buscado = calcular_tamanio_proceso(pid_buscado);
+					printf("La cantidad de Marcos del proceso %d es: %d", pid_buscado, tamanio_proceso_buscado);
 					break;
 				default:
 					accion_correcta = 0;
@@ -889,6 +890,19 @@ void log_contenido_memoria_in_disk() {
 	free(dump);
 
     log_destroy(logger);
+}
+
+int calcular_tamanio_proceso(int pid_buscado){
+
+	int tamanio_proceso = 0;
+
+	int _obtenerPaginaProceso(t_pagina_invertida *p) {
+		return p->pid == pid_buscado;
+	}
+
+	tamanio_proceso = list_count_satisfying(tabla_paginas, (void*)_obtenerPaginaProceso);
+
+	return tamanio_proceso;
 }
 
 void grabar_valor(int direccion, int valor){

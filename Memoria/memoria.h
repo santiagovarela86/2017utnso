@@ -109,5 +109,6 @@ void crearPaginaHeap(int pid, int numeroDePagina, int bytes);
 int obtener_inicio_pagina(t_pagina_invertida* pagina);
 int obtener_offset_pagina(t_pagina_invertida* pagina);
 bool pagina_llena(t_pagina_invertida* pagina);
+int calcular_tamanio_proceso(int pid);
 
 #endif /* MEMORIA_H_ */
