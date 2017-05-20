@@ -32,6 +32,7 @@ int socketMemoria;
 int sktKernel;
 t_list* variables_locales;
 t_pcb* pcb;
+int bloqueo;
 
 int main(int argc , char **argv){
 
@@ -45,6 +46,7 @@ int main(int argc , char **argv){
 
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
+	bloqueo = 0;
 
 	variables_locales = list_create();
 
@@ -94,7 +96,7 @@ void* manejo_kernel(void *args) {
     	//Guardo el Quantum
     	int q = pcb->quantum;
 
-    	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter){
+    	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter && bloqueo == 0){
     		instruccion = solicitoInstruccion(pcb);
     	//	printf("el program es: %d\n", pcb->program_counter);
        	//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
@@ -110,6 +112,19 @@ void* manejo_kernel(void *args) {
 
     		pcb->program_counter++;
 
+    	}
+
+    	if(bloqueo == 1){
+    		char* mensajeAKernel = string_new();
+
+        	string_append(&mensajeAKernel, "532");
+        	string_append(&mensajeAKernel, ";");
+        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+        	string_append(&mensajeAKernel, ";");
+
+        	enviarMensaje(&socketKernel, mensajeAKernel);
+
+        	free(mensajeAKernel);
     	}
 
 
@@ -633,6 +648,9 @@ void wait(t_nombre_semaforo identificador_semaforo){
 
 			if(valor == 570){
 				valor_esperado = 1;
+			}else if (valor == 577){
+				valor_esperado = 1;
+				bloqueo = 1;
 			}
 		}
 	}

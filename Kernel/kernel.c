@@ -1970,6 +1970,17 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 
 		t_globales* sem = list_find(lista_semaforos, encontrar_sem);
 
+		if(sem->valor == 0){
+			char* mensajeACPU = string_new();
+			string_append(&mensajeACPU, "577");
+			string_append(&mensajeACPU, ";");
+
+			enviarMensaje(socketCliente, mensajeACPU);
+			logrado = 1;
+
+			free(mensajeACPU);
+		}
+
 		if (sem->valor > 0) {
 			pthread_mutex_lock(&mtx_semaforos);
 			sem->valor--;
