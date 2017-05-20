@@ -139,6 +139,8 @@ void informoAConsola(int socketConsola, int pid);
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU);
 t_pcb * pcbFromPid(int pid);
 void asignarCantidadMaximaStackPorProceso();
+void abrir_subconsola_procesos();
+void listarCola(t_queue * cola);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
