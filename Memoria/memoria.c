@@ -653,7 +653,42 @@ void * inicializar_consola(void* args){
 					break;
 				case 4:
 					accion_correcta = 1;
-					log_contenido_memoria_in_disk();
+
+					int subaccion = -1;
+					int subaccionCorrecta = 0;
+
+					puts("Ingrese accion a realizar: ");
+					puts("0: Contenido de todo el bloque de Memoria");
+					puts("1: Contenido de un proceso particular");
+					puts("-1: Salir");
+
+					while(subaccionCorrecta == 0){
+
+						scanf("%d", &subaccion);
+						switch(subaccion) {
+							case 0:
+								subaccionCorrecta = 1;
+								log_contenido_memoria_in_disk();
+								break;
+							case 1:
+								subaccionCorrecta = 1;
+								int pid = 0;
+								printf("Ingrese PID de proceso: ");
+								scanf("%d", &pid);
+								log_contenido_memoria_in_disk_for_pid(pid);
+								break;
+							case -1:
+								subaccionCorrecta = 1;
+								break;
+							default:
+								subaccionCorrecta = 0;
+								puts("Comando invalido. Por favor ingrese alguna de las siguientes opciones:");
+								puts("0: Contenido de todo el bloque de Memoria");
+								puts("1: Contenido de un proceso particular");
+								puts("-1: Salir");
+								break;
+						}
+					}
 					break;
 				case 5:
 					accion_correcta = 1;
@@ -890,6 +925,53 @@ void log_contenido_memoria_in_disk() {
 	free(dump);
 
     log_destroy(logger);
+}
+
+void log_contenido_memoria_in_disk_for_pid(int pid){
+
+	char* nombre_archivo = string_new();
+	char* dump = string_new();
+
+	int _obtenerPaginaProceso(t_pagina_invertida *p) {
+		return p->pid == pid;
+	}
+
+	void _appendToDump(t_pagina_invertida* p){
+		int inicio = obtener_inicio_pagina(p);
+		string_append(&dump, "Contenido del Marco ");
+		string_append(&dump, string_itoa(p->nro_marco));
+		string_append(&dump, ": \n");
+		char *subBloque = string_substring(bloque_memoria, inicio, configuracion->marco_size);
+		string_append(&dump, subBloque);
+		string_append(&dump, " \n");
+		free(subBloque);
+	}
+
+	string_append(&nombre_archivo, "contenido_memoria_PID_");
+	string_append(&nombre_archivo, string_itoa(pid));
+	string_append(&nombre_archivo, ".log");
+
+	t_log* logger = log_create(nombre_archivo, nombre_archivo, true, LOG_LEVEL_INFO);
+
+	string_append(&dump, "\n");
+	string_append(&dump, "BLOQUE DE MEMORIA DE PID: ");
+	string_append(&dump, string_itoa(pid));
+	string_append(&dump, "\n");
+
+	t_list* paginas_proceso = list_filter(tabla_paginas, (void*) _obtenerPaginaProceso);
+
+	if (list_size(paginas_proceso) == 0){
+		string_append(&dump, "No existe el proceso en Memoria");
+	}
+
+	list_iterate(paginas_proceso, (void*) _appendToDump);
+
+	log_info(logger, "LOGUEO DE CONTENIDO DE MEMORIA DE PID %s", dump);
+
+	free(nombre_archivo);
+	free(dump);
+	list_destroy_and_destroy_elements(paginas_proceso, free);
+	log_destroy(logger);
 }
 
 int calcular_tamanio_proceso(int pid_buscado){
