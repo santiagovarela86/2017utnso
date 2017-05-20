@@ -87,7 +87,7 @@ void* manejo_kernel(void *args) {
     	//RECIBO EL PCB
 
     	pcb = reciboPCB(&socketKernel);
-
+    	bloqueo = 0 ;
     	//MUESTRO LA INFO DEL PCB
     	imprimoInfoPCB(pcb);
 
@@ -125,10 +125,7 @@ void* manejo_kernel(void *args) {
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
         	free(mensajeAKernel);
-    	}
-
-
-    	if(pcb->program_counter >= pcb->indiceCodigo->elements_count){ //Se ejecutaron todas las instrucciones
+    	}else if(pcb->program_counter >= pcb->indiceCodigo->elements_count){ //Se ejecutaron todas las instrucciones
 
     		char* mensajeAKernel = string_new();
 
