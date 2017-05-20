@@ -591,8 +591,14 @@ void finalizar_programa(int pid){
 		return p->pid == pid;
 	}
 
+	int _obtenerCacheProceso(t_entrada_cache* e){
+		return e->pid == pid;
+	}
+
+	list_remove_by_condition(tabla_cache, (void*) _obtenerCacheProceso);
+
 	t_pagina_invertida* paginaProceso = NULL;
-	while((paginaProceso = list_remove_by_condition(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
+	while((paginaProceso = list_find(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
 		liberar_pagina(paginaProceso);
 	}
 }
