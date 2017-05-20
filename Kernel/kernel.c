@@ -57,6 +57,7 @@ t_list* lista_semaforos;
 t_list* lista_File_global;
 t_list* lista_File_proceso;
 t_list* lista_procesos;
+t_list* registro_bloqueados;
 int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
@@ -140,6 +141,7 @@ void inicializarEstructuras(char * pathConfig){
 	lista_File_global = list_create();
 	lista_File_proceso = list_create();
 	lista_procesos = list_create();
+	registro_bloqueados = list_create();
 
 	cola_listos = crear_cola_pcb();
 	cola_bloqueados = crear_cola_pcb();
@@ -2035,6 +2037,35 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 		t_globales* sem = list_find(lista_semaforos, encontrar_sem);
 
 		if(sem->valor == 0){
+
+			int fin = queue_size(cola_ejecucion);
+			int encontrado = 0;
+			t_pcb* p;
+
+			while(fin > 0 && encontrado == 0){
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				p = queue_pop(cola_ejecucion);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
+				if(*(p->socket_consola) == *(socketCliente)){
+					t_bloqueo* bloq = malloc(sizeof(t_bloqueo));
+					bloq->pid = p->pid;
+					bloq->sem = string_new();
+					bloq->sem = sem->nombre;
+
+					list_add(registro_bloqueados, bloq);
+
+					encontrado = 1;
+				}
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				queue_push(cola_ejecucion, p);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
+				fin--;
+			}
+
 			char* mensajeACPU = string_new();
 			string_append(&mensajeACPU, "577");
 			string_append(&mensajeACPU, ";");

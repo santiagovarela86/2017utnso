@@ -89,6 +89,11 @@ typedef struct {
 	int skt;
 }t_nuevo;
 
+typedef struct {
+	int pid;
+	char* sem;
+}t_bloqueo;
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);
