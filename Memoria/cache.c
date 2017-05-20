@@ -1,7 +1,8 @@
 #include "cache.h"
+#include "memoria.h"
 #include <stdlib.h>
 
-t_entrada_cache *crear_entrada_cache(char *contenido_pagina, int nro_pagina, int pid){
+t_entrada_cache *crear_entrada_cache(int pid, int nro_pagina, char *contenido_pagina){
 	t_entrada_cache* new = malloc(sizeof(t_entrada_cache));
 	new->contenido_pagina = contenido_pagina;
 	new->nro_pagina = nro_pagina;

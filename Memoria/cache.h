@@ -8,7 +8,7 @@
 #ifndef CACHE_H_
 #define CACHE_H_
 
-#include <commons/collections/queue.h>
+#include <commons/collections/list.h>
 
 typedef struct {
 	int pid;
@@ -17,7 +17,7 @@ typedef struct {
 } t_entrada_cache;
 
 
-t_entrada_cache *crear_entrada_cache(char*, int , int);
+t_entrada_cache *crear_entrada_cache(int, int, char*);
 void destruir_entrada_cache(t_entrada_cache*);
 void flush_memoria_cache(t_list*);
 

@@ -214,6 +214,9 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
+
+		almacenar_pagina_en_cache_para_pid(pid, pagina);
+
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 		char* respuestaAKernel = string_new();
 
@@ -736,10 +739,24 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
 
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char* datos_pagina = string_new();
-	t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
-	int inicio = obtener_inicio_pagina(pagina_buscada);
-	if (pagina_buscada != NULL){
-		datos_pagina = leer_memoria(inicio + offset, tamanio);
+
+	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
+
+	if (entrada_cache == NULL){
+
+		//CACHE_MISS
+		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+		int inicio = obtener_inicio_pagina(pagina_buscada);
+		if (pagina_buscada != NULL){
+			datos_pagina = leer_memoria(inicio + offset, tamanio);
+		}
+
+		//Se carga la nueva pagina en cache
+		almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+	} else {
+		//Si encontro la entrada en cache
+		//Leo el contenido de la misma utilizando offset y tamanio
+		datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
 	}
 	return datos_pagina;
 }
@@ -1318,5 +1335,43 @@ bool pagina_llena(t_pagina_invertida* pagina){
 		pagina_llena = true;
 
 	return pagina_llena;
+}
+
+bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
+
+	bool guardadoOK = true;
+
+	bool _paginas_en_cache_para_proceso(t_entrada_cache* entrada){
+		return entrada->pid == pid;
+	}
+
+	int nro_paginas_en_cache = list_count_satisfying(tabla_cache, (void*)_paginas_en_cache_para_proceso);
+
+	if (nro_paginas_en_cache < configuracion->cache_x_proc && list_size(tabla_cache) < configuracion->entradas_cache){
+
+		//Si no se supera el limite de entradas de cache por proceso
+		//Y si no se supera el tamanio de la cache
+		//Agrego la entrada
+
+		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+		t_entrada_cache* entrada_cache = crear_entrada_cache(pagina->pid, pagina->nro_pagina, contenido_pagina);
+
+		list_add(tabla_cache, entrada_cache);
+	}
+
+
+
+	return guardadoOK;
+}
+
+t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
+
+	int _encontrar_entrada_cache(t_entrada_cache* ent){
+		return ent->pid == pid && ent->nro_pagina == pagina;
+	}
+
+	t_entrada_cache* entrada = list_find(tabla_cache, (void*) _encontrar_entrada_cache);
+
+	return entrada;
 }
 

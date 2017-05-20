@@ -19,7 +19,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "cache.h"
-
+#include "configuracion.h"
 #include "helperFunctions.h"
 
 
@@ -112,5 +112,7 @@ int obtener_offset_pagina(t_pagina_invertida* pagina);
 bool pagina_llena(t_pagina_invertida* pagina);
 int calcular_tamanio_proceso(int pid);
 void subconsola_contenido_memoria(void);
+bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina);
+t_entrada_cache* obtener_entrada_cache(int pid, int pagina);
 
 #endif /* MEMORIA_H_ */
