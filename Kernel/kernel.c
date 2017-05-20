@@ -870,7 +870,7 @@ void * handler_conexion_cpu(void * sock) {
 		int pid_mensaje;
 		int fd;
 		int tamanio;
-		char flag;
+		char* flag;
 		char* direccion;
 		char* infofile;
 		int pid_recibido;
@@ -900,8 +900,8 @@ void * handler_conexion_cpu(void * sock) {
 
 			     fd = atoi(mensajeDesdeCPU[1]);
 				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
-				 infofile = mensajeDesdeCPU[2];
-				 tamanio = atoi(mensajeDesdeCPU[3]);
+				 infofile = mensajeDesdeCPU[3];
+				 tamanio = atoi(mensajeDesdeCPU[4]);
 
 				escribirArchivo(fd, pid_mensaje, infofile, tamanio);
 
@@ -909,7 +909,6 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 803: //de CPU a File system (abrir)
 
-				//validar();
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
@@ -921,29 +920,31 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 802:  //de CPU a File system (borrar)
 
-				 infofile = string_new();
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
 
-				 //lista_File_global
-
-				//borrarArchivo(pid_mensaje, direccion, flag);
+				 borrarArchivo(pid_mensaje, direccion);
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
 			case 801://de CPU a File system (cerrar)
 
-				string_append(&mensajeFileSystem, string_itoa(operacion));
-				string_append(&mensajeFileSystem, ";");
+				 direccion = mensajeDesdeCPU[1];
+			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
+
+				 cerrarArchivo(pid_mensaje, direccion, infofile);
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
-			case 800://de CPU a File system (cerrar)
+			case 800://de CPU a File system (leer)
 
-				string_append(&mensajeFileSystem, string_itoa(operacion));
-				string_append(&mensajeFileSystem, ";");
+				 direccion = mensajeDesdeCPU[1];
+			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
+				 infofile = mensajeDesdeCPU[3];
+
+				 leerArchivo(pid_mensaje, direccion, infofile);
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
@@ -2249,10 +2250,19 @@ void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
 	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
 }
 
-void abrirArchivo(int pid_mensaje, char* direccion, char flag)
+void abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
 
 }
-void borrarArchivo(int pid_mensaje, char* direccion, char flag)
+void borrarArchivo(int pid_mensaje, char* direccion)
 {
 }
+void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile)
+{
+
+}
+void leerArchivo( int pid_mensaje, char* direccion, char* infofile)
+{
+
+}
+
