@@ -79,7 +79,7 @@ typedef struct {
 } t_fileProceso;
 
 typedef struct {
-	int fileDescriptor;
+	int fdGlobal;
 	char* path;
 	int cantidadDeAperturas;
 } t_fileGlobal;

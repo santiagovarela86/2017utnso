@@ -306,28 +306,27 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 
 				puts("Se busca la Tabla global de archivos");
-				string_append(&mensaje, "820");
 
-				string_append(&mensaje, ";");
-				enviarMensaje(&skt_filesystem, mensaje);
-
-
-				recv(skt_filesystem, message, sizeof(message), 0);
-
-				char** fileTablaProcesSerial = string_split(message, ";");
+				char* tablaGlobalArchivos = string_new();
 
 				int j= 0;
-				while (j < ((int)atoi(fileTablaProcesSerial[1]))){
+
+				for (j = 0; j < lista_File_global->elements_count; j++){
+
 					t_fileGlobal * elem = malloc(sizeof(elem));
-					elem->cantidadDeAperturas = atoi(message[j]);
-					j++;
-					elem->fileDescriptor = atoi(message[j]);
-					j++;
-					elem->path = message[j];
-					j++;
-					list_add(lista_File_global, elem);
+					elem = list_get(lista_File_global, j);
+
+					string_append(&tablaGlobalArchivos, string_itoa(elem->cantidadDeAperturas));
+					string_append(&tablaGlobalArchivos, ";");
+
+					string_append(&tablaGlobalArchivos, string_itoa(elem->fdGlobal));
+					string_append(&tablaGlobalArchivos, ";");
+
+					string_append(&tablaGlobalArchivos, elem->path);
+				    string_append(&tablaGlobalArchivos, ";");
 				}
-				log_console_in_disk(mensaje);
+
+				log_console_in_disk(tablaGlobalArchivos);
 				break;
 			case 8:
 				accion_correcta = 1;
