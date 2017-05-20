@@ -653,42 +653,7 @@ void * inicializar_consola(void* args){
 					break;
 				case 4:
 					accion_correcta = 1;
-
-					int subaccion = -1;
-					int subaccionCorrecta = 0;
-
-					puts("Ingrese accion a realizar: ");
-					puts("0: Contenido de todo el bloque de Memoria");
-					puts("1: Contenido de un proceso particular");
-					puts("-1: Salir");
-
-					while(subaccionCorrecta == 0){
-
-						scanf("%d", &subaccion);
-						switch(subaccion) {
-							case 0:
-								subaccionCorrecta = 1;
-								log_contenido_memoria_in_disk();
-								break;
-							case 1:
-								subaccionCorrecta = 1;
-								int pid = 0;
-								printf("Ingrese PID de proceso: ");
-								scanf("%d", &pid);
-								log_contenido_memoria_in_disk_for_pid(pid);
-								break;
-							case -1:
-								subaccionCorrecta = 1;
-								break;
-							default:
-								subaccionCorrecta = 0;
-								puts("Comando invalido. Por favor ingrese alguna de las siguientes opciones:");
-								puts("0: Contenido de todo el bloque de Memoria");
-								puts("1: Contenido de un proceso particular");
-								puts("-1: Salir");
-								break;
-						}
-					}
+					subconsola_contenido_memoria();
 					break;
 				case 5:
 					accion_correcta = 1;
@@ -985,6 +950,44 @@ int calcular_tamanio_proceso(int pid_buscado){
 	tamanio_proceso = list_count_satisfying(tabla_paginas, (void*)_obtenerPaginaProceso);
 
 	return tamanio_proceso;
+}
+
+void subconsola_contenido_memoria(){
+	int subaccion = -1;
+	int subaccionCorrecta = 0;
+
+	puts("Ingrese accion a realizar: ");
+	puts("0: Contenido de todo el bloque de Memoria");
+	puts("1: Contenido de un proceso particular");
+	puts("-1: Salir");
+
+	while(subaccionCorrecta == 0){
+
+		scanf("%d", &subaccion);
+		switch(subaccion) {
+			case 0:
+				subaccionCorrecta = 1;
+				log_contenido_memoria_in_disk();
+				break;
+			case 1:
+				subaccionCorrecta = 1;
+				int pid = 0;
+				printf("Ingrese PID de proceso: ");
+				scanf("%d", &pid);
+				log_contenido_memoria_in_disk_for_pid(pid);
+				break;
+			case -1:
+				subaccionCorrecta = 1;
+				break;
+			default:
+				subaccionCorrecta = 0;
+				puts("Comando invalido. Por favor ingrese alguna de las siguientes opciones:");
+				puts("0: Contenido de todo el bloque de Memoria");
+				puts("1: Contenido de un proceso particular");
+				puts("-1: Salir");
+				break;
+		}
+	}
 }
 
 void grabar_valor(int direccion, int valor){
