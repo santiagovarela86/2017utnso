@@ -28,11 +28,6 @@
 #define ASIGNACION_MEMORIA_ERROR 1
 
 typedef struct {
-	int pid;
-	int numero_pagina;
-} t_manejo_programa;
-
-typedef struct {
 	int socket_consola;
 } estructura_socket;
 
@@ -90,8 +85,8 @@ void liberarEstructuras();
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_tabla_paginas(Memoria_Config* config);
 t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
-t_manejo_programa* get_manejo_programa(int pid);
-t_manejo_programa* crear_nuevo_manejo_programa(int pid, int pagina);
+t_pagina_proceso* get_manejo_programa(int pid);
+t_pagina_proceso* crear_nuevo_manejo_programa(int pid, int pagina);
 void liberar_pagina(t_pagina_invertida* pagina);
 int marco_libre_para_variables();
 t_pagina_invertida *memory_read(char *base, int offset, int size);
