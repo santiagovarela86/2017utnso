@@ -1036,10 +1036,9 @@ void * handler_conexion_cpu(void * sock) {
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
+				 int fdNuevo = abrirArchivo(pid_mensaje, direccion, flag);
 
-				abrirArchivo(pid_mensaje, direccion, flag);
-
-				enviarMensaje(&skt_filesystem, mensajeFileSystem);
+				enviarMensaje(socketCliente, string_itoa(fdNuevo));
 				break;
 
 			case 802:  //de CPU a File system (borrar)
@@ -2366,9 +2365,46 @@ void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
 	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
 }
 
-void abrirArchivo(int pid_mensaje, char* direccion, char* flag)
+int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
+	int fdNuevo;
+	 if(lista_File_global->elements_count != 0)
+	 {
+		 fdNuevo = lista_File_global->elements_count + 1;
+	 }
+	 else
+	 {
+		 fdNuevo = 3;
+	 }
 
+	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
+
+	archNuevo->cantidadDeAperturas = 1;
+	archNuevo->fdGlobal = fdNuevo;
+	archNuevo->path = direccion;
+
+	archNuevo = list_add(lista_File_global,archNuevo);
+
+	char* mensajeAFS = string_new();
+	string_append(&mensajeAFS, "802");
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, direccion);
+	string_append(&mensajeAFS, ";");
+
+	free(archNuevo);
+
+	enviarMensaje(&skt_filesystem, mensajeAFS);
+
+	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+	if (result > 0) {
+		puts("archivo borrado desde el fs");
+	}
+	else {
+		perror("Error no se pudo borrar\n");
+	}
+	free(mensajeAFS);
+	return fdNuevo;
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {

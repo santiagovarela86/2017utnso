@@ -738,12 +738,15 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 
 		if (result > 0){
 			puts("archivo se abrió correctamente");
+			return ((t_descriptor_archivo)atoi(mensajeAKernel));
+
 		} else {
 			perror("Error al abrir el archivo \n");
+			return 0;
 		}
 
 
-	return 0;
+
 }
 
 void borrar(t_descriptor_archivo descriptor){
