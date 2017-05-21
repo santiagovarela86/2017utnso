@@ -1427,11 +1427,18 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Ejecuto el algoritmo para reemplazo
 		//Y le asigno el contenido de la pagina
 
-		t_entrada_cache* entrada_cache_antigua = obtener_entrada_reemplazo_cache();
+		t_entrada_cache* entrada_cache_reemplazo = obtener_entrada_reemplazo_cache();
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+
+		//Hago el reemplazo de paginas y ordeno
 		int indice_cache = list_size(tabla_cache) + 1;
-		t_entrada_cache* entrada_cache_nueva = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
-		list_replace(tabla_cache, entrada_cache_antigua->indice, entrada_cache_nueva);
+		int indice_antiguo = entrada_cache_reemplazo->indice;
+		entrada_cache_reemplazo->indice = indice_cache;
+		entrada_cache_reemplazo->pid = pid;
+		entrada_cache_reemplazo->nro_pagina = pagina->nro_pagina;
+		entrada_cache_reemplazo->contenido_pagina = contenido_pagina;
+
+		list_replace(tabla_cache, indice_antiguo, entrada_cache_reemplazo);
 
 		//Reorganizo las entradas de cache en base al reemplazo
 		reorganizar_indice_cache_y_ordenar();
