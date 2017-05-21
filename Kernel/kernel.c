@@ -1087,9 +1087,8 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
 
-				 borrarArchivo(pid_mensaje, direccion);
+				 borrarArchivo(pid_mensaje, fd);
 
-				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
 			case 801://de CPU a File system (cerrar)
@@ -2424,16 +2423,56 @@ void abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
 
 }
-void borrarArchivo(int pid_mensaje, char* direccion)
+void borrarArchivo(int pid_mensaje, int fd)
 {
 
-	int encontrar_arch(t_fileGlobal* glo){
-		return string_equals_ignore_case(direccion, glo->path);
+	int encontrar_archProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
 	}
-	t_fileGlobal* archAbrir = malloc(sizeof(t_fileGlobal));
-	archAbrir = list_find(lista_File_global,(void*) encontrar_arch);
-	list_remove_by_condition(lista_File_global,(void*) encontrar_arch);
+	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
+	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
 
+	int encontrar_archGlobal(t_fileGlobal* glo){
+		if(archAbrir1->global_fd == glo->fdGlobal)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
+
+	if(archAbrir2->cantidadDeAperturas != 0)
+	{
+		puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
+	}
+	else
+	{
+		char* mensajeAFS = string_new();
+		string_append(&mensajeAFS, "802");
+		string_append(&mensajeAFS, ";");
+		string_append(&mensajeAFS, archAbrir2->path);
+		string_append(&mensajeAFS, ";");
+
+		free(archAbrir1);
+		free(archAbrir2);
+
+		enviarMensaje(&skt_filesystem, mensajeAFS);
+
+		int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+		if (result > 0) {
+			puts("archivo borrado desde el fs");
+		}
+		else {
+			perror("Error no se pudo borrar\n");
+		}
+		free(mensajeAFS);
+
+	}
 }
 void cerrarArchivo(int pid_mensaje, int fd)
 {
@@ -2496,7 +2535,6 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, archAbrir2->path);
 	string_append(&mensajeAFS, ";");
 
-	free(mensajeAFS);
 	free(archAbrir1);
 	free(archAbrir2);
 

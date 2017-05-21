@@ -162,7 +162,7 @@ void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 
 void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio);
 void abrirArchivo(int pid_mensaje, char* direccion, char* flag);
-void borrarArchivo(int pid_mensaje, char* direccion);
+void borrarArchivo(int pid_mensaje, int fd);
 void cerrarArchivo(int pid_mensaje, int fd);
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 
