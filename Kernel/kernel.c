@@ -15,6 +15,7 @@
 //605 KER A MEM - NUEVA PAGINA
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
+//616 KER A MEM - FINALIZAR PROGRAMA
 
 #include <stdio.h>
 #include <string.h>
@@ -1617,6 +1618,17 @@ void asignarCantidadMaximaStackPorProceso(){
 	free(mensajeAMemoria);
 }
 
+void finalizarProgramaEnMemoria(int pid){
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "616");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(pid));
+	string_append(&mensajeAMemoria, ";");
+	enviarMensaje(&skt_memoria, mensajeAMemoria);
+
+	free(mensajeAMemoria);
+}
+
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 	_Bool coincideHeapPID(heapElement * elem){
 		return elem->pid == pcb->pid;
@@ -1872,6 +1884,7 @@ void finalizarPrograma(int pidACerrar) {
 		}
 	}
 
+	finalizarProgramaEnMemoria(pidACerrar);
 }
 
 void cerrarConsola(int socketCliente) {
@@ -2200,6 +2213,7 @@ void finDePrograma(int * socketCliente) {
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, pcb_a_cambiar);
+				finalizarProgramaEnMemoria(pcb_deserializado->pid);
 				pthread_mutex_unlock(&mtx_terminados);
 
 			} else {
