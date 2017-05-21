@@ -331,7 +331,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			t_pagina_invertida* pag_encontrada;
 
-			t_manejo_programa * manejo_programa = get_manejo_programa(pid);
+			t_pagina_proceso * manejo_programa = get_manejo_programa(pid);
 
 			if(manejo_programa == NULL){
 
@@ -351,18 +351,19 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					break;
 				}
 
-				t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
+				//t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
 
 				pag_a_cargar->nro_pagina = paginaParaVariables;
 				pag_a_cargar->pid = pid;
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 				manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
-				list_add(tabla_programas, manejo_programa);
+				//list_add(tabla_programas, manejo_programa);
+				list_add(lista_paginas_stack, manejo_programa);
 
-				pag_stack->pagina = paginaParaVariables;
+				/*pag_stack->pagina = paginaParaVariables;
 				pag_stack->pid = pid;
-				list_add(lista_paginas_stack, pag_stack);
+				list_add(lista_paginas_stack, pag_stack);*/
 
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
@@ -382,7 +383,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				//puts("ya existen otras variables de ese programa");
 
-				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->numero_pagina);
+				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->pagina);
 
 				if (!pagina_llena(pag_encontrada)) {
 
@@ -773,26 +774,26 @@ char* leer_memoria(int inicio, int offset){
 	return codigo_programa;
 }
 
-t_manejo_programa* crear_nuevo_manejo_programa(int pid, int pagina){
+t_pagina_proceso* crear_nuevo_manejo_programa(int pid, int pagina){
 
-	int encontrar_pid(t_manejo_programa *p) {
+	int encontrar_pid(t_pagina_proceso *p) {
 		return (p->pid == pid);
 	}
 
-	t_manejo_programa* nuevo_manejo_programa = malloc(sizeof(t_manejo_programa));
+	t_pagina_proceso* nuevo_manejo_programa = malloc(sizeof(t_pagina_proceso));
 	nuevo_manejo_programa->pid = pid;
-	nuevo_manejo_programa->numero_pagina = pagina;
+	nuevo_manejo_programa->pagina = pagina;
 
 	return nuevo_manejo_programa;
 }
 
-t_manejo_programa* get_manejo_programa(int pid){
+t_pagina_proceso* get_manejo_programa(int pid){
 
-	int esElProgramaBuscado(t_manejo_programa *p) {
+	int esElProgramaBuscado(t_pagina_proceso *p) {
 		return p->pid == pid;
 	}
 
-	return list_find(tabla_programas, (void*) esElProgramaBuscado);
+	return list_find(lista_paginas_stack, (void*) esElProgramaBuscado);
 }
 
 void log_cache_in_disk(t_list* cache) {

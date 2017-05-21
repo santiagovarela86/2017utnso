@@ -100,7 +100,9 @@ typedef struct {
 	int cant_oper_privilegiadas;
 	int cant_syscalls;
 	int cant_alocar;
+	int tama_alocar;
 	int cant_liberar;
+	int tama_liberar;
 }t_estadistica;
 
 enum exit_codes {
@@ -181,6 +183,7 @@ void bloqueoDePrograma(int pid_a_buscar);
 void matarProceso(int pidAMatar);
 void abrir_subconsola_dos(t_pcb* p);
 t_pcb* existe_proceso(int pid);
+t_estadistica* encontrar_estadistica(t_pcb* p);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

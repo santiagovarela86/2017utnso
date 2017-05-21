@@ -46,6 +46,7 @@ pthread_mutex_t mtx_nuevos;
 pthread_mutex_t mtx_cpu;
 pthread_mutex_t mtx_globales;
 pthread_mutex_t mtx_semaforos;
+pthread_mutex_t mtx_estadistica;
 t_queue* cola_listos;
 t_queue* cola_bloqueados;
 t_queue* cola_ejecucion;
@@ -58,6 +59,7 @@ t_list* lista_File_global;
 t_list* lista_File_proceso;
 t_list* lista_procesos;
 t_list* registro_bloqueados;
+t_list* lista_estadistica;
 int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
@@ -116,6 +118,7 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mtx_cpu, NULL);
 	pthread_mutex_init(&mtx_globales, NULL);
 	pthread_mutex_init(&mtx_semaforos, NULL);
+	pthread_mutex_init(&mtx_estadistica, NULL);
 
 	sem_init(&semaforoMemoria, 0, 0);
 	sem_init(&semaforoFileSystem, 0, 0);
@@ -128,6 +131,7 @@ void inicializarEstructuras(char * pathConfig){
 	lista_File_proceso = list_create();
 	lista_procesos = list_create();
 	registro_bloqueados = list_create();
+	lista_estadistica = list_create();
 
 	cola_listos = crear_cola_pcb();
 	cola_bloqueados = crear_cola_pcb();
@@ -249,7 +253,7 @@ void * inicializar_consola(void* args){
 
 					abrir_subconsola_dos(p);
 				}else{
-					puts("No existe el subproceso");
+					puts("No existe el proceso");
 				}
 
 				break;
@@ -497,6 +501,7 @@ void abrir_subconsola_dos(t_pcb* p){
 
 		int accion = 0;
 		int accion_correcta = 0;
+		t_estadistica* est;
 
 		while (accion_correcta == 0){
 
@@ -510,22 +515,38 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 2:
 				accion_correcta = 1;
 
+				est = encontrar_estadistica(p);
+
+				printf("La cantidad de operaciones privilegiadas son: %d \n", est->cant_oper_privilegiadas);
 				break;
 			case 3:
+				accion_correcta = 1;
+
+				break;
+			case 4:
 				accion_correcta = 1;
 
 				break;
 			case 5:
 				accion_correcta = 1;
 
+				est = encontrar_estadistica(p);
+
+				printf("La cantidad de acciones alocar son: %d \n", est->cant_alocar);
 				break;
 			case 6:
 				accion_correcta = 1;
 
+				est = encontrar_estadistica(p);
+
+				printf("La cantidad de acciones liberar son: %d \n", est->cant_liberar);
 				break;
 			case 7:
 				accion_correcta = 1;
 
+				est = encontrar_estadistica(p);
+
+				printf("La cantidad Syscalls son: %d \n", est->cant_syscalls);
 				break;
 
 			default:
@@ -625,6 +646,25 @@ void matarProceso(int pidAMatar){
 			largoColaListada--;
 		}
 
+}
+
+t_estadistica* encontrar_estadistica(t_pcb* p){
+	int inicio = 0;
+	int fin = list_size(lista_estadistica);
+	int encontrado = 0;
+	t_estadistica* est;
+
+	while(inicio < fin && encontrado == 0){
+		est = (t_estadistica*) list_get(lista_estadistica, inicio);
+
+		if(est->pid == p->pid){
+			encontrado = 1;
+		}
+
+		inicio++;
+	}
+
+	return est;
 }
 
 void listarCola(t_queue * cola){
@@ -1523,6 +1563,19 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 	new_pcb->cantidadPaginas = cantidadPaginas;
 	cargoIndicesPCB(new_pcb, codigo);
 
+	t_estadistica* est = malloc(sizeof(t_estadistica));
+	est->pid = new_pcb->pid;
+	est->cant_alocar = 0;
+	est->cant_liberar = 0;
+	est->cant_oper_privilegiadas = 0;
+	est->cant_syscalls = 0;
+	est->tama_alocar = 0;
+	est->tama_liberar = 0;
+
+	pthread_mutex_lock(&mtx_estadistica);
+	list_add(lista_estadistica, est);
+	pthread_mutex_unlock(&mtx_estadistica);
+
 	pthread_mutex_lock(&mtx_listos);
 	queue_push(cola_listos, new_pcb);
 	pthread_mutex_unlock(&mtx_listos);
@@ -1656,6 +1709,19 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 			new_pcb->inicio_codigo = atoi(respuesta_Memoria[1]);
 			new_pcb->cantidadPaginas = atoi(respuesta_Memoria[2]);
 			cargoIndicesPCB(new_pcb, codigoLimpio);
+
+			t_estadistica* est = malloc(sizeof(t_estadistica));
+			est->pid = new_pcb->pid;
+			est->cant_alocar = 0;
+			est->cant_liberar = 0;
+			est->cant_oper_privilegiadas = 0;
+			est->cant_syscalls = 0;
+			est->tama_alocar = 0;
+			est->tama_liberar = 0;
+
+			pthread_mutex_lock(&mtx_estadistica);
+			list_add(lista_estadistica, est);
+			pthread_mutex_unlock(&mtx_estadistica);
 
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, new_pcb);
