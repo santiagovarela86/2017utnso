@@ -616,6 +616,7 @@ void liberar_pagina(t_pagina_invertida* pagina){
 void * inicializar_consola(void* args){
 
 	Memoria_Config * configuracion = (Memoria_Config *) args;
+	char* valorIngresado = string_new();
 
 	while (1) {
 		puts("");
@@ -645,7 +646,8 @@ void * inicializar_consola(void* args){
 
 		while(accion_correcta == 0){
 
-			scanf("%d", &accion);
+			scanf("%s", valorIngresado);
+			accion = atoi(valorIngresado);
 
 			switch(accion){
 				case 1:
