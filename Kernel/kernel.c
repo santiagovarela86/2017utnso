@@ -12,8 +12,10 @@
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //500 CPU A KER - HANDSHAKE DEL CPU
 //600 CPU A KER - RESERVAR MEMORIA HEAP
+//605 KER A MEM - NUEVA PAGINA
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
+//616 KER A MEM - FINALIZAR PROGRAMA
 
 #include <stdio.h>
 #include <string.h>
@@ -64,7 +66,7 @@ int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
 int plan;
-t_list * heap;
+t_list * lista_paginas_heap;;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 
@@ -123,7 +125,7 @@ void inicializarEstructuras(char * pathConfig){
 	sem_init(&semaforoMemoria, 0, 0);
 	sem_init(&semaforoFileSystem, 0, 0);
 
-	heap = list_create();
+	lista_paginas_heap = list_create();
 
 	lista_semaforos = list_create();
 	lista_variables_globales = list_create();
@@ -188,7 +190,7 @@ void liberarEstructuras(){
 	pthread_mutex_destroy(&mtx_globales);
 	pthread_mutex_destroy(&mtx_semaforos);
 
-	list_destroy_and_destroy_elements(heap, heapElementDestroyer);
+	list_destroy_and_destroy_elements(lista_paginas_heap, heapElementDestroyer);
 
 	queue_destroy_and_destroy_elements(cola_cpu, eliminar_pcb);
 	free(configuracion);
@@ -1616,37 +1618,75 @@ void asignarCantidadMaximaStackPorProceso(){
 	free(mensajeAMemoria);
 }
 
+void finalizarProgramaEnMemoria(int pid){
+	char* mensajeAMemoria = string_new();
+	string_append(&mensajeAMemoria, "616");
+	string_append(&mensajeAMemoria, ";");
+	string_append(&mensajeAMemoria, string_itoa(pid));
+	string_append(&mensajeAMemoria, ";");
+	enviarMensaje(&skt_memoria, mensajeAMemoria);
+
+	free(mensajeAMemoria);
+}
+
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
-	int paginaActual = pcb->cantidadPaginas;
-
-	enviarMensaje(&skt_memoria, serializarMensaje(4, 600, pcb->pid, paginaActual, bytes));
-
-	char * buffer = string_new();
-
-	int result = recv(skt_memoria, buffer, MAXBUF, 0);
-
-	if (result > 0){
-		char ** respuesta = string_split(buffer, ";");
-
-		if (strcmp(respuesta[0],"600") == 0){
-			heapElement * heapElem = malloc(sizeof(heapElement));
-			heapElem->pid = atoi(respuesta[1]);
-			heapElem->nro_pagina = atoi(respuesta[2]);
-			heapElem->tamanio_disponible = atoi(respuesta[3]);
-			list_add(heap, heapElem);
-			pcb->cantidadPaginas++;
-			printf("Se agregó una página al Heap\n");
-			printf("PID: %d\n", heapElem->pid);
-			printf("Nro Pagina: %d\n", heapElem->nro_pagina);
-			printf("Free Space: %d\n", heapElem->tamanio_disponible);
-			char * direccion = string_new();
-			enviarMensaje(&socketCPU, direccion);
-		}else{
-			perror("Error en el protocolo de mensajes entre procesos\n");
-		}
-	} else {
-		perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
+	_Bool coincideHeapPID(heapElement * elem){
+		return elem->pid == pcb->pid;
 	}
+
+	printf("Solicitud de Heap desde el CPU: %d\n", socketCPU);
+
+	//Verifico si todavía no hay paginas de Heap
+	//if (list_size(lista_paginas_heap) == 0){
+	if(!(list_any_satisfy(lista_paginas_heap, coincideHeapPID))){
+		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
+		printf("Primer Pagina para el Proceso\n");
+		int paginaActual = pcb->cantidadPaginas;
+
+		enviarMensaje(&skt_memoria, serializarMensaje(4, 605, pcb->pid, paginaActual, bytes));
+
+		char * buffer = string_new();
+		int result = recv(skt_memoria, buffer, MAXBUF, 0);
+		printf("Recibi mensaje: %s\n", buffer);
+
+		if (result > 0) {
+			char ** respuesta = string_split(buffer, ";");
+
+			if (strcmp(respuesta[0], "605") == 0) {
+				heapElement * heapElem = malloc(sizeof(heapElement));
+				heapElem->pid = atoi(respuesta[1]);
+				heapElem->nro_pagina = atoi(respuesta[2]);
+				heapElem->tamanio_disponible = atoi(respuesta[3]);
+				heapElem->direccion = atoi(respuesta[4]);
+
+				list_add(lista_paginas_heap, heapElem);
+
+				pcb->cantidadPaginas++;
+
+				printf("Se agregó una página al Heap\n");
+				printf("PID: %d\n", heapElem->pid);
+				printf("Nro Pagina: %d\n", heapElem->nro_pagina);
+				printf("Free Space: %d\n", heapElem->tamanio_disponible);
+				printf("Direccion: %d\n", heapElem->direccion);
+
+				printf("Direccion String: %s\n", string_itoa(heapElem->direccion));
+				char * mensaje = serializarMensaje(1, heapElem->direccion);
+
+				enviarMensaje(&socketCPU, mensaje);
+				printf("Envie mensaje %s al CPU: %d\n", mensaje, socketCPU);
+			} else {
+				perror("Error en el protocolo de mensajes entre procesos\n");
+			}
+		} else {
+			perror(
+					"Error de comunicacion con Memoria durante la reserva de memoria heap\n");
+		}
+	}else {
+		printf("Iésima Pagina para el Proceso\n");
+
+	}
+
+
 	//free(buffer);
 }
 
@@ -1844,6 +1884,7 @@ void finalizarPrograma(int pidACerrar) {
 		}
 	}
 
+	finalizarProgramaEnMemoria(pidACerrar);
 }
 
 void cerrarConsola(int socketCliente) {
@@ -2172,6 +2213,7 @@ void finDePrograma(int * socketCliente) {
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, pcb_a_cambiar);
+				finalizarProgramaEnMemoria(pcb_deserializado->pid);
 				pthread_mutex_unlock(&mtx_terminados);
 
 			} else {

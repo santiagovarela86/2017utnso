@@ -698,15 +698,21 @@ t_puntero reservar(t_valor_variable espacio){
 	char * buffer = serializarMensaje(3, 600, pcb->pid, espacio);
 	enviarMensaje(&sktKernel, buffer);
 
-	int result = recv(sktKernel, buffer, MAXBUF, 0);
+	printf("Espero a que el Kernel me mande la direccion\n");
+	char * buffer2 = string_new();
+	int result = recv(sktKernel, buffer2, MAXBUF, 0);
+	printf("Recibi Informacion del Kernel (Direccion de reserva)\n");
+	printf("Tamaño Result Receive: %d\n", result);
 
 	if (result > 0){
+		char ** respuesta = string_split(buffer2, ";");
+
 		printf("Falsa Reserva de Heap\n");
-		printf("Direccion Heap: %d\n", atoi(buffer));
-		return atoi(buffer);
+		printf("Direccion Heap: %d\n", atoi(respuesta[0]));
+		return atoi(respuesta[0]);
 	} else {
 		perror("Error reservando Memoria de Heap\n");
-		return -1;
+		return 0;
 	}
 }
 

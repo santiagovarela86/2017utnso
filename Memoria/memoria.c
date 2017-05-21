@@ -13,6 +13,7 @@
 //600 KER A MEM - RESERVAR MEMORIA HEAP
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
+//616 KER A MEM - FINALIZAR PROGRAMA
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -40,6 +41,7 @@ Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
 t_list* tabla_programas;
 t_list* lista_paginas_stack;
+bool cache_habilitada = false;
 
 int socketKernel;
 struct sockaddr_in direccionKernel;
@@ -110,6 +112,7 @@ void inicializarEstructuras(char * pathConfig){
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
 	tiempo_retardo = configuracion->retardo_memoria;
+	cache_habilitada = configuracion->entradas_cache > 0 ? true : false;
 	pthread_mutex_unlock(&mutex_tiempo_retardo);
 
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
@@ -178,7 +181,7 @@ void * hilo_conexiones_kernel(){
 					iniciarPrograma(pid, cantidadDePaginas, codigo_programa);
 					break;
 
-				case 600:
+				case 605:
 					;
 					pid = atoi(mensajeDelKernel[1]);
 					int paginaActual = atoi(mensajeDelKernel[2]);
@@ -188,6 +191,11 @@ void * hilo_conexiones_kernel(){
 
 				case 612:
 					stack_size = atoi(mensajeDelKernel[1]);
+					break;
+
+				case 616:
+					pid = atoi(mensajeDelKernel[1]);
+					finalizar_programa(pid);
 					break;
 			}
 
@@ -215,7 +223,8 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
 
-		almacenar_pagina_en_cache_para_pid(pid, pagina);
+		if (cache_habilitada)
+			almacenar_pagina_en_cache_para_pid(pid, pagina);
 
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 		char* respuestaAKernel = string_new();
@@ -243,25 +252,73 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 }
 
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
-	//POR AHORA HAGO UNA SOLA PAGINA
-	//int cantidadPaginas = bytesPedidos / configuracion->marco_size;
-
-	//SI ALCANZA UNA PAGINA PARA GUARDAR LO QUE ME PIDEN
-	int freeSpace = configuracion->marco_size - sizeof(heapMetadata);
+	//VERIFICO QUE EL ESPACIO QUE PIDEN QUEPA EN UNA PAGINA
+	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
 	if (bytesPedidos < freeSpace){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
 
-		//HACER MAS CODIGOS DE OPERACION
-		char * respuestaAKernel = serializarMensaje(4, 600, pagina->pid, pagina->nro_pagina, freeSpace);
+		heapMetadata * meta_free = malloc(sizeof(heapMetadata));
+		meta_free->isFree = true;
+		meta_free->size = freeSpace - bytesPedidos;
+
+		heapMetadata * meta_used = malloc(sizeof(heapMetadata));
+		meta_used->isFree = false;
+		meta_used->size = bytesPedidos;
+
+		//Guardo la Metadata Used en el Inicio de la Pagina
+		int dirInicioPagina = pagina->nro_marco*configuracion->marco_size;
+		memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
+
+		//Guardo la Metadata Free en el Final de los datos
+		memcpy(&bloque_memoria[pagina->nro_marco*configuracion->marco_size+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
+
+		/*
+		printf("Imprimo Bloque de Memoria (Antes)\n");
+		int i = 0;
+		while (i < configuracion->marco_size){
+			printf("[%d]", bloque_memoria[pagina->nro_marco*configuracion->marco_size + i]);
+			i++;
+		}
+		printf("\n");
+
+		printf("Heap Free: %d\n", meta_free->isFree);
+		printf("Heap Size: %d\n", meta_free->size);
+		*/
+
+
+
+		//Recupero la Metadata de la Página
+		//heapMetadata * test = malloc(sizeof(heapMetadata));
+		//memcpy(test, &bloque_memoria[pagina->nro_marco*configuracion->marco_size], sizeof(heapMetadata));
+
+		/*
+		printf("Test Heap Free: %d\n", test->isFree);
+		printf("Test Heap Size: %d\n", test->size);
+
+		printf("Imprimo Bloque de Memoria (Después)\n");
+		i = 0;
+		while (i < configuracion->marco_size){
+			printf("[%d]", bloque_memoria[pagina->nro_marco*configuracion->marco_size + i]);
+			i++;
+		}
+		printf("\n");
+		*/
+
+		int inicio = obtener_inicio_pagina(pagina);
+		int direccionFree = inicio + sizeof(heapMetadata);
+
+		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccionFree);
 		enviarMensaje(&socketKernel, respuestaAKernel);
+		printf("Envie mensaje: %s\n", respuestaAKernel);
 
 		printf("Se creo una pagina de Heap\n");
 		printf("PID: %d\n", pagina->pid);
 		printf("Nro Pagina: %d\n", pagina->nro_pagina);
 		printf("Nro Marco: %d\n", pagina->nro_marco);
 		printf("Free Space: %d\n", freeSpace);
+		printf("Direccion: %d\n", direccionFree);
 
 		free(respuestaAKernel);
 	} else {
@@ -770,7 +827,8 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		}
 
 		//Se carga la nueva pagina en cache
-		almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+		if (cache_habilitada)
+			almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
 	} else {
 		//Si encontro la entrada en cache
 
@@ -1104,7 +1162,8 @@ void grabar_valor(int direccion, int valor){
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
 
-		grabar_valor_en_cache(direccion, valor_string);
+		if (cache_habilitada)
+			grabar_valor_en_cache(direccion, valor_string);
 
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 99){
@@ -1122,7 +1181,8 @@ void grabar_valor(int direccion, int valor){
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
 
-		grabar_valor_en_cache(direccion, valor_string);
+		if (cache_habilitada)
+			grabar_valor_en_cache(direccion, valor_string);
 
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 9){
@@ -1139,7 +1199,8 @@ void grabar_valor(int direccion, int valor){
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
 
-		grabar_valor_en_cache(direccion, valor_string);
+		if (cache_habilitada)
+			grabar_valor_en_cache(direccion, valor_string);
 
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else{
@@ -1155,7 +1216,8 @@ void grabar_valor(int direccion, int valor){
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
 
-		grabar_valor_en_cache(direccion, valor_string);
+		if (cache_habilitada)
+			grabar_valor_en_cache(direccion, valor_string);
 
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}
@@ -1381,7 +1443,7 @@ int obtener_offset_pagina(t_pagina_invertida* pagina){
 }
 
 int obtener_inicio_pagina(t_pagina_invertida* pagina){
-	int inicio = pagina->nro_marco * configuracion->marco_size + 1;
+	int inicio = pagina->nro_marco * configuracion->marco_size;
 	return inicio;
 }
 
@@ -1410,7 +1472,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 	int nro_paginas_en_cache = list_count_satisfying(tabla_cache, (void*)_paginas_en_cache_para_proceso);
 
-	if (nro_paginas_en_cache < configuracion->cache_x_proc && list_size(tabla_cache) < configuracion->entradas_cache){
+	if (cache_habilitada && nro_paginas_en_cache < configuracion->cache_x_proc && list_size(tabla_cache) < configuracion->entradas_cache){
 
 		//Si no se supera el limite de entradas de cache por proceso
 		//Y si no se supera el tamanio de la cache

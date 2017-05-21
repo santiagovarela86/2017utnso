@@ -71,6 +71,7 @@ typedef struct {
 	int pid;
 	int nro_pagina;
 	int tamanio_disponible;
+	int direccion;
 } heapElement;
 
 typedef struct {
@@ -185,6 +186,7 @@ void matarProceso(int pidAMatar);
 void abrir_subconsola_dos(t_pcb* p);
 t_pcb* existe_proceso(int pid);
 t_estadistica* encontrar_estadistica(t_pcb* p);
+void finalizarProgramaEnMemoria(int pid);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
