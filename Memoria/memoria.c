@@ -13,6 +13,7 @@
 //600 KER A MEM - RESERVAR MEMORIA HEAP
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
+//616 KER A MEM - FINALIZAR PROGRAMA
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -188,6 +189,11 @@ void * hilo_conexiones_kernel(){
 
 				case 612:
 					stack_size = atoi(mensajeDelKernel[1]);
+					break;
+
+				case 616:
+					pid = atoi(mensajeDelKernel[1]);
+					finalizar_programa(pid);
 					break;
 			}
 
