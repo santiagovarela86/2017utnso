@@ -1408,9 +1408,23 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 		list_add(tabla_cache, entrada_cache);
 	}
-	else {
-		//TODO: agregar algoritmo de reemplazo LRU
+	else if (nro_paginas_en_cache == configuracion->cache_x_proc) {
+		//No se puede guardar por superar el maximo de cache habilitado para el proceso
 		guardadoOK = false;
+	}
+	else {
+
+		//Ejecuto el algoritmo para reemplazo
+		//Y le asigno el contenido de la pagina
+
+		t_entrada_cache* entrada_cache_antigua = obtener_entrada_reemplazo_cache();
+		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+		int indice_cache = list_size(tabla_cache) + 1;
+		t_entrada_cache* entrada_cache_nueva = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
+		list_replace(tabla_cache, entrada_cache_antigua->indice, entrada_cache_nueva);
+
+		//Reorganizo las entradas de cache en base al reemplazo
+		reorganizar_indice_cache_y_ordenar();
 	}
 
 	return guardadoOK;
@@ -1459,6 +1473,34 @@ void grabar_valor_en_cache(int direccion, char* valor){
 	} else {
 		actualizar_pagina_en_cache(pagina->pid, pagina->nro_pagina, contenido);
 	}
+}
 
+t_entrada_cache* obtener_entrada_reemplazo_cache(){
+
+	t_entrada_cache* entrada_cache = malloc(sizeof(t_entrada_cache));
+
+	if (string_equals_ignore_case(configuracion->reemplazo_cache, "LRU") == true){
+
+		//Obtengo a la victima del reemplazo
+		//Que seria la pagina mas antigua de la cache, es decir, la primera
+		entrada_cache = list_get(tabla_cache, 0);
+	}
+
+	return entrada_cache;
+}
+
+void reorganizar_indice_cache_y_ordenar(){
+
+	void _decrementar_indice_cache(t_entrada_cache* entrada){
+		entrada->indice = entrada->indice - 1;
+	}
+
+    bool _indice_menor(t_entrada_cache* unaEntrada, t_entrada_cache* otra_entrada) {
+        return unaEntrada->indice < otra_entrada->indice;
+    }
+
+	list_iterate(tabla_cache, _decrementar_indice_cache);
+
+	list_sort(tabla_cache, (void*)_indice_menor);
 }
 
