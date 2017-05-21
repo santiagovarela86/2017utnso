@@ -616,6 +616,7 @@ void liberar_pagina(t_pagina_invertida* pagina){
 void * inicializar_consola(void* args){
 
 	Memoria_Config * configuracion = (Memoria_Config *) args;
+	char* valorIngresado = string_new();
 
 	while (1) {
 		puts("");
@@ -645,7 +646,8 @@ void * inicializar_consola(void* args){
 
 		while(accion_correcta == 0){
 
-			scanf("%d", &accion);
+			scanf("%s", valorIngresado);
+			accion = atoi(valorIngresado);
 
 			switch(accion){
 				case 1:
@@ -703,6 +705,8 @@ void * inicializar_consola(void* args){
 			}
 		}
 	}
+
+	free(valorIngresado);
 
 	return EXIT_SUCCESS;
 }
@@ -769,8 +773,19 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
 	} else {
 		//Si encontro la entrada en cache
+
 		//Leo el contenido de la misma utilizando offset y tamanio
 		datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
+
+		//Hago el reemplazo de paginas y ordeno
+		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_antiguo = entrada_cache->indice;
+		entrada_cache->indice = indice_cache;
+
+		list_replace(tabla_cache, indice_antiguo, entrada_cache);
+
+		reorganizar_indice_cache_y_ordenar();
+
 	}
 	return datos_pagina;
 }
@@ -1413,15 +1428,21 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		guardadoOK = false;
 	}
 	else {
-
 		//Ejecuto el algoritmo para reemplazo
 		//Y le asigno el contenido de la pagina
 
-		t_entrada_cache* entrada_cache_antigua = obtener_entrada_reemplazo_cache();
+		t_entrada_cache* entrada_cache_reemplazo = obtener_entrada_reemplazo_cache();
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+
+		//Hago el reemplazo de paginas y ordeno
 		int indice_cache = list_size(tabla_cache) + 1;
-		t_entrada_cache* entrada_cache_nueva = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
-		list_replace(tabla_cache, entrada_cache_antigua->indice, entrada_cache_nueva);
+		int indice_antiguo = entrada_cache_reemplazo->indice;
+		entrada_cache_reemplazo->indice = indice_cache;
+		entrada_cache_reemplazo->pid = pid;
+		entrada_cache_reemplazo->nro_pagina = pagina->nro_pagina;
+		entrada_cache_reemplazo->contenido_pagina = contenido_pagina;
+
+		list_replace(tabla_cache, indice_antiguo, entrada_cache_reemplazo);
 
 		//Reorganizo las entradas de cache en base al reemplazo
 		reorganizar_indice_cache_y_ordenar();
@@ -1433,16 +1454,22 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 	bool updateOK = true;
 
-	int _obtener_entrada_cache(t_entrada_cache* entrada){
+	int _encontrar_entrada_cache(t_entrada_cache* entrada){
 		return entrada->pid == pid && entrada->nro_pagina;
 	}
 
-	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_obtener_entrada_cache);
+	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_encontrar_entrada_cache);
+
+	int indice_stack = list_size(tabla_cache) + 1;
+
+	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_stack, pid, pagina, contenido);
 
 	if (entrada_a_actualizar != NULL){
 		entrada_a_actualizar->contenido_pagina = contenido;
-		list_replace(tabla_cache, entrada_a_actualizar->indice, entrada_a_actualizar);
+		list_replace(tabla_cache, entrada_a_actualizar->indice, nueva_entrada_cache);
 	}
+
+	reorganizar_indice_cache_y_ordenar();
 
 	return updateOK;
 }
@@ -1499,7 +1526,7 @@ void reorganizar_indice_cache_y_ordenar(){
         return unaEntrada->indice < otra_entrada->indice;
     }
 
-	list_iterate(tabla_cache, _decrementar_indice_cache);
+	list_iterate(tabla_cache, (void*)_decrementar_indice_cache);
 
 	list_sort(tabla_cache, (void*)_indice_menor);
 }
