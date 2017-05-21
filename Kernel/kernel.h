@@ -95,6 +95,14 @@ typedef struct {
 	char* sem;
 }t_bloqueo;
 
+typedef struct {
+	int pid;
+	int cant_oper_privilegiadas;
+	int cant_syscalls;
+	int cant_alocar;
+	int cant_liberar;
+}t_estadistica;
+
 enum exit_codes {
 	FIN_OK = 0,
 	FIN_ERROR_RESERVA_RECURSOS = -1,
