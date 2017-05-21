@@ -1657,13 +1657,9 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 				printf("Free Space: %d\n", heapElem->tamanio_disponible);
 				printf("Direccion: %d\n", heapElem->direccion);
 
-				sleep(10);
-
 				printf("Direccion String: %s\n", string_itoa(heapElem->direccion));
-				//char * mensaje = serializarMensaje(1, string_itoa(heapElem->direccion));
-				char * mensaje = string_new();
-				string_append(&mensaje, string_itoa(heapElem->direccion));
-				string_append(&mensaje, ";");
+				char * mensaje = serializarMensaje(1, heapElem->direccion);
+
 				enviarMensaje(&socketCPU, mensaje);
 				printf("Envie mensaje %s al CPU: %d\n", mensaje, socketCPU);
 			} else {

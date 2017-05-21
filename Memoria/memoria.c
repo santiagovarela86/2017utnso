@@ -253,8 +253,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		int inicio = obtener_inicio_pagina(pagina);
 		int direccion = inicio + sizeof(heapMetadata);
 
-		//sleep(10);
-
 		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccion);
 		enviarMensaje(&socketKernel, respuestaAKernel);
 		printf("Envie mensaje: %s\n", respuestaAKernel);
