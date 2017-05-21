@@ -1979,7 +1979,7 @@ void listar_ejecucion(){
 	int fin = queue_size((cola_ejecucion));
 
 	if(fin == 0){
-		puts("No hay programas terminados");
+		puts("No hay programas ejecutando");
 	}
 
 	while(fin > 0){
@@ -1987,7 +1987,7 @@ void listar_ejecucion(){
 		t_pcb* aux = queue_pop(cola_ejecucion);
 		pthread_mutex_unlock(&mtx_ejecucion);
 
-		puts("Programas Terminados:");
+		puts("Programas Ejecutando:");
 		printf("%d \n", aux->pid);
 
 		pthread_mutex_lock(&mtx_ejecucion);
