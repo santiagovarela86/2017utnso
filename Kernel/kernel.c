@@ -215,7 +215,7 @@ void * inicializar_consola(void* args){
 		puts("3)  Obtener tabla global de archivos");
 		puts("4)  Modificar el grado de multiprogramacion del sistema");
 		puts("5)  Finalizar Proceso");
-		puts("6) Detener la Planificacion");
+		puts("6)  Detener la Planificacion");
 		puts("***********************************************************");
 
 		int accion = 0;
@@ -239,11 +239,18 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Datos del Proceso ");
+				string_append(&mensaje, "Datos del Proceso: ");
 				string_append(&mensaje, string_itoa(pid_buscado));
 				log_console_in_disk(mensaje);
 
-				abrir_subconsola_dos(pid_buscado);
+				int existencia = existe_proceso(pid_buscado);
+
+				if(existencia == 1){
+					abrir_subconsola_dos(pid_buscado);
+				}else{
+					puts("No existe el subproceso");
+				}
+
 				break;
 			case 3:
 				accion_correcta = 1;
@@ -312,11 +319,105 @@ void * inicializar_consola(void* args){
 				puts("3)  Obtener tabla global de archivos");
 				puts("4)  Modificar el grado de multiprogramacion del sistema");
 				puts("5)  Finalizar Proceso");
-				puts("6) Detener la Planificacion");
+				puts("6)  Detener la Planificacion");
 				break;
 			}
 
 			free(mensaje);
+		}
+	}
+}
+
+int existe_proceso(int pid){
+	int fin = queue_size(cola_terminados);
+	int encontrado = 0;
+	t_pcb* p;
+
+	while(fin > 0 && encontrado == 0){
+		pthread_mutex_lock(&mtx_terminados);
+		p = queue_pop(cola_terminados);
+		pthread_mutex_unlock(&mtx_terminados);
+
+		if(p->pid == pid){
+			encontrado = 1;
+		}
+
+		pthread_mutex_lock(&mtx_terminados);
+		queue_push(cola_terminados, p);
+		pthread_mutex_unlock(&mtx_terminados);
+
+		fin--;
+	}
+
+	if(encontrado == 1){
+		return encontrado;
+	}else{
+		fin = queue_size(cola_listos);
+
+		while(fin > 0 && encontrado == 0){
+			pthread_mutex_lock(&mtx_listos);
+			p = queue_pop(cola_listos);
+			pthread_mutex_unlock(&mtx_listos);
+
+			if(p->pid == pid){
+				encontrado = 1;
+			}
+
+			pthread_mutex_lock(&mtx_listos);
+			queue_push(cola_listos, p);
+			pthread_mutex_unlock(&mtx_listos);
+
+			fin--;
+		}
+
+		if(encontrado == 1){
+			return encontrado;
+		}else{
+			fin = queue_size(cola_bloqueados);
+
+			while(fin > 0 && encontrado == 0){
+				pthread_mutex_lock(&mtx_bloqueados);
+				p = queue_pop(cola_bloqueados);
+				pthread_mutex_unlock(&mtx_bloqueados);
+
+				if(p->pid == pid){
+					encontrado = 1;
+				}
+
+				pthread_mutex_lock(&mtx_bloqueados);
+				queue_push(cola_bloqueados, p);
+				pthread_mutex_unlock(&mtx_bloqueados);
+
+				fin--;
+			}
+
+			if(encontrado == 1){
+				return encontrado;
+			}else{
+				fin = queue_size(cola_ejecucion);
+
+				while(fin > 0 && encontrado == 0){
+					pthread_mutex_lock(&mtx_ejecucion);
+					p = queue_pop(cola_ejecucion);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
+					if(p->pid == pid){
+						encontrado = 1;
+					}
+
+					pthread_mutex_lock(&mtx_ejecucion);
+					queue_push(cola_ejecucion, p);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
+					fin--;
+				}
+
+				if(encontrado == 1){
+					return encontrado;
+				}else{
+					return 0;
+				}
+			}
 		}
 	}
 }

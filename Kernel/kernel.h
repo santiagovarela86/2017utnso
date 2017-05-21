@@ -172,6 +172,7 @@ void listar_ejecucion();
 void bloqueoDePrograma(int pid_a_buscar);
 void matarProceso(int pidAMatar);
 void abrir_subconsola_dos(int pid);
+int existe_proceso(int pid);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
