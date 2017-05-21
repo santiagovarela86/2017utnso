@@ -71,6 +71,7 @@ typedef struct {
 	int pid;
 	int nro_pagina;
 	int tamanio_disponible;
+	int direccion;
 } heapElement;
 
 typedef struct {
