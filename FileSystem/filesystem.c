@@ -20,9 +20,9 @@
 #include "helperFunctions.h"
 #include "filesystem.h"
 
+int socketKernel;
 char* montaje;
-t_list* lista_File_global;
-t_list* lista_File_proceso;
+t_list* lista_archivos;
 FileSystem_Config * configuracion;
 
 int socketFileSystem;
@@ -53,8 +53,7 @@ int main(int argc, char** argv) {
 void inicializarEstructuras(char * pathConfig){
 	configuracion = leerConfiguracion(pathConfig);
 
-	lista_File_global = list_create();
-	lista_File_proceso = list_create();
+	lista_archivos = list_create();
 
 	montaje = string_new();
 
@@ -73,7 +72,7 @@ void liberarEstructuras(){
 
 void * hilo_conexiones_kernel(void * args){
 
-	int socketKernel;
+
 	struct sockaddr_in direccionKernel;
 	socklen_t length = sizeof direccionKernel;
 
@@ -93,27 +92,28 @@ void * hilo_conexiones_kernel(void * args){
 			int codigo = atoi(mensajeAFileSystem[0]);
 
 			switch (codigo){
+				case 804://de CPU a File system (cerrar)
+					guardar_datos(mensajeAFileSystem[1],mensajeAFileSystem[2],mensajeAFileSystem[3],mensajeAFileSystem[4]);
+
+				break;
 
 				case 803: //de CPU a File system (abrir)
 
-					if("r" == mensajeAFileSystem[1]){
-						abrir_archivo(mensajeAFileSystem[0]);
-					}
-					if("c" == mensajeAFileSystem[1]){
-						crear_archivo(mensajeAFileSystem[0]);
-					}
+					crear_archivo(mensajeAFileSystem[1], mensajeAFileSystem[2]);
 
 					break;
 
 				case 802:  //de CPU a File system (borrar)
 
-					break;
-
-				case 801://de CPU a File system (cerrar)
-
+					borrarArchivo(mensajeAFileSystem[1]);
 
 					break;
 
+
+				case 800://de CPU a File system (leer)
+
+					obtener_datos(mensajeAFileSystem[3],atoi(mensajeAFileSystem[1]),atoi(mensajeAFileSystem[2]));
+					break;
 			}
 
 			result = recv(socketKernel, message, sizeof(message), 0);
@@ -182,13 +182,10 @@ void atender_peticiones(int socket){
 				}
 	}
 */
-	while(1){
-
-	}
 }
 
 
-char* abrir_archivo(char* directorio){
+/*char* abrir_archivo(char* directorio){
 
 
 	int fd_script = open(directorio, O_RDWR);
@@ -204,15 +201,15 @@ char* abrir_archivo(char* directorio){
 		return string_equals_ignore_case(directorio, glo->path);
 	}
 	t_fileGlobal* archAbrir = malloc(sizeof(t_fileGlobal));
-	archAbrir = list_find(lista_File_global,(void*) encontrar_arch);
-	list_remove_by_condition(lista_File_global,(void*) encontrar_arch);
-	list_add(lista_File_global,archAbrir);
+	archAbrir = list_find(lista_archivos,(void*) encontrar_arch);
+	list_remove_by_condition(lista_archivos,(void*) encontrar_arch);
+	list_add(lista_archivos,archAbrir);
 
 	archAbrir->cantidadDeAperturas = 1;
 	archAbrir->fileDescriptor = fd_script;
 	archAbrir->path = directorio;
 
-	list_add(lista_File_global, archAbrir);
+	list_add(lista_archivos, archAbrir);*/
 
 		//list_add()
 	/*	if(permiso == 'r'){
@@ -225,16 +222,31 @@ char* abrir_archivo(char* directorio){
 			return arch;
 		}else{
 			puts("Permiso incorrecto");
-		}*/
+		}
 
 	close(fd_script);
 	char* extra = string_new();
 	return extra;
 }
-
+*/
 int validar_archivo(char* directorio){
 
-	char* path = string_new();
+	int encontrar_sem(t_archivosFileSystem* archivo) {
+		return string_starts_with(directorio, archivo->path);
+	}
+
+
+	if(list_any_satisfy(lista_archivos, (void *) encontrar_sem))
+
+	{
+	return 2;
+
+	}
+	else
+	{
+		return 1;
+	}
+	/*char* path = string_new();
 
 	path = string_substring(montaje,1,string_length(montaje));
 
@@ -246,88 +258,101 @@ int validar_archivo(char* directorio){
 		return -1;
 	}else{
 	 //El archivo existe
-		return 1;
-	}
-
-}
-char* crear_archivo(char* directorio){
 	  FILE * pFile;
 	  pFile = fopen (directorio,"w"); //por defecto lo crea
 	  if (pFile!=NULL)
 	  {
 	    fputs ("asigno_Bloque_Prueba",pFile);
 		int fd_script = open(directorio, O_WRONLY);
-
-		t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
-		archNuevo->cantidadDeAperturas = 0;
-		archNuevo->fileDescriptor = fd_script;
-		archNuevo->path = directorio;
-
-		list_add(lista_File_global, archNuevo);
-
 		struct stat scriptFileStat;
 		fstat(fd_script, &scriptFileStat);
 
 			char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
+			list_add(lista_archivos, arch);
 			close(fd_script);
 		    fclose (pFile);
 			return arch;
 	  	  }
-	    return 0;
-      fclose(pFile);
+	    return 0;*/
+		return 1;
+	}
+
+void crear_archivo(char* flag, char* directorio){
+
+   	  int result = validar_archivo(directorio);
+
+   	  if (result == 1)
+   	  {
+
+   		  FILE * pFile;
+   		  pFile = fopen (directorio,"w"); //por defecto lo crea
+   		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
+   		  archNuevo->referenciaArchivo = pFile;
+   		  archNuevo->path = directorio;
+		  list_add(lista_archivos, directorio);
+
+   	  }
+   	  else
+   	  {
+			int encontrar_Arch(t_archivosFileSystem* archivo) {
+				return string_starts_with(directorio, archivo->path);
+			}
+
+		  t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_Arch);
+		  list_remove_by_condition(lista_archivos,(void*) encontrar_Arch);
+   		  FILE * pFileReabrir;
+   		  pFileReabrir = freopen(directorio,flag,archBuscado->referenciaArchivo); //le cambio el tipo de apertura
+   		  archBuscado->referenciaArchivo = pFileReabrir;
+   		  list_add(lista_archivos, archBuscado);
+   	  }
 }
 
-char* obtener_datos(char* directorio, int offset, int size, char permiso){
+void obtener_datos(char* directorio, int offset, int size){
 
-	  FILE *file;
-	  file = fopen(directorio, "r");
-	    if(permiso == 'r'){
-	    if (file != NULL) {
-	        char* mensaje = string_new();
+        char* mensaje = string_new();
 
-	        fseek(file,offset,SEEK_SET);
-	        fgets(mensaje, size, file );
+			int encontrar_sem(t_archivosFileSystem* archivo) {
+				return string_starts_with(directorio, archivo->path);
+			}
 
-	        fclose(file);
-	        return mensaje;
+			t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
+
+	        fseek(archBuscado->referenciaArchivo,offset,SEEK_SET);
+	        fgets(mensaje, size, archBuscado->referenciaArchivo );
+
+	    	enviarMensaje(socketKernel, mensaje);
+	        return ;
 
 	    } // End if file
 
-	}
-	else
-	{
-		puts("Permiso incorrecto");
-	}
-	fclose(file);
-	return 0;
 
-}
+void guardar_datos(char* directorio, int offset, int size, char* buffer){
 
-char* guardar_datos(char* directorio, int offset, int size, char* buffer, char permiso){
 
-   FILE *file;
-   file = fopen(directorio, "w");
+		int encontrar_sem(t_archivosFileSystem* archivo) {
+			return string_starts_with(directorio, archivo->path);
+		}
 
-	if(permiso == 'w'){
+		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-	    if (file != NULL) {
-	        char* mensaje = string_new();
+        fseek(archBuscado->referenciaArchivo,offset,SEEK_SET);
+        fputs((FILE*)archBuscado->referenciaArchivo, buffer);
 
-	        fseek(file,offset,SEEK_SET);
-	        fputs(buffer, file );
+        //return mensaje;
 
-	        fclose(file);
-	        return mensaje;
+    } // End if file
 
-	    } // End if file
-	   }
+void borrarArchivo(char* directorio){
 
-    	else
-    	{
-    		puts("Permiso incorrecto");
-    	}
-	  fclose(file);
-	return 0;
+		int encontrar_sem(t_archivosFileSystem* archivo) {
+			return string_starts_with(directorio, archivo->path);
+		}
 
-}
+		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
+		close((FILE*)archDestroy->referenciaArchivo);
+		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
+
+        //return mensaje;
+
+    } // End if file
 

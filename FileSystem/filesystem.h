@@ -9,10 +9,7 @@
 #define FILESYSTEM_H_
 
 void * hilo_conexiones_kernel(void * args);
-void atender_peticiones(int socket);
-int validar_archivo(char* directorio);
-char* abrir_archivo(char* directorio);
-char* crear_archivo(char* directorio);
+
 
 typedef struct {
 	int fileDescriptor;
@@ -21,14 +18,18 @@ typedef struct {
 } t_fileProceso;
 
 typedef struct {
-	int fileDescriptor;
 	char* path;
-	int cantidadDeAperturas;
-} t_fileGlobal;
+	FILE* referenciaArchivo;
+} t_archivosFileSystem;
 
 void * handler_conexion_kernel(void * sock);
 
 void inicializarEstructuras(char * pathConfig);
 void liberarEstructuras();
+void obtener_datos(char* directorio, int offset, int size);
+int validar_archivo(char* directorio);
+void crear_archivo(char* directorio, char* flag);
+void borrarArchivo(char* directorio);
+void guardar_datos(char* directorio, int offset, int size, char* buffer);
 
 #endif /* FILESYSTEM_H_ */
