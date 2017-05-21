@@ -590,7 +590,12 @@ void finalizar_programa(int pid){
 		return e->pid == pid;
 	}
 
+	int _obtenerPaginaStackProceso(t_pagina_proceso * p) {
+		return p->pid == pid;
+	}
+
 	list_remove_by_condition(tabla_cache, (void*) _obtenerCacheProceso);
+	list_remove_by_condition(lista_paginas_stack, (void*) _obtenerPaginaProceso);
 
 	t_pagina_invertida* paginaProceso = NULL;
 	while((paginaProceso = list_find(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
