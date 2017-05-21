@@ -1634,10 +1634,13 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 		return elem->pid == pcb->pid;
 	}
 
+	_Bool hayLugarHeap (heapElement * elem){
+		return elem->tamanio_disponible >= bytes;
+	}
+
 	printf("Solicitud de Heap desde el CPU: %d\n", socketCPU);
 
-	//Verifico si todavía no hay paginas de Heap
-	//if (list_size(lista_paginas_heap) == 0){
+	//Verifico si no hay paginas de Heap para este Proceso
 	if(!(list_any_satisfy(lista_paginas_heap, coincideHeapPID))){
 		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
 		printf("Primer Pagina para el Proceso\n");
@@ -1682,7 +1685,20 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 					"Error de comunicacion con Memoria durante la reserva de memoria heap\n");
 		}
 	}else {
+		//SI YA EXISTEN PAGINAS DE HEAP PARA ESTE PROCESO, ME FIJO SI TENGO LUGAR
 		printf("Iésima Pagina para el Proceso\n");
+
+		if (list_any_satisfy(lista_paginas_heap, hayLugarHeap)){
+			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
+			printf("HAY LUGAR EN LAS PAGINAS QUE YA TENGO\n");
+			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
+			heapElement * paginaHeapLibre = list_find(lista_paginas_heap, hayLugarHeap);
+
+
+
+		}else{
+			//TENGO QUE PEDIR UNA PAGINA NUEVA
+		}
 
 	}
 
