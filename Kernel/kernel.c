@@ -210,6 +210,8 @@ void liberarEstructuras(){
 
 void * inicializar_consola(void* args){
 
+	char* valorIngresado = string_new();
+
 	while(1){
 		puts("");
 		puts("***********************************************************");
@@ -230,7 +232,8 @@ void * inicializar_consola(void* args){
 		while (accion_correcta == 0){
 
 			char * mensaje = string_new();
-			scanf("%d", &accion);
+			scanf("%s", valorIngresado);
+			accion = atoi(valorIngresado);
 
 			switch(accion){
 			case 1:
@@ -331,6 +334,7 @@ void * inicializar_consola(void* args){
 			free(mensaje);
 		}
 	}
+	free(valorIngresado);
 }
 
 t_pcb* existe_proceso(int pid){

@@ -706,6 +706,8 @@ void * inicializar_consola(void* args){
 		}
 	}
 
+	free(valorIngresado);
+
 	return EXIT_SUCCESS;
 }
 
