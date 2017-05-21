@@ -712,7 +712,7 @@ t_puntero reservar(t_valor_variable espacio){
 		return atoi(respuesta[0]);
 	} else {
 		perror("Error reservando Memoria de Heap\n");
-		return -1;
+		return 0;
 	}
 }
 
