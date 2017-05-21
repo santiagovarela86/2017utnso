@@ -2446,6 +2446,8 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "802");
 	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, flag);
+	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, direccion);
 	string_append(&mensajeAFS, ";");
 
@@ -2503,14 +2505,14 @@ void borrarArchivo(int pid_mensaje, int fd)
 
 		enviarMensaje(&skt_filesystem, mensajeAFS);
 
-		int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+		/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
 
 		if (result > 0) {
 			puts("archivo borrado desde el fs");
 		}
 		else {
 			perror("Error no se pudo borrar\n");
-		}
+		}*/
 		free(mensajeAFS);
 
 	}
