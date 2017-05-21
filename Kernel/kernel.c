@@ -551,62 +551,77 @@ void abrir_subconsola_dos(t_pcb* p){
 void matarProceso(int pidAMatar){
 
 		int tempPid;
-		t_pcb * temporalP = malloc(sizeof(t_pcb));
+		t_pcb * temporalP;
 		int largoColaListada;
 
 		largoColaListada = queue_size(cola_listos);
 		while(largoColaListada != 0){
-			pthread_mutex_lock(&mtx_globales);
-			temporalP = (t_pcb*) queue_pop(cola_listos);
+
+			pthread_mutex_lock(&mtx_listos);
+			temporalP = queue_pop(cola_listos);
+			pthread_mutex_unlock(&mtx_listos);
+
 			tempPid = temporalP->pid;
 			if(temporalP->pid != pidAMatar && tempPid > 0){
+
+				pthread_mutex_lock(&mtx_listos);
 				queue_push(cola_listos, temporalP);
+				pthread_mutex_unlock(&mtx_listos);
+
 			}else{
+				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+				pthread_mutex_unlock(&mtx_terminados);
 			}
-			pthread_mutex_unlock(&mtx_globales);
+
 			largoColaListada--;
 		}
 
 		largoColaListada = queue_size(cola_bloqueados);
 		while(largoColaListada != 0){
-			pthread_mutex_lock(&mtx_globales);
-			temporalP = (t_pcb*) queue_pop(cola_bloqueados);
+
+			pthread_mutex_lock(&mtx_bloqueados);
+			temporalP = queue_pop(cola_bloqueados);
+			pthread_mutex_unlock(&mtx_bloqueados);
+
 			tempPid = temporalP->pid;
 			if(temporalP->pid != pidAMatar && tempPid > 0){
+
+				pthread_mutex_lock(&mtx_bloqueados);
 				queue_push(cola_bloqueados, temporalP);
+				pthread_mutex_unlock(&mtx_bloqueados);
+
 			}else{
+
+				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+				pthread_mutex_unlock(&mtx_terminados);
 			}
-			pthread_mutex_unlock(&mtx_globales);
+
 			largoColaListada--;
 		}
 
 		largoColaListada = queue_size(cola_ejecucion);
 		while(largoColaListada != 0){
-			pthread_mutex_lock(&mtx_globales);
-			temporalP = (t_pcb*) queue_pop(cola_ejecucion);
-			tempPid = temporalP->pid;
-			if(temporalP->pid != pidAMatar && tempPid > 0){
-				queue_push(cola_ejecucion, temporalP);
-			}else{
-				queue_push(cola_terminados, temporalP);
-			}
-			pthread_mutex_unlock(&mtx_globales);
-			largoColaListada--;
-		}
 
-		largoColaListada = queue_size(cola_nuevos);
-		while(largoColaListada != 0){
-			pthread_mutex_lock(&mtx_globales);
-			temporalP = (t_pcb*) queue_pop(cola_nuevos);
+			pthread_mutex_lock(&mtx_ejecucion);
+			temporalP = queue_pop(cola_ejecucion);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
 			tempPid = temporalP->pid;
 			if(temporalP->pid != pidAMatar && tempPid > 0){
-				queue_push(cola_nuevos, temporalP);
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				queue_push(cola_ejecucion, temporalP);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
 			}else{
+
+				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+				pthread_mutex_unlock(&mtx_terminados);
 			}
-			pthread_mutex_unlock(&mtx_globales);
+
 			largoColaListada--;
 		}
 
