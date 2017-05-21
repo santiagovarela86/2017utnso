@@ -239,14 +239,15 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Datos del Proceso: ");
-				string_append(&mensaje, string_itoa(pid_buscado));
-				log_console_in_disk(mensaje);
 
-				int existencia = existe_proceso(pid_buscado);
+				t_pcb* p = existe_proceso(pid_buscado);
 
-				if(existencia == 1){
-					abrir_subconsola_dos(pid_buscado);
+				if(p != NULL){
+					string_append(&mensaje, "Datos del Proceso: ");
+					string_append(&mensaje, string_itoa(pid_buscado));
+					log_console_in_disk(mensaje);
+
+					abrir_subconsola_dos(p);
 				}else{
 					puts("No existe el subproceso");
 				}
@@ -328,7 +329,7 @@ void * inicializar_consola(void* args){
 	}
 }
 
-int existe_proceso(int pid){
+t_pcb* existe_proceso(int pid){
 	int fin = queue_size(cola_terminados);
 	int encontrado = 0;
 	t_pcb* p;
@@ -350,7 +351,7 @@ int existe_proceso(int pid){
 	}
 
 	if(encontrado == 1){
-		return encontrado;
+		return p;
 	}else{
 		fin = queue_size(cola_listos);
 
@@ -371,7 +372,7 @@ int existe_proceso(int pid){
 		}
 
 		if(encontrado == 1){
-			return encontrado;
+			return p;
 		}else{
 			fin = queue_size(cola_bloqueados);
 
@@ -392,7 +393,7 @@ int existe_proceso(int pid){
 			}
 
 			if(encontrado == 1){
-				return encontrado;
+				return p;
 			}else{
 				fin = queue_size(cola_ejecucion);
 
@@ -413,9 +414,9 @@ int existe_proceso(int pid){
 				}
 
 				if(encontrado == 1){
-					return encontrado;
+					return p;
 				}else{
-					return 0;
+					return NULL;
 				}
 			}
 		}
@@ -479,7 +480,7 @@ void abrir_subconsola_procesos(){
 	}
 }
 
-void abrir_subconsola_dos(int pid){
+void abrir_subconsola_dos(t_pcb* p){
 
 
 		puts("");
@@ -504,7 +505,7 @@ void abrir_subconsola_dos(int pid){
 			switch(accion){
 			case 1:
 				accion_correcta = 1;
-
+				printf("La cantidad de rafagas realizadas son: %d \n", p->program_counter);
 				break;
 			case 2:
 				accion_correcta = 1;
