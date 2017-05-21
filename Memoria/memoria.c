@@ -1071,6 +1071,8 @@ void subconsola_contenido_memoria(){
 
 void grabar_valor(int direccion, int valor){
 
+	char* valor_string = string_new();
+
 	if(valor > 999){
 		int milesima = valor / 1000;
 		int centena = (valor % 1000) / 100;
@@ -1081,7 +1083,14 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-		grabar_valor_en_cache(direccion, valor);
+
+		valor_string[0] = bloque_memoria[direccion];
+		valor_string[1] = bloque_memoria[direccion + 1];
+		valor_string[2] = bloque_memoria[direccion + 2];
+		valor_string[3] = bloque_memoria[direccion + 3];
+
+		grabar_valor_en_cache(direccion, valor_string);
+
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 99){
 		int centena = (valor % 1000) / 100;
@@ -1092,7 +1101,14 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-		grabar_valor_en_cache(direccion, valor);
+
+		valor_string[0] = bloque_memoria[direccion];
+		valor_string[1] = bloque_memoria[direccion + 1];
+		valor_string[2] = bloque_memoria[direccion + 2];
+		valor_string[3] = bloque_memoria[direccion + 3];
+
+		grabar_valor_en_cache(direccion, valor_string);
+
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 9){
 		int decena = (valor % 100) / 10;
@@ -1102,7 +1118,14 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-		grabar_valor_en_cache(direccion, valor);
+
+		valor_string[0] = bloque_memoria[direccion];
+		valor_string[1] = bloque_memoria[direccion + 1];
+		valor_string[2] = bloque_memoria[direccion + 2];
+		valor_string[3] = bloque_memoria[direccion + 3];
+
+		grabar_valor_en_cache(direccion, valor_string);
+
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else{
 		int unidad = valor % 10;
@@ -1111,7 +1134,14 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = '0';
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-		grabar_valor_en_cache(direccion, valor);
+
+		valor_string[0] = bloque_memoria[direccion];
+		valor_string[1] = bloque_memoria[direccion + 1];
+		valor_string[2] = bloque_memoria[direccion + 2];
+		valor_string[3] = bloque_memoria[direccion + 3];
+
+		grabar_valor_en_cache(direccion, valor_string);
+
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}
 
@@ -1414,19 +1444,19 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 	return entrada;
 }
 
-void grabar_valor_en_cache(int direccion, int valor){
+void grabar_valor_en_cache(int direccion, char* valor){
 
 	int indice_tabla_paginas = direccion % configuracion->marco_size;
 	t_pagina_invertida* pagina = list_get(tabla_paginas, indice_tabla_paginas);
 	char * contenido = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 
+	string_append(&contenido, valor);
+
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pagina->pid, pagina->nro_pagina);
 
 	if (entrada_cache == NULL){
-		//Si el proceso no tiene entradas en cache
 		almacenar_pagina_en_cache_para_pid(pagina->pid, pagina);
 	} else {
-		//Reemplazo el contenido de la pagina en cache
 		actualizar_pagina_en_cache(pagina->pid, pagina->nro_pagina, contenido);
 	}
 

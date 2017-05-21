@@ -109,7 +109,7 @@ int calcular_tamanio_proceso(int pid);
 void subconsola_contenido_memoria(void);
 bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina);
 t_entrada_cache* obtener_entrada_cache(int pid, int pagina);
-void grabar_valor_en_cache(int direccion, int valor);
+void grabar_valor_en_cache(int direccion, char* valor);
 bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido);
 
 #endif /* MEMORIA_H_ */
