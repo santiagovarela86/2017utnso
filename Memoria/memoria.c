@@ -250,10 +250,57 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
 
-		int inicio = obtener_inicio_pagina(pagina);
-		int direccion = inicio + sizeof(heapMetadata);
+		heapMetadata * meta_free = malloc(sizeof(heapMetadata));
+		meta_free->isFree = true;
+		meta_free->size = freeSpace - bytesPedidos;
 
-		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccion);
+		heapMetadata * meta_used = malloc(sizeof(heapMetadata));
+		meta_used->isFree = false;
+		meta_used->size = bytesPedidos;
+
+		//Guardo la Metadata Used en el Inicio de la Pagina
+		int dirInicioPagina = pagina->nro_marco*configuracion->marco_size;
+		memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
+
+		//Guardo la Metadata Free en el Final de los datos
+		memcpy(&bloque_memoria[pagina->nro_marco*configuracion->marco_size+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
+
+		/*
+		printf("Imprimo Bloque de Memoria (Antes)\n");
+		int i = 0;
+		while (i < configuracion->marco_size){
+			printf("[%d]", bloque_memoria[pagina->nro_marco*configuracion->marco_size + i]);
+			i++;
+		}
+		printf("\n");
+
+		printf("Heap Free: %d\n", meta_free->isFree);
+		printf("Heap Size: %d\n", meta_free->size);
+		*/
+
+
+
+		//Recupero la Metadata de la Página
+		//heapMetadata * test = malloc(sizeof(heapMetadata));
+		//memcpy(test, &bloque_memoria[pagina->nro_marco*configuracion->marco_size], sizeof(heapMetadata));
+
+		/*
+		printf("Test Heap Free: %d\n", test->isFree);
+		printf("Test Heap Size: %d\n", test->size);
+
+		printf("Imprimo Bloque de Memoria (Después)\n");
+		i = 0;
+		while (i < configuracion->marco_size){
+			printf("[%d]", bloque_memoria[pagina->nro_marco*configuracion->marco_size + i]);
+			i++;
+		}
+		printf("\n");
+		*/
+
+		int inicio = obtener_inicio_pagina(pagina);
+		int direccionFree = inicio + sizeof(heapMetadata);
+
+		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccionFree);
 		enviarMensaje(&socketKernel, respuestaAKernel);
 		printf("Envie mensaje: %s\n", respuestaAKernel);
 
@@ -262,7 +309,7 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		printf("Nro Pagina: %d\n", pagina->nro_pagina);
 		printf("Nro Marco: %d\n", pagina->nro_marco);
 		printf("Free Space: %d\n", freeSpace);
-		printf("Direccion: %d\n", direccion);
+		printf("Direccion: %d\n", direccionFree);
 
 		free(respuestaAKernel);
 	} else {
