@@ -1564,6 +1564,19 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 	new_pcb->cantidadPaginas = cantidadPaginas;
 	cargoIndicesPCB(new_pcb, codigo);
 
+	t_estadistica* est = malloc(sizeof(t_estadistica));
+	est->pid = new_pcb->pid;
+	est->cant_alocar = 0;
+	est->cant_liberar = 0;
+	est->cant_oper_privilegiadas = 0;
+	est->cant_syscalls = 0;
+	est->tama_alocar = 0;
+	est->tama_liberar = 0;
+
+	pthread_mutex_lock(&mtx_estadistica);
+	list_add(lista_estadistica, est);
+	pthread_mutex_unlock(&mtx_estadistica);
+
 	pthread_mutex_lock(&mtx_listos);
 	queue_push(cola_listos, new_pcb);
 	pthread_mutex_unlock(&mtx_listos);
