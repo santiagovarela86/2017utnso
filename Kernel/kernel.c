@@ -1054,12 +1054,12 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 801://de CPU a File system (cerrar)
 
-				 direccion = mensajeDesdeCPU[1];
+				 fd = atoi(mensajeDesdeCPU[1]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 
-				 cerrarArchivo(pid_mensaje, direccion, infofile);
+				 cerrarArchivo(pid_mensaje, fd);
+				 enviarMensaje(socketCliente, "el archivo fue cerrado correctamente");
 
-				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
 
 			case 800://de CPU a File system (leer)
@@ -1069,9 +1069,10 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 leerArchivo(pid_mensaje, fd, infofile, tamanio);
+				 char* mensajeAPUrtorno= leerArchivo(pid_mensaje, fd, infofile, tamanio);
+				 enviarMensaje(socketCliente, mensajeAPUrtorno);
 
-				enviarMensaje(&skt_filesystem, mensajeFileSystem);
+
 				break;
 
 			case 571:
@@ -2381,22 +2382,53 @@ void borrarArchivo(int pid_mensaje, char* direccion)
 	list_remove_by_condition(lista_File_global,(void*) encontrar_arch);
 
 }
-void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile)
-{
-
-}
-void leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
+void cerrarArchivo(int pid_mensaje, int fd)
 {
 	int encontrar_archProceso(t_fileProceso* glo){
-		return  string_equals_ignore_case(fd, glo->fileDescriptor);
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
+	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
 
+	int encontrar_archGlobal(t_fileGlobal* glo){
+		if(archAbrir1->global_fd == glo->fdGlobal)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
+
+	if(archAbrir2->cantidadDeAperturas == 0)
+	{
+		list_remove(lista_File_global, archAbrir1->global_fd);
+	}
+	else
+	{
+		archAbrir2->cantidadDeAperturas--;
+		list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
+	}
+}
+char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
+{
+	int encontrar_archProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
 	}
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
 	archAbrir1 = list_find(lista_File_global,(void*) encontrar_archProceso);
 
 	int encontrar_archGlobal(t_fileGlobal* glo){
-		return string_equals_ignore_case(archAbrir1->global_fd, glo->fdGlobal);
-
+		if(archAbrir1->global_fd == glo->fdGlobal)
+			return 1;
+		else
+			return 0;
 	}
 	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 	archAbrir2 = list_find(lista_File_global,(void*) encontrar_archGlobal);
@@ -2411,7 +2443,21 @@ void leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, archAbrir2->path);
 	string_append(&mensajeAFS, ";");
 
+	free(mensajeAFS);
+	free(archAbrir1);
+	free(archAbrir2);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
+
+	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+	if (result > 0) {
+		puts("archivo cerrado correctamente");
+	}
+	else {
+		perror("Error no se pudo leer \n");
+	}
+	return mensajeAFS;
+	free(mensajeAFS);
 }
 

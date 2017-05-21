@@ -850,33 +850,33 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	puts("Leer");
 	puts("");
 
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "800");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(descriptor_archivo));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, ((char*)informacion));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(tamanio));
-	string_append(&mensajeAKernel, ";");
+	char* mensaje = string_new();
+	string_append(&mensaje, "800");
+	string_append(&mensaje, ";");
+	string_append(&mensaje, string_itoa(descriptor_archivo));
+	string_append(&mensaje, ";");
+	string_append(&mensaje, string_itoa(pcb->pid));
+	string_append(&mensaje, ";");
+	string_append(&mensaje, ((char*)informacion));
+	string_append(&mensaje, ";");
+	string_append(&mensaje, string_itoa(tamanio));
+	string_append(&mensaje, ";");
 
 
-	enviarMensaje(&sktKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensaje);
 
-	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
-
-	free(mensajeAKernel);
+	int result = recv(sktKernel, mensaje, sizeof(mensaje), 0);
 
 	if (result > 0) {
-		puts("archivo cerrado correctamente");
+		puts("el archivo se leyo correctamente");
+		printf("el contenido es %s", mensaje);
 	}
 	else {
 		perror("Error no se pudo leer \n");
 	}
-
+	free(mensaje);
 	return;
+
 }
 
 char* serializar_pcb(t_pcb* pcb){
