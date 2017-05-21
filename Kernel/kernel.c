@@ -998,6 +998,7 @@ void * handler_conexion_cpu(void * sock) {
 		char* direccion;
 		char* infofile;
 		int pid_recibido;
+
 		switch (operacion){
 			case 530:
 				finDeQuantum(socketCliente);
@@ -1233,69 +1234,72 @@ void logExitCode(int code)
 
 }
 
-void * planificar(){
+void * planificar() {
 	int corte, i, encontrado;
+	int y = 1;
 
-	while (1){
+	while (1) {
 
-		if(plan == 0){
-		usleep(configuracion->quantum_sleep);
+		if (plan == 0) {
+			usleep(configuracion->quantum_sleep);
 
-		pthread_mutex_lock(&mtx_cpu);
-		corte = queue_size(cola_cpu);
-		pthread_mutex_unlock(&mtx_cpu);
+			pthread_mutex_lock(&mtx_cpu);
+			corte = queue_size(cola_cpu);
+			pthread_mutex_unlock(&mtx_cpu);
 
-		i = 0;
-		encontrado = 0;
+			i = 0;
+			encontrado = 0;
 
-		if(!(queue_is_empty(cola_cpu))){
-			estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+			if (!(queue_is_empty(cola_cpu))) {
+				estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
 
-			while (i <= corte && encontrado == 0){
+				while (i <= corte && encontrado == 0) {
 
-				pthread_mutex_lock(&mtx_cpu);
-				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-				pthread_mutex_unlock(&mtx_cpu);
+					pthread_mutex_lock(&mtx_cpu);
+					temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+					pthread_mutex_unlock(&mtx_cpu);
 
-				if(temporalCpu->pid_asignado == -1){
+					//printf("El PID asignado del CPU que reviso es: %d\n",
+						//	temporalCpu->pid_asignado);
 
-					encontrado = 1;
-				}else{
-					i++;
+					if (temporalCpu->pid_asignado == -1) {
+						encontrado = 1;
+					} else {
+						i++;
+					}
+
+					pthread_mutex_lock(&mtx_cpu);
+					queue_push(cola_cpu, temporalCpu);
+					pthread_mutex_unlock(&mtx_cpu);
 				}
 
-				pthread_mutex_lock(&mtx_cpu);
-				queue_push(cola_cpu, temporalCpu);
-				pthread_mutex_unlock(&mtx_cpu);
-			}
+				if (encontrado == 1) {
+					if (!(queue_is_empty(cola_listos))) {
 
-			if(encontrado == 1){
-				if(!(queue_is_empty(cola_listos))){
+						t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
 
-					t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
+						pthread_mutex_lock(&mtx_listos);
+						pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
+						pthread_mutex_unlock(&mtx_listos);
 
-					pthread_mutex_lock(&mtx_listos);
-					pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
-					pthread_mutex_unlock(&mtx_listos);
+						temporalCpu->pid_asignado = pcbtemporalListos->pid;
+						pcbtemporalListos->socket_cpu = &temporalCpu->socket;
 
-					temporalCpu->pid_asignado = pcbtemporalListos->pid;
-					pcbtemporalListos->socket_cpu = &temporalCpu->socket;
+						char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
 
-					char* mensajeACPUPlan = serializar_pcb(pcbtemporalListos);
-					enviarMensaje(pcbtemporalListos->socket_cpu, mensajeACPUPlan);
+						enviarMensaje(pcbtemporalListos->socket_cpu,mensajeACPUPlan);
 
-					pthread_mutex_lock(&mtx_ejecucion);
-					queue_push(cola_ejecucion, pcbtemporalListos);
-					pthread_mutex_unlock(&mtx_ejecucion);
+						pthread_mutex_lock(&mtx_ejecucion);
+						queue_push(cola_ejecucion, pcbtemporalListos);
+						pthread_mutex_unlock(&mtx_ejecucion);
 
-					free(mensajeACPUPlan);
+						free(mensajeACPUPlan);
+					}
 				}
 			}
-		}
 		}
 	}
 }
-
 
 bool esComentario(char* linea){
 	//return string_starts_with(linea, TEXT_COMMENT); //me pincha porque esta entre comillas simples?
@@ -1901,6 +1905,8 @@ void finDeQuantum(int * socketCliente){
 
 	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
 
+		printf("Libero CPU\n");
+
 		pthread_mutex_lock(&mtx_cpu);
 		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
 		pthread_mutex_unlock(&mtx_cpu);
@@ -2074,71 +2080,76 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 }
 
-void finDePrograma(int * socketCliente){
+void finDePrograma(int * socketCliente) {
 	char message[MAXBUF];
-	recv(* socketCliente, &message, sizeof(message), 0);
 
-	t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
-	pcb_deserializado = deserializar_pcb(message);
+	enviarMensaje(socketCliente, "531;");
 
-	int encontrado = 0;
+	int result = recv(*socketCliente, &message, sizeof(message), 0);
 
-	int size = queue_size(cola_ejecucion);
+	if (result > 0) {
+		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
+		pcb_deserializado = deserializar_pcb(message);
 
-	int iter = 0;
+		int encontrado = 0;
 
-	t_pcb* pcb_a_cambiar;
+		int size = queue_size(cola_ejecucion);
 
-	while (encontrado == 0 && iter < size) {
+		int iter = 0;
 
-		pthread_mutex_lock(&mtx_ejecucion);
-		pcb_a_cambiar = queue_pop(cola_ejecucion);
-		pthread_mutex_unlock(&mtx_ejecucion);
+		t_pcb* pcb_a_cambiar;
 
-		if (pcb_a_cambiar->pid == pcb_deserializado->pid) {
-
-			encontrado = 1;
-
-		} else {
+		while (encontrado == 0 && iter < size) {
 
 			pthread_mutex_lock(&mtx_ejecucion);
-			queue_push(cola_ejecucion, pcb_a_cambiar);
+			pcb_a_cambiar = queue_pop(cola_ejecucion);
 			pthread_mutex_unlock(&mtx_ejecucion);
 
+			if (pcb_a_cambiar->pid == pcb_deserializado->pid) {
+
+				encontrado = 1;
+
+				pcb_a_cambiar->program_counter =
+				pcb_deserializado->program_counter;
+
+				pthread_mutex_lock(&mtx_terminados);
+				queue_push(cola_terminados, pcb_a_cambiar);
+				pthread_mutex_unlock(&mtx_terminados);
+
+			} else {
+
+				pthread_mutex_lock(&mtx_ejecucion);
+				queue_push(cola_ejecucion, pcb_a_cambiar);
+				pthread_mutex_unlock(&mtx_ejecucion);
+
+			}
+
+			int c = 0;
+
+			while (c < queue_size(cola_cpu)) {
+				estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+
+				pthread_mutex_lock(&mtx_cpu);
+				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+				pthread_mutex_unlock(&mtx_cpu);
+
+				if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
+					encontrado = 1;
+				}
+
+				temporalCpu->pid_asignado = -1;
+
+				pthread_mutex_lock(&mtx_cpu);
+				queue_push(cola_cpu, temporalCpu);
+				pthread_mutex_unlock(&mtx_cpu);
+
+				c++;
+			}
+
 		}
-
-		iter++;
+	} else {
+		perror("Error de comunicacion de fin de programa con el CPU\n");
 	}
-
-	if(encontrado == 1){
-		pcb_a_cambiar->program_counter = pcb_deserializado->program_counter;
-
-		pthread_mutex_lock(&mtx_terminados);
-		queue_push(cola_terminados, pcb_a_cambiar);
-		pthread_mutex_unlock(&mtx_terminados);
-	}
-
-	encontrado = 0;
-
-	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
-
-	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
-
-		pthread_mutex_lock(&mtx_cpu);
-		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-		pthread_mutex_unlock(&mtx_cpu);
-
-		if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
-			encontrado = 1;
-		}
-
-		temporalCpu->pid_asignado = -1;
-
-		pthread_mutex_lock(&mtx_cpu);
-		queue_push(cola_cpu, temporalCpu);
-		pthread_mutex_unlock(&mtx_cpu);
-	}
-
 }
 
 void waitSemaforo(int * socketCliente, char * semaforo_buscado){

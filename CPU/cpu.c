@@ -129,19 +129,29 @@ void* manejo_kernel(void *args) {
 
     		char* mensajeAKernel = string_new();
 
+
+
         	string_append(&mensajeAKernel, "531");
         	string_append(&mensajeAKernel, ";");
-
-
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
-        	char* mensajeAKernel2 = serializar_pcb(pcb);
+        	//ESPERO A QUE EL KERNEL ME CONFIRME QUE ESTA LISTO
+        	int result = recv(socketKernel, mensajeAKernel, MAXBUF, 0);
 
-        	//printf("Enviando mensaje %s \n", mensajeAKernel);
-        	enviarMensaje(&socketKernel, mensajeAKernel2);
+        	if (result > 0){
+				if (strcmp(mensajeAKernel, "531;") == 0) {
+					char* mensajeAKernel2 = serializar_pcb(pcb);
+					enviarMensaje(&socketKernel, mensajeAKernel2);
+					free(mensajeAKernel2);
+        		}else{
+        			perror("Error en protocolo de mensajes entre procesos\n");
+        		}
+        	}else{
+        		perror("Error de comunicacion de fin de programa con el Kernel\n");
+        	}
 
         	free(mensajeAKernel);
-        	free(mensajeAKernel2);
+
     	}else{ //FIN DE QUANTUM
 
     		char* mensajeAKernel = string_new();
