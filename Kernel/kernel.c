@@ -2388,49 +2388,35 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 
 void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
 
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
-	archAbrir1 = list_find(lista_File_global,(void*) encontrar_archProceso);
-
-	int encontrar_archGlobal(t_fileGlobal* glo){
-		if(archAbrir1->global_fd == glo->fdGlobal)
-			return 1;
-		else
-			return 0;
-	}
-
-	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-	archAbrir2 = list_find(lista_File_global,(void*) encontrar_archGlobal);
-
-	//char* aux = string_duplicate(archAbrir2->path);//porque me putea si lo mando de una
+/*	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+	regTablaGlobal = traducirFDaPath(fd);
 	char* mensajeAFS = string_new();
-	string_append(&mensajeAFS, "804");
+	string_append(&mensajeAFS, "800");
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, ((char*)info));
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, string_itoa(tamanio));
 	string_append(&mensajeAFS, ";");
-	//string_append(&mensajeAFS, archAbrir2->path);
+	string_append(&mensajeAFS, regTablaGlobal->path);
 	string_append(&mensajeAFS, ";");
 
-	free(archAbrir1);
-	free(archAbrir2);
+	//free(archAbrir1);
+	free(regTablaGlobal);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
 	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
-if (result > 0) {
+
+	if (result > 0) {
 		puts("archivo cerrado correctamente");
 	}
 	else {
 		perror("Error no se pudo leer \n");
 	}
-	free(mensajeAFS);
+
+	free(mensajeAFS);*/
+	return;
+
 }
 
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
@@ -2524,6 +2510,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 		free(mensajeAFS);
 
 	}
+	return;
 }
 void cerrarArchivo(int pid_mensaje, int fd)
 {
@@ -2555,27 +2542,12 @@ void cerrarArchivo(int pid_mensaje, int fd)
 		archAbrir2->cantidadDeAperturas--;
 		list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 	}
+	return;
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
-	archAbrir1 = list_find(lista_File_global,(void*) encontrar_archProceso);
-
-	int encontrar_archGlobal(t_fileGlobal* glo){
-		if(archAbrir1->global_fd == glo->fdGlobal)
-			return 1;
-		else
-			return 0;
-	}
-	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-	archAbrir2 = list_find(lista_File_global,(void*) encontrar_archGlobal);
-
+	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+	regTablaGlobal = traducirFDaPath(fd);
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "800");
 	string_append(&mensajeAFS, ";");
@@ -2583,11 +2555,11 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, string_itoa(tamanio));
 	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, archAbrir2->path);
+	string_append(&mensajeAFS, regTablaGlobal->path);
 	string_append(&mensajeAFS, ";");
 
-	free(archAbrir1);
-	free(archAbrir2);
+	//free(archAbrir1);
+	free(regTablaGlobal);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
@@ -2599,7 +2571,28 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	else {
 		perror("Error no se pudo leer \n");
 	}
-	return mensajeAFS;
 	free(mensajeAFS);
+	return mensajeAFS;
+
+}
+
+t_fileGlobal* traducirFDaPath(int fd)
+{
+	int encontrar_archProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
+	regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
+
+	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+	regTablaGlobal = list_get(lista_File_global, regTablaProceso->global_fd);
+
+	return regTablaGlobal;
+	//free(regTablaGlobal);
+	//free(regTablaProceso);
+
 }
 
