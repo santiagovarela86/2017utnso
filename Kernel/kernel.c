@@ -2263,6 +2263,14 @@ void abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, char* direccion)
 {
+
+	int encontrar_arch(t_fileGlobal* glo){
+		return string_equals_ignore_case(direccion, glo->path);
+	}
+	t_fileGlobal* archAbrir = malloc(sizeof(t_fileGlobal));
+	archAbrir = list_find(lista_File_global,(void*) encontrar_arch);
+	list_remove_by_condition(lista_File_global,(void*) encontrar_arch);
+
 }
 void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile)
 {
@@ -2270,6 +2278,10 @@ void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile)
 }
 void leerArchivo( int pid_mensaje, char* direccion, char* infofile)
 {
+	char* mensajeAFS = string_new();
+	string_append(&mensajeAFS, "804");
+	string_append(&mensajeAFS, ";");
 
+	enviarMensaje(&skt_filesystem, mensajeAFS);
 }
 
