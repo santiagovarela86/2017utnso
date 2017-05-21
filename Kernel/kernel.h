@@ -95,6 +95,20 @@ typedef struct {
 	char* sem;
 }t_bloqueo;
 
+enum exit_codes {
+	FIN_OK = 0,
+	FIN_ERROR_RESERVA_RECURSOS = -1,
+	FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE = -2,
+	FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS = -3,
+	FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS = -4,
+	FIN_ERROR_EXCEPCION_MEMORIA = -5,
+	FIN_POR_DESCONEXION_CONSOLA = -6,
+	FIN_POR_CONSOLA = -7,
+	FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA = -8,
+	FIN_ERROR_SUPERO_MAXIMO_PAGINAS = -9,
+	FIN_ERROR_SIN_DEFINICION = -20
+};
+
 void *hilo_conexiones_cpu(void* args);
 void *hilo_conexiones_consola(void* args);
 void *handler_conexion_consola(void * args);
