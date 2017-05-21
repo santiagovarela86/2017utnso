@@ -11,13 +11,14 @@
 #include <commons/collections/list.h>
 
 typedef struct {
+	int indice;
 	int pid;
 	int nro_pagina;
 	char* contenido_pagina;
 } t_entrada_cache;
 
 
-t_entrada_cache *crear_entrada_cache(int, int, char*);
+t_entrada_cache *crear_entrada_cache(int, int, int, char*);
 void destruir_entrada_cache(t_entrada_cache*);
 void flush_memoria_cache(t_list*);
 

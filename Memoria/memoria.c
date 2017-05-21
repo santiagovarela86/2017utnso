@@ -304,8 +304,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 	while (result > 0){
 
-		retardo_acceso_memoria();
-
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int codigo = atoi(mensajeDesdeCPU[0]);
 
@@ -315,6 +313,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 511) {
 
+			//Ocurre el retardo para acceder a la memoria principal
+			retardo_acceso_memoria();
+
 			int direccion = atoi(mensajeDesdeCPU[1]);
 			int valor = atoi(mensajeDesdeCPU[2]);
 
@@ -322,6 +323,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 
 		} else if (codigo == 512) {
+
+			//Ocurre el retardo para acceder a la memoria principal
+			retardo_acceso_memoria();
 
 			char nombreVariable = *mensajeDesdeCPU[1];
 
@@ -358,12 +362,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 				manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
-				//list_add(tabla_programas, manejo_programa);
 				list_add(lista_paginas_stack, manejo_programa);
-
-				/*pag_stack->pagina = paginaParaVariables;
-				pag_stack->pid = pid;
-				list_add(lista_paginas_stack, pag_stack);*/
 
 				pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
@@ -454,6 +453,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 513) {
 
+			//Ocurre el retardo para acceder a la memoria principal
+			retardo_acceso_memoria();
+
 			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
 			char* valor_variable  = string_new();
 
@@ -472,6 +474,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int pid = atoi(mensajeDesdeCPU[1]);
 			int pagina = atoi(mensajeDesdeCPU[2]);
 			int offset = atoi(mensajeDesdeCPU[3]);
+
+			//Ocurre el retardo para acceder a la memoria principal
+			retardo_acceso_memoria();
 
 			t_pagina_invertida* pag_a_buscar = buscar_pagina_para_consulta(pid, pagina);
 
@@ -749,8 +754,11 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
 	if (entrada_cache == NULL){
-
 		//CACHE_MISS
+
+		//Ocurre el retardo para acceder a la memoria principal
+		retardo_acceso_memoria();
+
 		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
 		int inicio = obtener_inicio_pagina(pagina_buscada);
 		if (pagina_buscada != NULL){
@@ -1073,6 +1081,7 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		grabar_valor_en_cache(direccion, valor);
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 99){
 		int centena = (valor % 1000) / 100;
@@ -1083,6 +1092,7 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = (char) (centena + 48);
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		grabar_valor_en_cache(direccion, valor);
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else if(valor > 9){
 		int decena = (valor % 100) / 10;
@@ -1092,6 +1102,7 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		grabar_valor_en_cache(direccion, valor);
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}else{
 		int unidad = valor % 10;
@@ -1100,6 +1111,7 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 1] = '0';
 		bloque_memoria[direccion + 2] = '0';
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+		grabar_valor_en_cache(direccion, valor);
 		pthread_mutex_unlock(&mutex_bloque_memoria);
 	}
 
@@ -1359,15 +1371,36 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Y si no se supera el tamanio de la cache
 		//Agrego la entrada
 
+		int indice_cache = list_size(tabla_cache) + 1;
+
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
-		t_entrada_cache* entrada_cache = crear_entrada_cache(pagina->pid, pagina->nro_pagina, contenido_pagina);
+		t_entrada_cache* entrada_cache = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
 
 		list_add(tabla_cache, entrada_cache);
 	}
-
-
+	else {
+		//TODO: agregar algoritmo de reemplazo LRU
+		guardadoOK = false;
+	}
 
 	return guardadoOK;
+}
+
+bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
+	bool updateOK = true;
+
+	int _obtener_entrada_cache(t_entrada_cache* entrada){
+		return entrada->pid == pid && entrada->nro_pagina;
+	}
+
+	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_obtener_entrada_cache);
+
+	if (entrada_a_actualizar != NULL){
+		entrada_a_actualizar->contenido_pagina = contenido;
+		list_replace(tabla_cache, entrada_a_actualizar->indice, entrada_a_actualizar);
+	}
+
+	return updateOK;
 }
 
 t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
@@ -1379,5 +1412,23 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 	t_entrada_cache* entrada = list_find(tabla_cache, (void*) _encontrar_entrada_cache);
 
 	return entrada;
+}
+
+void grabar_valor_en_cache(int direccion, int valor){
+
+	int indice_tabla_paginas = direccion % configuracion->marco_size;
+	t_pagina_invertida* pagina = list_get(tabla_paginas, indice_tabla_paginas);
+	char * contenido = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+
+	t_entrada_cache* entrada_cache = obtener_entrada_cache(pagina->pid, pagina->nro_pagina);
+
+	if (entrada_cache == NULL){
+		//Si el proceso no tiene entradas en cache
+		almacenar_pagina_en_cache_para_pid(pagina->pid, pagina);
+	} else {
+		//Reemplazo el contenido de la pagina en cache
+		actualizar_pagina_en_cache(pagina->pid, pagina->nro_pagina, contenido);
+	}
+
 }
 
