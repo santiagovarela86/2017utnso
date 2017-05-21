@@ -989,8 +989,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 531:
-				pid_recibido = atoi(mensajeDesdeCPU[1]);
-				finDePrograma(pid_recibido);
+				finDePrograma(socketCliente);
 				break;
 
 			case 532:
@@ -1402,21 +1401,6 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 				e++;
 			}
 	}
-
-	/*
-	printf("\n");
-
-	printf("Etiquetas DE NUEVO EN LA DESERIALIZACION:\n");
-
-	z = 0;
-
-	while (z < pcb->etiquetas_size){
-		printf("[%d]", pcb->etiquetas[z]);
-		z++;
-	}
-
-	printf("\n");
-	*/
 
 	while(cantIndiceStack > 0) {
 		t_Stack *sta = malloc(sizeof(t_Stack));
@@ -2075,7 +2059,13 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 }
 
-void finDePrograma(int pid_a_buscar){
+void finDePrograma(int * socketCliente){
+	char message[MAXBUF];
+	recv(* socketCliente, &message, sizeof(message), 0);
+
+	t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
+	pcb_deserializado = deserializar_pcb(message);
+
 	int encontrado = 0;
 
 	int size = queue_size(cola_ejecucion);
@@ -2090,7 +2080,7 @@ void finDePrograma(int pid_a_buscar){
 		pcb_a_cambiar = queue_pop(cola_ejecucion);
 		pthread_mutex_unlock(&mtx_ejecucion);
 
-		if (pcb_a_cambiar->pid == pid_a_buscar) {
+		if (pcb_a_cambiar->pid == pcb_deserializado->pid) {
 
 			encontrado = 1;
 
@@ -2106,6 +2096,8 @@ void finDePrograma(int pid_a_buscar){
 	}
 
 	if(encontrado == 1){
+		pcb_a_cambiar->program_counter = pcb_deserializado->program_counter;
+
 		pthread_mutex_lock(&mtx_terminados);
 		queue_push(cola_terminados, pcb_a_cambiar);
 		pthread_mutex_unlock(&mtx_terminados);
@@ -2121,7 +2113,7 @@ void finDePrograma(int pid_a_buscar){
 		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
 		pthread_mutex_unlock(&mtx_cpu);
 
-		if (temporalCpu->pid_asignado == pid_a_buscar) {
+		if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
 			encontrado = 1;
 		}
 

@@ -131,12 +131,17 @@ void* manejo_kernel(void *args) {
 
         	string_append(&mensajeAKernel, "531");
         	string_append(&mensajeAKernel, ";");
-        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-        	string_append(&mensajeAKernel, ";");
+
 
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
+        	char* mensajeAKernel2 = serializar_pcb(pcb);
+
+        	//printf("Enviando mensaje %s \n", mensajeAKernel);
+        	enviarMensaje(&socketKernel, mensajeAKernel2);
+
         	free(mensajeAKernel);
+        	free(mensajeAKernel2);
     	}else{ //FIN DE QUANTUM
 
     		char* mensajeAKernel = string_new();
