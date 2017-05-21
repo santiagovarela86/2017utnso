@@ -178,7 +178,7 @@ void * hilo_conexiones_kernel(){
 					iniciarPrograma(pid, cantidadDePaginas, codigo_programa);
 					break;
 
-				case 600:
+				case 605:
 					;
 					pid = atoi(mensajeDelKernel[1]);
 					int paginaActual = atoi(mensajeDelKernel[2]);
@@ -243,25 +243,28 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 }
 
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
-	//POR AHORA HAGO UNA SOLA PAGINA
-	//int cantidadPaginas = bytesPedidos / configuracion->marco_size;
-
-	//SI ALCANZA UNA PAGINA PARA GUARDAR LO QUE ME PIDEN
-	int freeSpace = configuracion->marco_size - sizeof(heapMetadata);
+	//VERIFICO QUE EL ESPACIO QUE PIDEN QUEPA EN UNA PAGINA
+	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
 	if (bytesPedidos < freeSpace){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
 
-		//HACER MAS CODIGOS DE OPERACION
-		char * respuestaAKernel = serializarMensaje(4, 600, pagina->pid, pagina->nro_pagina, freeSpace);
+		int inicio = obtener_inicio_pagina(pagina);
+		int direccion = inicio + sizeof(heapMetadata);
+
+		//sleep(10);
+
+		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccion);
 		enviarMensaje(&socketKernel, respuestaAKernel);
+		printf("Envie mensaje: %s\n", respuestaAKernel);
 
 		printf("Se creo una pagina de Heap\n");
 		printf("PID: %d\n", pagina->pid);
 		printf("Nro Pagina: %d\n", pagina->nro_pagina);
 		printf("Nro Marco: %d\n", pagina->nro_marco);
 		printf("Free Space: %d\n", freeSpace);
+		printf("Direccion: %d\n", direccion);
 
 		free(respuestaAKernel);
 	} else {
