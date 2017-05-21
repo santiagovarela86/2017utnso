@@ -211,15 +211,11 @@ void * inicializar_consola(void* args){
 		puts("***********************************************************");
 		puts("CONSOLA KERNEL - ACCIONES");
 		puts("1)  Listado de procesos del sistema");
-		puts("2)  Cantidad de rafagas ejecutadas");
-		puts("3)  Cantidad de operaciones privilegiadas");
-		puts("4)  Tabla de archivos abiertos por proceso");
-		puts("5)  Cantidad de paginas de heap utilizadas");
-		puts("6)  Cantidad de syscalls ejecutadas");
-		puts("7)  Tabla global de archivos");
-		puts("8)  Modificar el grado de multiprogramacion del sistema");
-		puts("9)  Finalizar Proceso");
-		puts("10) Detener la Planificacion");
+		puts("2)  Obtener dato de un proceso");
+		puts("3)  Obtener tabla global de archivos");
+		puts("4)  Modificar el grado de multiprogramacion del sistema");
+		puts("5)  Finalizar Proceso");
+		puts("6) Detener la Planificacion");
 		puts("***********************************************************");
 
 		int accion = 0;
@@ -243,52 +239,13 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Cantidad de rafagas ejecutadas por el proceso ");
+				string_append(&mensaje, "Datos del Proceso ");
 				string_append(&mensaje, string_itoa(pid_buscado));
 				log_console_in_disk(mensaje);
+
+				abrir_subconsola_dos(pid_buscado);
 				break;
 			case 3:
-				accion_correcta = 1;
-				printf("Ingrese PID del proceso: ");
-				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Cantidad de operaciones privilegiadas ejecutadas por el proceso ");
-				string_append(&mensaje, string_itoa(pid_buscado));
-				log_console_in_disk(mensaje);
-				break;
-			case 4:
-				accion_correcta = 1;
-				printf("Ingrese PID del proceso: ");
-				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "821");
-
-				string_append(&mensaje, ";");
-				string_append(&mensaje, string_itoa(pid_buscado));
-				string_append(&mensaje, ";");
-				enviarMensaje(&skt_filesystem, mensaje);
-
-
-				char message[MAXBUF];
-				recv(skt_filesystem, message, sizeof(message), 0);
-
-				log_console_in_disk(mensaje);
-				break;
-			case 5:
-				accion_correcta = 1;
-				printf("Ingrese PID del proceso: ");
-				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Cantidad de paginas de heap utilizadas por el proceso ");
-				string_append(&mensaje, string_itoa(pid_buscado));
-				log_console_in_disk(mensaje);
-				break;
-			case 6:
-				accion_correcta = 1;
-				printf("Ingrese PID del proceso: ");
-				scanf("%d", &pid_buscado);
-				string_append(&mensaje, "Cantidad de syscalls ejecutadas por el proceso ");
-				string_append(&mensaje, string_itoa(pid_buscado));
-				log_console_in_disk(mensaje);
-				break;
-			case 7:
 				accion_correcta = 1;
 
 				puts("Se busca la Tabla global de archivos");
@@ -314,7 +271,7 @@ void * inicializar_consola(void* args){
 
 				log_console_in_disk(tablaGlobalArchivos);
 				break;
-			case 8:
+			case 4:
 				accion_correcta = 1;
 				printf("Ingrese nuevo grado de multiprogramacion: ");
 				scanf("%d", &nuevo_grado_multiprog);
@@ -325,7 +282,7 @@ void * inicializar_consola(void* args){
 				string_append(&mensaje, string_itoa(nuevo_grado_multiprog));
 				log_console_in_disk(mensaje);
 				break;
-			case 9:
+			case 5:
 				accion_correcta = 1;
 				printf("Ingrese PID del proceso: ");
 				scanf("%d", &pid_buscado);
@@ -334,7 +291,7 @@ void * inicializar_consola(void* args){
 				string_append(&mensaje, string_itoa(pid_buscado));
 				log_console_in_disk(mensaje);
 				break;
-			case 10:
+			case 6:
 				accion_correcta = 1;
 				if(plan == 0){
 					plan = 1;
@@ -351,15 +308,11 @@ void * inicializar_consola(void* args){
 				accion_correcta = 0;
 				puts("Comando invalido. A continuacion se detallan las acciones:");
 				puts("1)  Listado de procesos del sistema");
-				puts("2)  Cantidad de rafagas ejecutadas");
-				puts("3)  Cantidad de operaciones privilegiadas");
-				puts("4)  Tabla de archivos abiertos");
-				puts("5)  Cantidad de paginas de heap utilizadas");
-				puts("6)  Cantidad de syscalls ejecutadas");
-				puts("7)  Tabla global de archivos");
-				puts("8)  Modificar el grado de multiprogramacion del sistema");
-				puts("9)  Finalizar Proceso");
-				puts("10) Detener la Planificacion");
+				puts("2)  Obtener dato de un proceso");
+				puts("3)  Obtener tabla global de archivos");
+				puts("4)  Modificar el grado de multiprogramacion del sistema");
+				puts("5)  Finalizar Proceso");
+				puts("6) Detener la Planificacion");
 				break;
 			}
 
@@ -403,6 +356,74 @@ void abrir_subconsola_procesos(){
 			case 4:
 				accion_correcta = 1;
 				listar_terminados();
+				break;
+
+			default:
+				accion_correcta = 0;
+				puts("Comando invalido. A continuacion se detallan las acciones:");
+				puts("");
+				puts("***********************************************************");
+				puts("SUB CONSOLA KERNEL - LISTADOS DE PROCESOS DEL SISTEMA");
+				puts("1)  Procesos en cola de Listos");
+				puts("2)  Procesos en cola de Ejecucion");
+				puts("3)  Procesos en cola de Bloqueados");
+				puts("4)  Procesos en cola de Terminados");
+				puts("5)  Procesos en cola de Nuevos");
+				puts("***********************************************************");
+				break;
+			}
+
+
+
+	}
+}
+
+void abrir_subconsola_dos(int pid){
+
+
+		puts("");
+		puts("***********************************************************");
+		puts("SUB CONSOLA KERNEL - DATOS DE UN PROCESO");
+		puts("1)  Cantidad de rafagas ejecutadas");
+		puts("2)  Cantidad de operaciones privilegiadas ejecutadas");
+		puts("3)  Obtener tabla de archivos");
+		puts("4)  Cantidad de paginas de heap utilizadas");
+		puts("5)  Cantidad de acciones alocar realizadas");
+		puts("6)  Cantidad de acciones liberar realizadas");
+		puts("7)  Cantidad de syscall ejecutadas");
+		puts("***********************************************************");
+
+		int accion = 0;
+		int accion_correcta = 0;
+
+		while (accion_correcta == 0){
+
+			scanf("%d", &accion);
+
+			switch(accion){
+			case 1:
+				accion_correcta = 1;
+
+				break;
+			case 2:
+				accion_correcta = 1;
+
+				break;
+			case 3:
+				accion_correcta = 1;
+
+				break;
+			case 5:
+				accion_correcta = 1;
+
+				break;
+			case 6:
+				accion_correcta = 1;
+
+				break;
+			case 7:
+				accion_correcta = 1;
+
 				break;
 
 			default:
