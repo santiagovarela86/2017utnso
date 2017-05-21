@@ -2387,48 +2387,50 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 }
 
 void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
-	/*
-	char* info = string_new();
-	int fd = atoi(mensajeDesdeCPU[1]);
-	info = mensajeDesdeCPU[3];
-	int pid_mensaje = atoi(mensajeDesdeCPU[2]);
-	*/
 
-	if (fd == 1) {
-		t_pcb* temporalN;
-		int encontreEjec = 0;
-		int largoColaEjec = queue_size(cola_ejecucion);
+	int encontrar_archProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+	archAbrir1 = list_find(lista_File_global,(void*) encontrar_archProceso);
 
-		//busco pid en cola bloqueados
-		while (encontreEjec == 0 && largoColaEjec != 0) {
-			temporalN = (t_pcb*) queue_pop(cola_ejecucion);
-			largoColaEjec--;
-			if (temporalN->pid == pid_mensaje) {
-				pthread_mutex_lock(&mtx_terminados);
-				queue_push(cola_terminados, temporalN);
-				pthread_mutex_unlock(&mtx_terminados);
-				encontreEjec = 1;
-			} else {
-				pthread_mutex_lock(&mtx_ejecucion);
-				queue_push(cola_ejecucion, temporalN);
-				pthread_mutex_unlock(&mtx_ejecucion);
-			}
-		}
+	int encontrar_archGlobal(t_fileGlobal* glo){
+		if(archAbrir1->global_fd == glo->fdGlobal)
+			return 1;
+		else
+			return 0;
+	}
 
-		char* mensajeAConso = string_new();
-		string_append(&mensajeAConso, "802");
-		string_append(&mensajeAConso, ";");
-		string_append(&mensajeAConso, string_itoa(pid_mensaje));
-		string_append(&mensajeAConso, ";");
-		string_append(&mensajeAConso, info);
-		string_append(&mensajeAConso, ";");
+	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+	archAbrir2 = list_find(lista_File_global,(void*) encontrar_archGlobal);
 
-		enviarMensaje(temporalN->socket_consola, mensajeAConso);
+	//char* aux = string_duplicate(archAbrir2->path);//porque me putea si lo mando de una
+	char* mensajeAFS = string_new();
+	string_append(&mensajeAFS, "804");
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, ((char*)info));
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, string_itoa(tamanio));
+	string_append(&mensajeAFS, ";");
+	//string_append(&mensajeAFS, archAbrir2->path);
+	string_append(&mensajeAFS, ";");
 
-		free(mensajeAConso);
+	free(archAbrir1);
+	free(archAbrir2);
 
-	} //TODO EN EL ELSE HAY QUE GRABAR EN UN ARCHIVO DEL FS. PARA ESO SE DEBE BUSCAR EN LA TABLA DE ARCHIVOS AL FD QUE SE RECIBIO EN EL MENSAJE
-	  //Y CUANDO SE LO ENCUENTRA TOMAR EL NOMBRE DEL ARCHIVO. CON ESE NOMBRE IR AL FS Y GRABAR.
+	enviarMensaje(&skt_filesystem, mensajeAFS);
+
+	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+if (result > 0) {
+		puts("archivo cerrado correctamente");
+	}
+	else {
+		perror("Error no se pudo leer \n");
+	}
+	free(mensajeAFS);
 }
 
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
@@ -2449,7 +2451,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	archNuevo->fdGlobal = fdNuevo;
 	archNuevo->path = direccion;
 
-	archNuevo = list_add(lista_File_global,archNuevo);
+	list_add(lista_File_global,archNuevo);
 
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "802");
