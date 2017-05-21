@@ -222,7 +222,7 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 		if (pagina != NULL) {
 
-			printf("MARCO ASIGNADO CODIGO: %d\n", pagina->nro_marco);
+			printf("MARCO ASIGNADO AL PID %d: %d\n", pagina->pid, pagina->nro_marco);
 
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(obtener_inicio_pagina(pagina)));
@@ -250,23 +250,17 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 	int freeSpace = configuracion->marco_size - sizeof(heapMetadata);
 	if (bytesPedidos < freeSpace){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
-		//ESTO ME ESTA DEVOLVIENDO PAGINA CERO
+		pagina->nro_pagina = paginaActual;
+		pagina->pid = pid;
 
-		char * respuestaAKernel = string_new();
-
-		//FALTA UN CODIGO DE OPERACION?
-		string_append(&respuestaAKernel, string_itoa(pagina->pid));
-		string_append(&respuestaAKernel, ";");
-		string_append(&respuestaAKernel, string_itoa(pagina->nro_pagina));
-		string_append(&respuestaAKernel, ";");
-		string_append(&respuestaAKernel, string_itoa(freeSpace));
-		string_append(&respuestaAKernel, ";");
+		//HACER MAS CODIGOS DE OPERACION
+		char * respuestaAKernel = serializarMensaje(4, 600, pagina->pid, pagina->nro_pagina, freeSpace);
 		enviarMensaje(&socketKernel, respuestaAKernel);
 
 		printf("Se creo una pagina de Heap\n");
-
 		printf("PID: %d\n", pagina->pid);
 		printf("Nro Pagina: %d\n", pagina->nro_pagina);
+		printf("Nro Marco: %d\n", pagina->nro_marco);
 		printf("Free Space: %d\n", freeSpace);
 
 		free(respuestaAKernel);

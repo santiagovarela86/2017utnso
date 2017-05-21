@@ -695,38 +695,19 @@ t_puntero reservar(t_valor_variable espacio){
 	puts("Reservar");
 	puts("");
 
-	char * solicitud = string_new();
-	string_append(&solicitud, "600");
-	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(pcb->pid));
-	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(espacio));
-	string_append(&solicitud, ";");
-	enviarMensaje(&sktKernel, solicitud);
-	free(solicitud);
+	char * buffer = serializarMensaje(3, 600, pcb->pid, espacio);
+	enviarMensaje(&sktKernel, buffer);
 
-	char * message = string_new();
-	int result = recv(sktKernel, message, MAXBUF, 0);
+	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
 	if (result > 0){
-		char ** respuesta = string_split(message, ";");
-
 		printf("Falsa Reserva de Heap\n");
-
-		printf("PID: %d\n", atoi(respuesta[0]));
-		printf("Nro Pagina: %d\n", atoi(respuesta[1]));
-		printf("Free Space: %d\n", atoi(respuesta[2]));
-
-		free(respuesta);
-		return 0;
-
+		printf("Direccion Heap: %d\n", atoi(buffer));
+		return atoi(buffer);
 	} else {
 		perror("Error reservando Memoria de Heap\n");
-
 		return -1;
 	}
-
-	free(message);
 }
 
 void liberar(t_puntero puntero){

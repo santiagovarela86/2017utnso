@@ -1236,7 +1236,6 @@ void logExitCode(int code)
 
 void * planificar() {
 	int corte, i, encontrado;
-	int y = 1;
 
 	while (1) {
 
@@ -1563,46 +1562,35 @@ void asignarCantidadMaximaStackPorProceso(){
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 	int paginaActual = pcb->cantidadPaginas;
 
-	/*
-	string_append(&solicitud, "600");
-	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(pcb->pid));
-	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(paginaActual));
-	string_append(&solicitud, ";");
-	string_append(&solicitud, string_itoa(bytes));
-	string_append(&solicitud, ";");
-	*/
 	enviarMensaje(&skt_memoria, serializarMensaje(4, 600, pcb->pid, paginaActual, bytes));
 
-	char * message = string_new();
+	char * buffer = string_new();
 
-	int result = recv(skt_memoria, message, MAXBUF, 0);
+	int result = recv(skt_memoria, buffer, MAXBUF, 0);
 
 	if (result > 0){
-		heapElement * heapElem = malloc(sizeof(heapElement));
+		char ** respuesta = string_split(buffer, ";");
 
-		char ** respuesta = string_split(message, ";");
-
-		heapElem->pid = atoi(respuesta[0]);
-		heapElem->nro_pagina = atoi(respuesta[1]);
-		heapElem->tamanio_disponible = atoi(respuesta[2]);
-
-		list_add(heap, heapElem);
-
-		printf("Se agregó una página al Heap\n");
-
-		printf("PID: %d\n", heapElem->pid);
-		printf("Nro Pagina: %d\n", heapElem->nro_pagina);
-		printf("Free Space: %d\n", heapElem->tamanio_disponible);
-
-		enviarMensaje(&socketCPU, serializarMensaje(3, heapElem->pid, heapElem->nro_pagina, heapElem->tamanio_disponible));
-
+		if (strcmp(respuesta[0],"600") == 0){
+			heapElement * heapElem = malloc(sizeof(heapElement));
+			heapElem->pid = atoi(respuesta[1]);
+			heapElem->nro_pagina = atoi(respuesta[2]);
+			heapElem->tamanio_disponible = atoi(respuesta[3]);
+			list_add(heap, heapElem);
+			pcb->cantidadPaginas++;
+			printf("Se agregó una página al Heap\n");
+			printf("PID: %d\n", heapElem->pid);
+			printf("Nro Pagina: %d\n", heapElem->nro_pagina);
+			printf("Free Space: %d\n", heapElem->tamanio_disponible);
+			char * direccion = string_new();
+			enviarMensaje(&socketCPU, direccion);
+		}else{
+			perror("Error en el protocolo de mensajes entre procesos\n");
+		}
 	} else {
-		perror("Error reservando Memoria de Heap\n");
+		perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
 	}
-
-	free(message);
+	//free(buffer);
 }
 
 void liberarMemoriaHeap(){

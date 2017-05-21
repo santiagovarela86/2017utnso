@@ -127,7 +127,8 @@ void * handlerConsola(void * args){
 
 	}
 
-	//free(valorIngresado);
+	free(valorIngresado);
+	return 0;
 }
 
 void * handlerKernel(void * args){
@@ -254,9 +255,12 @@ void iniciar_programa(int* socket_kernel){
 	string_append(&respuestaConsola, pmap_script);
 
 	enviarMensaje(socket_kernel, respuestaConsola);
-	munmap(pmap_script,scriptFileStat.st_size);
+	free(respuestaConsola);
+
 	close(fd_script);
-	//free(respuestaConsola);
+	munmap(pmap_script,scriptFileStat.st_size);
+
+	return;
 }
 
 t_queue* crear_cola_programas(){
