@@ -154,7 +154,7 @@ void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio);
 void abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 void borrarArchivo(int pid_mensaje, char* direccion);
 void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile);
-void leerArchivo( int pid_mensaje, char* direccion, char* infofile);
+void leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
 void rechazoFaltaMemoria(int socketConsola);

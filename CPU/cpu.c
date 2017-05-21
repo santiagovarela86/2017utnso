@@ -859,6 +859,8 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, ((char*)informacion));
 	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(tamanio));
+	string_append(&mensajeAKernel, ";");
 
 
 	enviarMensaje(&sktKernel, mensajeAKernel);

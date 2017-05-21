@@ -1064,11 +1064,12 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 800://de CPU a File system (leer)
 
-				 direccion = mensajeDesdeCPU[1];
+				 fd = atoi(mensajeDesdeCPU[1]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
+				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 leerArchivo(pid_mensaje, direccion, infofile);
+				 leerArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				enviarMensaje(&skt_filesystem, mensajeFileSystem);
 				break;
@@ -2384,11 +2385,32 @@ void cerrarArchivo(int pid_mensaje, char* direccion, char* infofile)
 {
 
 }
-void leerArchivo( int pid_mensaje, char* direccion, char* infofile)
+void leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
+	int encontrar_archProceso(t_fileProceso* glo){
+		return  string_equals_ignore_case(fd, glo->fileDescriptor);
+
+	}
+	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+	archAbrir1 = list_find(lista_File_global,(void*) encontrar_archProceso);
+
+	int encontrar_archGlobal(t_fileGlobal* glo){
+		return string_equals_ignore_case(archAbrir1->global_fd, glo->fdGlobal);
+
+	}
+	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+	archAbrir2 = list_find(lista_File_global,(void*) encontrar_archGlobal);
+
 	char* mensajeAFS = string_new();
-	string_append(&mensajeAFS, "804");
+	string_append(&mensajeAFS, "800");
 	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, ((char*)infofile));
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, string_itoa(tamanio));
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, archAbrir2->path);
+	string_append(&mensajeAFS, ";");
+
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 }
