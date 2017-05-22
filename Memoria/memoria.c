@@ -558,7 +558,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int offset = atoi(mensajeDesdeCPU[3]);
 
 			//Ocurre el retardo para acceder a la memoria principal
-			retardo_acceso_memoria();
+			//retardo_acceso_memoria();
 
 			t_pagina_invertida* pag_a_buscar = buscar_pagina_para_consulta(pid, pagina);
 
