@@ -1,4 +1,4 @@
-//CODIGOS
+///CODIGOS
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //499 FIL A OTR - RESPUESTA A CONEXION INCORRECTA
 
@@ -93,7 +93,7 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804://de CPU a File system (cerrar)
-					guardar_datos(mensajeAFileSystem[1],mensajeAFileSystem[2],mensajeAFileSystem[3],mensajeAFileSystem[4]);
+					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 
 				break;
 
@@ -109,10 +109,9 @@ void * hilo_conexiones_kernel(void * args){
 
 					break;
 
-
 				case 800://de CPU a File system (leer)
 
-					obtener_datos(mensajeAFileSystem[3],atoi(mensajeAFileSystem[1]),atoi(mensajeAFileSystem[2]));
+					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 					break;
 			}
 
@@ -308,7 +307,7 @@ void crear_archivo(char* flag, char* directorio){
 
 }
 
-void obtener_datos(char* directorio, int offset, int size){
+void obtener_datos(char* directorio,  char* buffer, int size, int offset) {
 
         char* mensaje = string_new();
 
@@ -318,7 +317,10 @@ void obtener_datos(char* directorio, int offset, int size){
 
 			t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-	        fseek(archBuscado->referenciaArchivo,offset,SEEK_SET);
+			if (offset != -1)
+			{
+				fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
+			}
 	        fgets(mensaje, size, archBuscado->referenciaArchivo );
 
 	    	enviarMensaje(&socketKernel, mensaje);
@@ -336,7 +338,10 @@ void guardar_datos(char* directorio, int offset, int size, char* buffer){
 
 		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-        fseek(archBuscado->referenciaArchivo,offset,SEEK_SET);
+		if (offset != -1)
+		{
+			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
+		}
         fputs((FILE*)archBuscado->referenciaArchivo, buffer);
 
         //return mensaje;
@@ -356,4 +361,3 @@ void borrarArchivo(char* directorio){
         //return mensaje;
 
     } // End if file
-
