@@ -1648,39 +1648,10 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 		return elem->tamanio_disponible >= bytes;
 	}
 
-	//Verifico si todavía no hay paginas de Heap
-	//if (list_size(lista_paginas_heap) == 0){
+	//Verifico si todavía no hay paginas de Heap para este proceso
 	if(!(list_any_satisfy(lista_paginas_heap, coincideHeapPID))){
 		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
-		int paginaActual = pcb->cantidadPaginas;
-
-		enviarMensaje(&skt_memoria, serializarMensaje(4, 605, pcb->pid, paginaActual, bytes));
-
-		char * buffer = string_new();
-		int result = recv(skt_memoria, buffer, MAXBUF, 0);
-
-		if (result > 0) {
-			char ** respuesta = string_split(buffer, ";");
-
-			if (strcmp(respuesta[0], "605") == 0) {
-				heapElement * heapElem = malloc(sizeof(heapElement));
-				heapElem->pid = atoi(respuesta[1]);
-				heapElem->nro_pagina = atoi(respuesta[2]);
-				heapElem->tamanio_disponible = atoi(respuesta[3]);
-				//heapElem->direccion = atoi(respuesta[4]);
-				int direccion = atoi(respuesta[4]);
-
-				list_add(lista_paginas_heap, heapElem);
-
-				pcb->cantidadPaginas++;
-
-				enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
-			} else {
-				perror("Error en el protocolo de mensajes entre procesos\n");
-			}
-		} else {
-			perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
-		}
+		pedirPaginaHeapNueva(pcb, bytes, socketCPU);
 	}else {
 		if (list_any_satisfy(lista_paginas_heap, hayLugarHeap)){
 			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
@@ -1719,10 +1690,44 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 			}
 		}else{
 			//TENGO QUE PEDIR UNA PAGINA NUEVA
+			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
 		}
 	}
 
 	//free(buffer);
+}
+
+void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
+	//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
+	int paginaActual = pcb->cantidadPaginas;
+
+	enviarMensaje(&skt_memoria, serializarMensaje(4, 605, pcb->pid, paginaActual, bytes));
+
+	char * buffer = string_new();
+	int result = recv(skt_memoria, buffer, MAXBUF, 0);
+
+	if (result > 0) {
+		char ** respuesta = string_split(buffer, ";");
+
+		if (strcmp(respuesta[0], "605") == 0) {
+			heapElement * heapElem = malloc(sizeof(heapElement));
+			heapElem->pid = atoi(respuesta[1]);
+			heapElem->nro_pagina = atoi(respuesta[2]);
+			heapElem->tamanio_disponible = atoi(respuesta[3]);
+			//heapElem->direccion = atoi(respuesta[4]);
+			int direccion = atoi(respuesta[4]);
+
+			list_add(lista_paginas_heap, heapElem);
+
+			pcb->cantidadPaginas++;
+
+			enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
+		} else {
+			perror("Error en el protocolo de mensajes entre procesos\n");
+		}
+	} else {
+		perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
+	}
 }
 
 void liberarMemoriaHeap(){
