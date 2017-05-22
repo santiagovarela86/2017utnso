@@ -2552,6 +2552,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
+
 	free(mensajeAFS);
 	return fdNuevo;
 }
