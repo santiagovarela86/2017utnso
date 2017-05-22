@@ -189,6 +189,14 @@ void * hilo_conexiones_kernel(){
 					crearPaginaHeap(pid, paginaActual, bytes);
 					break;
 
+				case 607:
+					;
+					pid = atoi(mensajeDelKernel[1]);
+					int paginaExistente = atoi(mensajeDelKernel[2]);
+					int bytesSolicitados = atoi(mensajeDelKernel[3]);
+					usarPaginaHeap(pid, paginaExistente, bytesSolicitados);
+					break;
+
 				case 612:
 					stack_size = atoi(mensajeDelKernel[1]);
 					break;
