@@ -261,71 +261,47 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	//BUSCO LA PAGINA EXISTENTE
-	printf("QUIERO USAR LA PAGINA HEAP EXISTENTE: %d, PID: %d\n", paginaExistente, pid);
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
-	printf("OBTUVE PAGINA %d, MARCO: %d\n", pagina->nro_pagina, pagina->nro_marco);
 
 	//Recupero la Primer Metadata Libre de la Página
 	int posicion = obtener_inicio_pagina(pagina);
 
-	printf("BLOQUE METADATA ANTES DEL SEGUNDO ALLOC\n");
-	int i = posicion;
-	while (i < posicion + 256){
-		printf("[%d]", bloque_memoria[i]);
-		i++;
-	}
-	printf("\n");
-
 	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicion);
 
-	int boundary = posicion + configuracion->marco_size - sizeof(heapMetadata) * 2;
+	printf("Metadata Posicion: %d, Free: %d, Size %d\n", posicion, metadata->isFree, metadata->size);
 
-	while (metadata->isFree == false){ //MUNDO FELIZ
-	//while ((metadata->isFree == false || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicion <= boundary){
+	int posicionAnterior = posicion;
+	int boundary = posicion + configuracion->marco_size - sizeof(heapMetadata);
+	printf("Boundary: %d\n", boundary);
+
+	//while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicion <= boundary){
+	while (metadata->isFree != true && posicion <= boundary){
+		posicionAnterior = posicion;
 		posicion = posicion + sizeof(heapMetadata) + metadata->size;
-		printf("Posicion: %d\n", posicion);
 		metadata = (heapMetadata *) (bloque_memoria + posicion);
-		//memcpy(metadata, &bloque_memoria[posicion], sizeof(heapMetadata));
+		printf("Posicion: %d, Metadata Free: %d, Size %d\n", posicion, metadata->isFree, metadata->size);
 	}
-
-	printf("Metadata Encontrada: Posicion: %d, Free: %d, Size: %d\n", posicion, metadata->isFree, metadata->size);
 
 	//SI ME PASE DEL BUFFER
 	if (posicion > boundary){
-		printf("Posicion: %d, Boundary: %d\n", posicion, boundary);
+		printf("Posicion: %d\n", posicion);
 		perror("Error buscando Metadata Heap\n");
 	} else {
-		//A ESTA ALTURA TENGO EL METADATA UTIL
-		printf("TENGO EL METADATA UTIL\n");
-
-		printf("Metadata Antes Free: %d, Size %d\n", metadata->isFree, metadata->size);
+		//CREO EL NUEVO METADATA
+		heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicion + sizeof(heapMetadata) + bytesPedidos);
+		metadataNuevo->isFree = true;
+		metadataNuevo->size = metadata->size - bytesPedidos	- sizeof(heapMetadata);
+		printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicion, metadataNuevo->isFree, metadataNuevo->size);
 
 		//EDITO EL ACTUAL
 		metadata->isFree = false;
-		int valorAnterior = metadata->size;
 		metadata->size = bytesPedidos;
-
-		printf("Metadata Despues Free: %d, Size %d\n", metadata->isFree, metadata->size);
-
-		//CREO EL NUEVO METADATA
-		heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicion + sizeof(heapMetadata) + valorAnterior);
-		metadataNuevo->isFree = true;
-		metadataNuevo->size = valorAnterior - bytesPedidos	- sizeof(heapMetadata);
-
-		printf("MetadataNuevo Free: %d, Size %d\n", metadataNuevo->isFree, metadataNuevo->size);
+		printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
 
 		//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
 		int direccion = posicion + sizeof(heapMetadata);
 
 		enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, metadataNuevo->size));
-		printf("Envie mensaje: %s\n", serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina, direccion, metadataNuevo->size));
-
-		printf("Se modificó una pagina de Heap\n");
-		printf("PID: %d\n", pagina->pid);
-		printf("Nro Pagina: %d\n", pagina->nro_pagina);
-		printf("Nro Marco: %d\n", pagina->nro_marco);
-		printf("New Free Space: %d\n", metadataNuevo->size);
-		printf("Direccion: %d\n", direccion);
 	}
 }
 
@@ -336,7 +312,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
-		printf("BUSCO MI PRIMER PAGINA DE HEAP: %d\n", paginaActual);
 
 		int dirInicioPagina = obtener_inicio_pagina(pagina);
 
@@ -348,26 +323,14 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		meta_free->isFree = true;
 		meta_free->size = freeSpace - bytesPedidos;
 
-		printf("BLOQUE METADATA LUEGO DEL PRIMER ALLOC\n");
-		int i = dirInicioPagina;
-		while (i < dirInicioPagina + 256){
-			printf("[%d]", bloque_memoria[i]);
-			i++;
-		}
-		printf("\n");
-
 		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
 		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree);
 		enviarMensaje(&socketKernel, respuestaAKernel);
-		printf("Envie mensaje: %s\n", respuestaAKernel);
+		//printf("Envie mensaje: %s\n", respuestaAKernel);
 
-		printf("Se creo una pagina de Heap\n");
-		printf("PID: %d\n", pagina->pid);
-		printf("Nro Pagina: %d\n", pagina->nro_pagina);
-		printf("Nro Marco: %d\n", pagina->nro_marco);
-		printf("Free Space: %d\n", meta_free->size);
-		printf("Direccion Bloque: %d\n", direccionFree);
+		printf("Se creo la primer pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+				pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 
 		free(respuestaAKernel);
 	} else {
