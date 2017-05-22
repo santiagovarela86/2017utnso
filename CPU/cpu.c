@@ -12,6 +12,7 @@
 //803 CPU A KER - ABRIR ARCHIVO
 //600 CPU A KER - RESERVAR MEMORIA HEAP
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
+//777 CPU A KER - SUMAR UNA PAGINA AL PCB
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -476,7 +477,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	if(result > 0){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 
-		printf("Lei el valor %s en la posicion %d \n", mensajeDesdeCPU[0], direccion_variable);
+		printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
 
 		int valor = atoi(mensajeDesdeCPU[0]);
 
@@ -527,11 +528,10 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 				string_append(&mensaje, string_itoa(pcb->pid));
 				string_append(&mensaje, ";");
 				enviarMensaje(&sktKernel, mensaje);
-				printf("Envio Mensaje: %s\n", mensaje);
 				paginaNueva = false;
 			}
 
-			printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
+			printf("La variable %c se guardo en la pos: %d \n\n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
 
 			free(mensajeAMemoria);
 
@@ -712,14 +712,10 @@ t_puntero reservar(t_valor_variable espacio){
 	printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer2 = string_new();
 	int result = recv(sktKernel, buffer2, MAXBUF, 0);
-	printf("Recibi Informacion del Kernel (Direccion de reserva)\n");
-	printf("Tamaño Result Receive: %d\n", result);
 
 	if (result > 0){
 		char ** respuesta = string_split(buffer2, ";");
-
-		printf("Falsa Reserva de Heap\n");
-		printf("Direccion Heap: %d\n", atoi(respuesta[0]));
+		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
 		return atoi(respuesta[0]);
 	} else {
 		perror("Error reservando Memoria de Heap\n");
