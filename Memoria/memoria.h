@@ -108,5 +108,6 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido);
 t_entrada_cache* obtener_entrada_reemplazo_cache();
 void reorganizar_indice_cache_y_ordenar(void);
 void finalizar_programa(int pid);
+void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos);
 
 #endif /* MEMORIA_H_ */
