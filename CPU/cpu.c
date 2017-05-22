@@ -203,8 +203,6 @@ char * solicitoInstruccion(t_pcb* pcb){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->offset));
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pcb->cantidadPaginas));
-	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
@@ -523,6 +521,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 			if (paginaNueva == true) {
 				pcb->cantidadPaginas++;
+				char * mensaje = string_new();
+				string_append(&mensaje, "777");
+				string_append(&mensaje, ";");
+				string_append(&mensaje, string_itoa(pcb->pid));
+				string_append(&mensaje, ";");
+				enviarMensaje(&sktKernel, mensaje);
+				printf("Envio Mensaje: %s\n", mensaje);
+				paginaNueva = false;
 			}
 
 			printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);

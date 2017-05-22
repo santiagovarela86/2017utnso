@@ -489,6 +489,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				string_append(&mensajeACpu, ";");
 				enviarMensaje(&sock, mensajeACpu);
+				paginaNueva = false;
 
 				free(entrada_stack);
 
@@ -687,15 +688,10 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int pid = atoi(mensajeDesdeCPU[1]);
 	int inicio_instruccion = atoi(mensajeDesdeCPU[2]);
 	int offset = atoi(mensajeDesdeCPU[3]);
-	int cantidadPaginas = atoi(mensajeDesdeCPU[4]);
+	//SUPONEMOS QUE EL CODIGO SOLO ESTA EN LA PAGINA 0
 	int paginaALeer = 0;
-	if (cantidadPaginas > 1){
-		paginaALeer = (inicio_instruccion + offset) % configuracion->marco_size;
-	}
-	//int inicio = inicio_bloque + inicio_instruccion;
 
 	char* respuestaACPU = string_new();
-	//string_append(&respuestaACPU, leer_codigo_programa(pid, inicio, offset));
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);

@@ -1153,7 +1153,17 @@ void * handler_conexion_cpu(void * sock) {
 				finalizarPrograma(pid_msg);
 				break;
 
+			case 777:
+				//SUMO EN UNO LA CANTIDAD DE PAGINAS
+				;
+				printf("Recibo Mensaje: %s\n", message);
+				int pid_pcb = atoi(mensajeDesdeCPU[1]);
+				t_pcb * un_pcb = pcbFromPid(pid_pcb);
+				un_pcb->cantidadPaginas++;
+
 		}
+
+
 
 		result = recv(* socketCliente, message, sizeof(message), 0);
 	}
