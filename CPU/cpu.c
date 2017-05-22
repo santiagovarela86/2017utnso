@@ -828,6 +828,22 @@ void cerrar(t_descriptor_archivo descriptor){
 void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
 	puts("Mover Cursor");
 	puts("");
+
+	char* mensajeAKernel = string_new();
+
+	string_append(&mensajeAKernel, "805");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(descriptor_archivo));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(posicion));
+	string_append(&mensajeAKernel, ";");
+
+	enviarMensaje(&sktKernel, mensajeAKernel);
+
+	free(mensajeAKernel);
+
+	puts("Cursor movido en el archivo");
+
 	return;
 }
 void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio){
