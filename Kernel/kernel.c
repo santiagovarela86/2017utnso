@@ -1078,7 +1078,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 803: //de CPU a File system (abrir)
-
+				puts("llega a kernel");
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
@@ -2467,6 +2467,7 @@ void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
 
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
+	puts("llega a metodo");
 	int fdNuevo;
 	 if(lista_File_global->elements_count != 0)
 	 {
@@ -2484,7 +2485,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	archNuevo->path = direccion;
 
 	list_add(lista_File_global,archNuevo);
-
+	puts("guarda en tabla");
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "802");
 	string_append(&mensajeAFS, ";");
@@ -2492,19 +2493,12 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, direccion);
 	string_append(&mensajeAFS, ";");
-
+	puts("serializa");
 	free(archNuevo);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
-	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
 
-	if (result > 0) {
-		puts("archivo borrado desde el fs");
-	}
-	else {
-		perror("Error no se pudo borrar\n");
-	}
 	free(mensajeAFS);
 	return fdNuevo;
 }

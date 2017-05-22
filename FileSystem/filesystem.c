@@ -97,15 +97,16 @@ void * hilo_conexiones_kernel(void * args){
 
 				break;
 
-				case 803: //de CPU a File system (abrir)
+				case 803: //de CPU a File system (borrar)
+					borrarArchivo(mensajeAFileSystem[1]);
 
-					crear_archivo(mensajeAFileSystem[1], mensajeAFileSystem[2]);
 
 					break;
 
-				case 802:  //de CPU a File system (borrar)
+				case 802:  //de CPU a File system (abrir)
 
-					borrarArchivo(mensajeAFileSystem[1]);
+					puts("llega al file system");
+					crear_archivo(mensajeAFileSystem[1], mensajeAFileSystem[2]);
 
 					break;
 
@@ -278,7 +279,7 @@ int validar_archivo(char* directorio){
 	}
 
 void crear_archivo(char* flag, char* directorio){
-
+		puts("abrir archi");
    	  int result = validar_archivo(directorio);
 
    	  if (result == 1)

@@ -735,9 +735,9 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(flags.creacion));
 		string_append(&mensajeAKernel, ";");
-
+		puts("serializa bien");
 		enviarMensaje(&sktKernel, mensajeAKernel);
-
+		puts("vuelve a ansi");
 		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 		free(mensajeAKernel);
