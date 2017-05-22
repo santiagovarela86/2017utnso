@@ -261,9 +261,10 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	//BUSCO LA PAGINA EXISTENTE
-	t_pagina_invertida * paginaX = buscar_pagina_para_insertar(pid, paginaExistente);
+	printf("QUIERO USAR LA PAGINA HEAP EXISTENTE: %d, PID: %d\n", paginaExistente, pid);
+	//t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaExistente);
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
-	printf("OBTUVE PAGINAX %d, MARCOX: %d\n", paginaX->nro_pagina, paginaX->nro_marco);
+	//printf("OBTUVE PAGINAX %d, MARCOX: %d\n", pagina->nro_pagina, pagina->nro_marco);
 	printf("OBTUVE PAGINA %d, MARCO: %d\n", pagina->nro_pagina, pagina->nro_marco);
 
 	heapMetadata * metadata = malloc(sizeof(heapMetadata));
@@ -274,6 +275,13 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	int posicion = obtener_inicio_pagina(pagina);
 	printf("Posicion: %d\n", posicion);
 
+	int i = posicion;
+	while (i < posicion + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
+		printf("[%d]", bloque_memoria[i]);
+		i++;
+	}
+	printf("\n");
+
 	memcpy(metadata, &bloque_memoria[posicion], sizeof(heapMetadata));
 
 	printf("Metadata Free: %d\n", metadata->isFree);
@@ -281,21 +289,26 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 
 	int boundary = configuracion->marco_size * configuracion->marcos - sizeof(heapMetadata);
 
-	char c;
-	scanf("%c", &c);
-	while ((metadata->isFree == false || (metadata->isFree == true && metadata->size < bytesPedidos))
-			&& posicion < boundary){
+	sleep(5);
+	while (metadata->isFree == false){
+	//while ((metadata->isFree == false || (metadata->isFree == true && metadata->size < bytesPedidos))
+	//		&& posicion <= boundary){
 		posicion = posicion + sizeof(heapMetadata) + metadata->size;
 		memcpy(metadata, &bloque_memoria[posicion], sizeof(heapMetadata));
 		printf("Posicion: %d\n", posicion);
 		printf("Metadata Free: %d\n", metadata->isFree);
 		printf("Metadata Size: %d\n", metadata->size);
-		char c;
-		scanf("%c", &c);
+		int i = posicion;
+		while (i < posicion + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
+			printf("[%d]", bloque_memoria[i]);
+			i++;
+		}
+		printf("\n");
+		sleep(5);
 	}
 
 	//SI ME PASE DEL BUFFER
-	if (posicion >= boundary){
+	if (posicion > boundary){
 		perror("Error buscando Metadata Heap\n");
 	} else {
 		//A ESTA ALTURA TENGO EL METADATA UTIL O VOLO POR LOS AIRES
@@ -338,6 +351,7 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
+		printf("BUSCO MI PRIMER PAGINA DE HEAP: %d\n", paginaActual);
 
 		heapMetadata * meta_free = malloc(sizeof(heapMetadata));
 		meta_free->isFree = true;
@@ -347,12 +361,45 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		meta_used->isFree = false;
 		meta_used->size = bytesPedidos;
 
-		//Guardo la Metadata Used en el Inicio de la Pagina
+		printf("METADATA VACIO\n");
 		int dirInicioPagina = obtener_inicio_pagina(pagina);
+		int i = dirInicioPagina;
+		while (i < dirInicioPagina + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
+			printf("[%d]", bloque_memoria[i]);
+			i++;
+		}
+		printf("\n");
+
+		//Guardo la Metadata Used en el Inicio de la Pagina
+		//int i = dirInicioPagina;
+		printf("Posicion: %d\n", dirInicioPagina);
 		memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
+
+		printf("METADATA PRIMER META\n");
+		//int dirInicioPagina = obtener_inicio_pagina(pagina);
+		i = dirInicioPagina;
+		while (i < dirInicioPagina + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
+			printf("[%d]", bloque_memoria[i]);
+			i++;
+		}
+		printf("\n");
+
+		heapMetadata * meta = malloc(sizeof(heapMetadata));
+		memcpy(meta, &bloque_memoria[dirInicioPagina], sizeof(heapMetadata));
+		printf("Metadata Free: %d\n", meta->isFree);
+		printf("Metadata Size: %d\n", meta->size);
 
 		//Guardo la Metadata Free en el Final de los datos
 		memcpy(&bloque_memoria[dirInicioPagina+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
+
+		printf("METADATA SEGUNDA META\n");
+		//int dirInicioPagina = obtener_inicio_pagina(pagina);
+		i = dirInicioPagina;
+		while (i < dirInicioPagina + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
+			printf("[%d]", bloque_memoria[i]);
+			i++;
+		}
+		printf("\n");
 
 		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
@@ -1319,6 +1366,7 @@ void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 		indice_bloque++;
 		(*j)++;
 	}
+
 }
 
 int paginaLibre(t_pagina_invertida* pagina){
@@ -1412,7 +1460,9 @@ void pruebas_f_hash(){
 t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 	int nro_marco = f_hash_nene_malloc(pid, pagina);
+	//printf("BUSCO PARA INSERTAR PID: %d, PAGINA: %d\n", pid, pagina);
 	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+	//printf("PAGINA ENCONTRADA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
 
 	//Si la pagina encontrada no es una estructura administrativa
 	//Ni esta ocupada por otro proceso
@@ -1428,6 +1478,10 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
 			pagina_encontrada = list_get(tabla_paginas, i);
 			if (pagina_encontrada->pid != -1 && pagina_encontrada->pid == 0) {
+				printf("HUBO COLISION BUSCO OTRA\n");
+				t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+				printf("PAGINA ENCONTrAdA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
+
 				return pagina_encontrada;
 			}
 			i++;
@@ -1438,7 +1492,9 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina){
 	int nro_marco = f_hash_nene_malloc(pid, pagina);
+	//printf("BUSCO PARA CONSULTAR PID: %d, PAGINA: %d\n", pid, pagina);
 	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+	//printf("PAGINA ENCONTrAdA PARA CONSULTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
 
 	return pagina_encontrada;
 }
