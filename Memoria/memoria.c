@@ -472,8 +472,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]);
 
-			int paginaNueva = 0;
-
 			t_pagina_invertida* pag_encontrada;
 
 			t_pagina_proceso * manejo_programa = get_manejo_programa(pid);
@@ -481,8 +479,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			if(manejo_programa == NULL){
 
 				//puts("primera variable del programa");
-
-				paginaNueva = 1;
 
 				pthread_mutex_lock(&mutex_estructuras_administrativas);
 
@@ -517,8 +513,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
 				string_append(&mensajeACpu, ";");
-				string_append(&mensajeACpu, string_itoa(paginaNueva));
-				string_append(&mensajeACpu, ";");
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				string_append(&mensajeACpu, ";");
 				enviarMensaje(&sock, mensajeACpu);
@@ -543,8 +537,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 					char* mensajeACpu = string_new();
 					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
-					string_append(&mensajeACpu, ";");
-					string_append(&mensajeACpu, string_itoa(paginaNueva));
 					string_append(&mensajeACpu, ";");
 					string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 					string_append(&mensajeACpu, ";");
@@ -581,8 +573,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 						char* mensajeACpu = string_new();
 						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
-						string_append(&mensajeACpu, ";");
-						string_append(&mensajeACpu, string_itoa(paginaNueva));
 						string_append(&mensajeACpu, ";");
 						string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 						string_append(&mensajeACpu, ";");
