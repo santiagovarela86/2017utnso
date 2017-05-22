@@ -34,6 +34,9 @@ int sktKernel;
 t_list* variables_locales;
 t_pcb* pcb;
 int bloqueo;
+int pagina_a_leer_cache = 0;
+int offset_a_leer_cache = 0;
+int tamanio_a_leer_cache = 0;
 
 int main(int argc , char **argv){
 
@@ -403,26 +406,31 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(direccion));
 	string_append(&mensajeAMemoria, ";");
+	if (direccion == VARIABLE_EN_CACHE){
+		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
+		string_append(&mensajeAMemoria, ";");
+		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
+		string_append(&mensajeAMemoria, ";");
+		string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
+		string_append(&mensajeAMemoria, ";");
+	}
 	string_append(&mensajeAMemoria, string_itoa(valor));
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 	free(mensajeAMemoria);
 
-	printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
+	if (direccion != VARIABLE_EN_CACHE)
+		printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
+	else
+		printf("Asigne el valor %d en la pagina %d offset %d de la Cache \n", valor, pagina_a_leer_cache, offset_a_leer_cache);
 
 	return;
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
-	puts("Obtener Posicion Variable");
+	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
-
-	/*int encontrar_var(variables *var) {
-		return (var->pid == pcb->pid && var->variable == identificador_variable);
-	}*/
-
-	//variables* var_encontrada = list_find(variables_locales, (void*) encontrar_var);
 
 	int encontrar_var(t_Stack* var){
 		return (var->nombre_variable == (char) identificador_variable);
@@ -450,6 +458,12 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 		char**mensajeDesdeMemoria = string_split(mensajeAMemoria, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
 
+		if (valor == VARIABLE_EN_CACHE){
+			pagina_a_leer_cache = entrada_encontrada->direccion.pagina;
+			offset_a_leer_cache = entrada_encontrada->direccion.offset;
+			tamanio_a_leer_cache = entrada_encontrada->direccion.size;
+		}
+
 		return valor;
 	}
 	else {
@@ -469,6 +483,16 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(direccion_variable));
 	string_append(&mensajeAMemoria, ";");
+	if (direccion_variable == VARIABLE_EN_CACHE){
+		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
+		string_append(&mensajeAMemoria, ";");
+		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
+		string_append(&mensajeAMemoria, ";");
+		string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
+		string_append(&mensajeAMemoria, ";");
+		string_append(&mensajeAMemoria, string_itoa(tamanio_a_leer_cache));
+		string_append(&mensajeAMemoria, ";");
+	}
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
@@ -477,7 +501,10 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	if(result > 0){
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 
-		printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
+		if(direccion_variable != VARIABLE_EN_CACHE)
+			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
+		else
+			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n", mensajeDesdeCPU[0], pagina_a_leer_cache, offset_a_leer_cache);
 
 		int valor = atoi(mensajeDesdeCPU[0]);
 

@@ -65,5 +65,6 @@ t_Stack* deserializar_entrada_stack(char** mensajeRecibido);
 #define CONST_SIN_NOMBRE_FUNCION -1
 #define ASIGNACION_MEMORIA_OK 0
 #define ASIGNACION_MEMORIA_ERROR 1
+#define VARIABLE_EN_CACHE -2
 
 #endif /* CPU_H_ */

@@ -110,4 +110,7 @@ void reorganizar_indice_cache_y_ordenar(void);
 void finalizar_programa(int pid);
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos);
 
+#define VARIABLE_EN_CACHE -2
+
+
 #endif /* MEMORIA_H_ */

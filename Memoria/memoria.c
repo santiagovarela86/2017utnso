@@ -388,8 +388,20 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			retardo_acceso_memoria();
 
 			int direccion = atoi(mensajeDesdeCPU[1]);
-			int valor = atoi(mensajeDesdeCPU[2]);
+			int valor = 0;
+			//Valor en Cache
+			if (direccion == VARIABLE_EN_CACHE){
 
+				int pid = atoi(mensajeDesdeCPU[2]);
+				int nro_pagina = atoi(mensajeDesdeCPU[3]);
+				int offset = atoi(mensajeDesdeCPU[4]);
+				valor = atoi(mensajeDesdeCPU[5]);
+				t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
+				int inicio = obtener_inicio_pagina(pagina);
+				direccion = inicio + offset;
+			} else {
+				valor = atoi(mensajeDesdeCPU[2]);
+			}
 			grabar_valor(direccion, valor);
 
 
@@ -455,6 +467,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				paginaNueva = false;
 
 				free(entrada_stack);
+				free(mensajeACpu);
 
 			} else {
 
@@ -481,6 +494,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 					string_append(&mensajeACpu, ";");
 
 					enviarMensaje(&sock, mensajeACpu);
+					free(mensajeACpu);
 				}
 				else {
 
@@ -520,6 +534,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 						enviarMensaje(&sock, mensajeACpu);
 
 						free(entrada_stack);
+						free(mensajeACpu);
 
 					}
 					else {
@@ -535,13 +550,21 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 513) {
 
-			//Ocurre el retardo para acceder a la memoria principal
-			retardo_acceso_memoria();
-
 			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
+
 			char* valor_variable  = string_new();
 
-			valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
+			if (posicion_de_la_Variable == VARIABLE_EN_CACHE){
+
+				int pid = atoi(mensajeDesdeCPU[2]);
+				int pagina = atoi(mensajeDesdeCPU[3]);
+				int offset = atoi(mensajeDesdeCPU[4]);
+				int tamanio = atoi(mensajeDesdeCPU[5]);
+				valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+			}
+			else {
+				valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
+			}
 
 			int valor = atoi(valor_variable);
 
@@ -550,6 +573,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			string_append(&mensajeACpu, ";");
 
 			enviarMensaje(&sock, mensajeACpu);
+			free(mensajeACpu);
 
 		} else if (codigo == 601) {
 
@@ -560,19 +584,53 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//Ocurre el retardo para acceder a la memoria principal
 			//retardo_acceso_memoria();
 
-			t_pagina_invertida* pag_a_buscar = buscar_pagina_para_consulta(pid, pagina);
+			t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
-			if (pag_a_buscar != NULL){
+			if (entrada_cache == NULL){
+				//CACHE_MISS
 
-				int inicio = obtener_inicio_pagina(pag_a_buscar);
+				//Ocurre el retardo para acceder a la memoria principal
+				retardo_acceso_memoria();
 
-				int direccion_memoria = inicio + offset;
+				t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+				if (pagina_buscada != NULL){
 
+					int inicio = obtener_inicio_pagina(pagina_buscada);
+					int direccion_memoria = inicio + offset;
+
+					char* mensajeACpu = string_new();
+					string_append(&mensajeACpu, string_itoa(direccion_memoria));
+					string_append(&mensajeACpu, ";");
+
+					enviarMensaje(&sock, mensajeACpu);
+					free(mensajeACpu);
+				}
+
+				//Se carga la nueva pagina en cache
+				if (cache_habilitada)
+					almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+
+			} else {
+
+				//Si encontro la entrada en cache
+
+				//Le aviso a la CPU que la variable se encuentra en cache
+				//Y que debe leerla utilizando pid, pagina, offset y tamanio
 				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(direccion_memoria));
+				string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
 				string_append(&mensajeACpu, ";");
 
 				enviarMensaje(&sock, mensajeACpu);
+				free(mensajeACpu);
+
+				//Hago el reemplazo de paginas y ordeno
+				int indice_cache = list_size(tabla_cache) + 1;
+				int indice_antiguo = entrada_cache->indice;
+				entrada_cache->indice = indice_cache;
+
+				list_replace(tabla_cache, indice_antiguo, entrada_cache);
+
+				reorganizar_indice_cache_y_ordenar();
 			}
 		}
 
@@ -1524,7 +1582,6 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 		t_entrada_cache* entrada_cache_reemplazo = obtener_entrada_reemplazo_cache();
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
-
 		//Hago el reemplazo de paginas y ordeno
 		int indice_cache = list_size(tabla_cache) + 1;
 		int indice_antiguo = entrada_cache_reemplazo->indice;
@@ -1578,8 +1635,9 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 
 void grabar_valor_en_cache(int direccion, char* valor){
 
-	int indice_tabla_paginas = direccion % configuracion->marco_size;
+	int indice_tabla_paginas = direccion / configuracion->marco_size;
 	t_pagina_invertida* pagina = list_get(tabla_paginas, indice_tabla_paginas);
+
 	char * contenido = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 
 	string_append(&contenido, valor);
