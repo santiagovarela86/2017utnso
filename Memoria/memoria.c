@@ -267,9 +267,8 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 
 	//Recupero la Primer Metadata Libre de la Página
 	int posicion = obtener_inicio_pagina(pagina);
-	printf("Posicion: %d\n", posicion);
 
-	printf("ANTES DE EMPEZAR A BUSCAR LA METAdATA\n");
+	printf("BLOQUE METADATA ANTES DEL SEGUNDO ALLOC\n");
 	int i = posicion;
 	while (i < posicion + 256){
 		printf("[%d]", bloque_memoria[i]);
@@ -278,38 +277,42 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	printf("\n");
 
 	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicion);
-	printf("Metadata Free: %d\n", metadata->isFree);
-	printf("Metadata Size: %d\n", metadata->size);
 
-	int boundary = configuracion->marco_size * configuracion->marcos - sizeof(heapMetadata);
+	int boundary = posicion + configuracion->marco_size - sizeof(heapMetadata) * 2;
 
-	//while (metadata->isFree == false){ //MUNDO FELIZ
-	while ((metadata->isFree == false || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicion <= boundary){
+	while (metadata->isFree == false){ //MUNDO FELIZ
+	//while ((metadata->isFree == false || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicion <= boundary){
 		posicion = posicion + sizeof(heapMetadata) + metadata->size;
+		printf("Posicion: %d\n", posicion);
 		metadata = (heapMetadata *) (bloque_memoria + posicion);
 		//memcpy(metadata, &bloque_memoria[posicion], sizeof(heapMetadata));
 	}
 
-	printf("Metadata Encontrada:\n");
-	printf("Posicion: %d\n", posicion);
-	printf("Metadata Free: %d\n", metadata->isFree);
-	printf("Metadata Size: %d\n", metadata->size);
+	printf("Metadata Encontrada: Posicion: %d, Free: %d, Size: %d\n", posicion, metadata->isFree, metadata->size);
 
 	//SI ME PASE DEL BUFFER
 	if (posicion > boundary){
+		printf("Posicion: %d, Boundary: %d\n", posicion, boundary);
 		perror("Error buscando Metadata Heap\n");
 	} else {
 		//A ESTA ALTURA TENGO EL METADATA UTIL
 		printf("TENGO EL METADATA UTIL\n");
 
-		//CREO EL NUEVO METADATA
-		heapMetadata * metadataNuevo = (heapMetadata * ) (bloque_memoria + posicion + sizeof(heapMetadata) + metadata->size);
-		metadataNuevo->isFree = true;
-		metadataNuevo->size = metadata->size - bytesPedidos	- sizeof(heapMetadata);
+		printf("Metadata Antes Free: %d, Size %d\n", metadata->isFree, metadata->size);
 
 		//EDITO EL ACTUAL
 		metadata->isFree = false;
+		int valorAnterior = metadata->size;
 		metadata->size = bytesPedidos;
+
+		printf("Metadata Despues Free: %d, Size %d\n", metadata->isFree, metadata->size);
+
+		//CREO EL NUEVO METADATA
+		heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicion + sizeof(heapMetadata) + valorAnterior);
+		metadataNuevo->isFree = true;
+		metadataNuevo->size = valorAnterior - bytesPedidos	- sizeof(heapMetadata);
+
+		printf("MetadataNuevo Free: %d, Size %d\n", metadataNuevo->isFree, metadataNuevo->size);
 
 		//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
 		int direccion = posicion + sizeof(heapMetadata);
@@ -337,57 +340,21 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 		int dirInicioPagina = obtener_inicio_pagina(pagina);
 
-		printf("METADATA VACIO\n");
+		heapMetadata * meta_used = (heapMetadata *) (bloque_memoria + dirInicioPagina);
+		meta_used->isFree = false;
+		meta_used->size = bytesPedidos;
 
+		heapMetadata * meta_free = (heapMetadata *) (bloque_memoria + dirInicioPagina + sizeof(heapMetadata) + bytesPedidos);
+		meta_free->isFree = true;
+		meta_free->size = freeSpace - bytesPedidos;
+
+		printf("BLOQUE METADATA LUEGO DEL PRIMER ALLOC\n");
 		int i = dirInicioPagina;
 		while (i < dirInicioPagina + 256){
 			printf("[%d]", bloque_memoria[i]);
 			i++;
 		}
 		printf("\n");
-
-		//Guardo la Metadata Used en el Inicio de la Pagina
-		//int i = dirInicioPagina;
-		//memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
-		printf("Posicion: %d\n", dirInicioPagina);
-
-		//heapMetadata * meta_used = malloc(sizeof(heapMetadata));
-		heapMetadata * meta_used = (heapMetadata *) (bloque_memoria + dirInicioPagina);
-		meta_used->isFree = false;
-		meta_used->size = bytesPedidos;
-
-		printf("METADATA PRIMER META\n");
-		//int dirInicioPagina = obtener_inicio_pagina(pagina);
-		i = dirInicioPagina;
-		while (i < dirInicioPagina + 256){
-			printf("[%d]", bloque_memoria[i]);
-			i++;
-		}
-		printf("\n");
-
-		//Guardo la Metadata Free en el Final de los datos
-		//memcpy(&bloque_memoria[dirInicioPagina+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
-		//heapMetadata * meta_free = malloc(sizeof(heapMetadata));
-		heapMetadata * meta_free = (heapMetadata *) (bloque_memoria + dirInicioPagina + sizeof(heapMetadata) + bytesPedidos);
-		meta_free->isFree = true;
-		meta_free->size = freeSpace - bytesPedidos;
-
-		printf("METADATA SEGUNDA META\n");
-		//int dirInicioPagina = obtener_inicio_pagina(pagina);
-		i = dirInicioPagina;
-		while (i < dirInicioPagina + 256/*dirInicioPagina+sizeof(heapMetadata)+bytesPedidos*/){
-			printf("[%d]", bloque_memoria[i]);
-			i++;
-		}
-		printf("\n");
-
-		//heapMetadata * meta = malloc(sizeof(heapMetadata));
-		//memcpy(meta, &bloque_memoria[dirInicioPagina], sizeof(heapMetadata));
-		printf("Metadata Free: %d\n", meta_used->isFree);
-		printf("Metadata Size: %d\n", meta_used->size);
-
-		printf("Metadata Free: %d\n", meta_free->isFree);
-		printf("Metadata Size: %d\n", meta_free->size);
 
 		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
@@ -435,6 +402,8 @@ void * hilo_conexiones_cpu(){
 
 void * handler_conexiones_cpu(void * socketCliente) {
 	int sock = (int *) socketCliente;
+
+	int paginaNueva = false;
 
 	handShakeListen(&sock, "500", "202", "299", "CPU");
 
@@ -484,6 +453,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
 
+				paginaNueva = true;
+
 				if (pag_a_cargar == NULL){
 					//No hay pagina para asignar
 					//Se avisa a la CPU que no se pudo asignar Memoria
@@ -513,6 +484,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
 				string_append(&mensajeACpu, ";");
+				string_append(&mensajeACpu, string_itoa(paginaNueva));
+				string_append(&mensajeACpu, ";");
 				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 				string_append(&mensajeACpu, ";");
 				enviarMensaje(&sock, mensajeACpu);
@@ -537,6 +510,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 					char* mensajeACpu = string_new();
 					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+					string_append(&mensajeACpu, ";");
+					string_append(&mensajeACpu, string_itoa(paginaNueva));
 					string_append(&mensajeACpu, ";");
 					string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 					string_append(&mensajeACpu, ";");
@@ -573,6 +548,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 						char* mensajeACpu = string_new();
 						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+						string_append(&mensajeACpu, ";");
+						string_append(&mensajeACpu, string_itoa(paginaNueva));
 						string_append(&mensajeACpu, ";");
 						string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 						string_append(&mensajeACpu, ";");

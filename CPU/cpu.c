@@ -513,12 +513,17 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 		char** mensajeSplit = string_split(mensajeAMemoria, ";");
 
 		int codigo = atoi(mensajeSplit[0]);
+		int paginaNueva = atoi(mensajeSplit[1]);
 
 		if (codigo == ASIGNACION_MEMORIA_OK){
 
 			t_Stack* entrada_stack = deserializar_entrada_stack(mensajeSplit);
 
 			list_add(pcb->indiceStack, entrada_stack);
+
+			if (paginaNueva == true) {
+				pcb->cantidadPaginas++;
+			}
 
 			printf("La variable %c se guardo en la pos: %d \n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
 
@@ -982,10 +987,10 @@ char* serializar_pcb(t_pcb* pcb){
 t_Stack* deserializar_entrada_stack(char** mensajeRecibido){
 	t_Stack* entrada_stack = malloc(sizeof(t_Stack));
 
-	entrada_stack->nombre_variable = mensajeRecibido[1][0];
-	entrada_stack->direccion.pagina = atoi(mensajeRecibido[2]);
-	entrada_stack->direccion.offset = atoi(mensajeRecibido[3]);
-	entrada_stack->direccion.size = atoi(mensajeRecibido[4]);
+	entrada_stack->nombre_variable = mensajeRecibido[2][0];
+	entrada_stack->direccion.pagina = atoi(mensajeRecibido[3]);
+	entrada_stack->direccion.offset = atoi(mensajeRecibido[4]);
+	entrada_stack->direccion.size = atoi(mensajeRecibido[5]);
 
 	return entrada_stack;
 }
