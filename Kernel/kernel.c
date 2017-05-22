@@ -1634,6 +1634,10 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 		return elem->pid == pcb->pid;
 	}
 
+	_Bool hayLugarHeap (heapElement * elem){
+		return elem->tamanio_disponible >= bytes;
+	}
+
 	printf("Solicitud de Heap desde el CPU: %d\n", socketCPU);
 
 	//Verifico si todavía no hay paginas de Heap
@@ -1657,7 +1661,8 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 				heapElem->pid = atoi(respuesta[1]);
 				heapElem->nro_pagina = atoi(respuesta[2]);
 				heapElem->tamanio_disponible = atoi(respuesta[3]);
-				heapElem->direccion = atoi(respuesta[4]);
+				//heapElem->direccion = atoi(respuesta[4]);
+				int direccion = atoi(respuesta[4]);
 
 				list_add(lista_paginas_heap, heapElem);
 
@@ -1667,10 +1672,10 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 				printf("PID: %d\n", heapElem->pid);
 				printf("Nro Pagina: %d\n", heapElem->nro_pagina);
 				printf("Free Space: %d\n", heapElem->tamanio_disponible);
-				printf("Direccion: %d\n", heapElem->direccion);
+				printf("Direccion: %d\n", direccion);
 
-				printf("Direccion String: %s\n", string_itoa(heapElem->direccion));
-				char * mensaje = serializarMensaje(1, heapElem->direccion);
+				printf("Direccion String: %s\n", string_itoa(direccion));
+				char * mensaje = serializarMensaje(1, direccion);
 
 				enviarMensaje(&socketCPU, mensaje);
 				printf("Envie mensaje %s al CPU: %d\n", mensaje, socketCPU);
@@ -1678,14 +1683,64 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 				perror("Error en el protocolo de mensajes entre procesos\n");
 			}
 		} else {
-			perror(
-					"Error de comunicacion con Memoria durante la reserva de memoria heap\n");
+			perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
 		}
 	}else {
 		printf("Iésima Pagina para el Proceso\n");
 
-	}
+		if (list_any_satisfy(lista_paginas_heap, hayLugarHeap)){
+			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
+			printf("HAY LUGAR EN LAS PAGINAS QUE YA TENGO\n");
+			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
+			heapElement * paginaHeapLibre = list_find(lista_paginas_heap, hayLugarHeap);
+			//ENVIO A MEMORIA LA SOLICITUD DE GRABAR EN PAGINA HEAP EXISTENTE
+			enviarMensaje(&skt_memoria, serializarMensaje(4, 607, paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, bytes));
 
+			char * buffer = string_new();
+			int result = recv(skt_memoria, buffer, MAXBUF, 0);
+			printf("Recibi mensaje: %s\n", buffer);
+
+			if (result > 0) {
+				char ** respuesta = string_split(buffer, ";");
+
+				if (strcmp(respuesta[0], "607") == 0) {
+					int pid = atoi(respuesta[1]);
+					int pagina = atoi(respuesta[2]);
+					int direccion = atoi(respuesta[3]);
+					int newFreeSpace = atoi(respuesta[4]);
+
+					_Bool mismaPaginaHeap(heapElement elem){
+						return pcb->pid == pid && elem.nro_pagina == pagina;
+					}
+
+					//ME COPIO LA ENTRADA EXISTENTE Y LA EDITO
+ 					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
+ 					entradaHeapExistente->tamanio_disponible = newFreeSpace;
+
+ 					//BORRO LA ENTRADA EXISTENTE
+ 					list_remove_by_condition(lista_paginas_heap, mismaPaginaHeap);
+
+ 					//ACTUALIZO
+ 					list_add(entradaHeapExistente, lista_paginas_heap);
+
+ 					printf("Se editó una página del Heap\n");
+ 					printf("PID: %d\n", pid);
+ 					printf("Nro Pagina: %d\n", pagina);
+ 					printf("Nuevo Free Space: %d\n", newFreeSpace);
+
+ 					enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
+ 					printf("Envie mensaje %s al CPU: %d\n", serializarMensaje(1, direccion), socketCPU);
+
+				}else{
+					perror("Error en el protocolo de mensajes entre procesos\n");
+				}
+			} else {
+				perror("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+			}
+		}else{
+			//TENGO QUE PEDIR UNA PAGINA NUEVA
+		}
+	}
 
 	//free(buffer);
 }

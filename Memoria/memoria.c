@@ -261,8 +261,9 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	//BUSCO LA PAGINA EXISTENTE
-	//t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaExistente);
+	t_pagina_invertida * paginaX = buscar_pagina_para_insertar(pid, paginaExistente);
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
+	printf("OBTUVE PAGINAX %d, MARCOX: %d\n", paginaX->nro_pagina, paginaX->nro_marco);
 	printf("OBTUVE PAGINA %d, MARCO: %d\n", pagina->nro_pagina, pagina->nro_marco);
 
 	heapMetadata * metadata = malloc(sizeof(heapMetadata));
