@@ -305,6 +305,7 @@ void crear_archivo(char* flag, char* directorio){
    		  archBuscado->referenciaArchivo = pFileReabrir;
    		  list_add(lista_archivos, archBuscado);
    	  }
+
 }
 
 void obtener_datos(char* directorio, int offset, int size){
@@ -320,7 +321,7 @@ void obtener_datos(char* directorio, int offset, int size){
 	        fseek(archBuscado->referenciaArchivo,offset,SEEK_SET);
 	        fgets(mensaje, size, archBuscado->referenciaArchivo );
 
-	    	enviarMensaje(socketKernel, mensaje);
+	    	enviarMensaje(&socketKernel, mensaje);
 	        return ;
 
 	    } // End if file
