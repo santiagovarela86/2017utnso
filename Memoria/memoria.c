@@ -267,13 +267,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		meta_used->isFree = false;
 		meta_used->size = bytesPedidos;
 
-		//Guardo la Metadata Used en el Inicio de la Pagina
-		int dirInicioPagina = pagina->nro_marco*configuracion->marco_size;
-		memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
-
-		//Guardo la Metadata Free en el Final de los datos
-		memcpy(&bloque_memoria[pagina->nro_marco*configuracion->marco_size+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
-
 		/*
 		printf("Imprimo Bloque de Memoria (Antes)\n");
 		int i = 0;
@@ -282,12 +275,27 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 			i++;
 		}
 		printf("\n");
-
-		printf("Heap Free: %d\n", meta_free->isFree);
-		printf("Heap Size: %d\n", meta_free->size);
 		*/
 
+		//Guardo la Metadata Used en el Inicio de la Pagina
+		int dirInicioPagina = obtener_inicio_pagina(pagina);
+		memcpy(&bloque_memoria[dirInicioPagina], meta_used, sizeof(heapMetadata));
 
+		//Guardo la Metadata Free en el Final de los datos
+		memcpy(&bloque_memoria[dirInicioPagina+sizeof(heapMetadata)+bytesPedidos], meta_free, sizeof(heapMetadata));
+
+		/*
+		printf("Imprimo Bloque de Memoria (Después)\n");
+		i = 0;
+		while (i < configuracion->marco_size){
+			printf("[%d]", bloque_memoria[pagina->nro_marco*configuracion->marco_size + i]);
+			i++;
+		}
+		printf("\n");
+		*/
+
+		//printf("Heap Free: %d\n", meta_free->isFree);
+		//printf("Heap Size: %d\n", meta_free->size);
 
 		//Recupero la Metadata de la Página
 		//heapMetadata * test = malloc(sizeof(heapMetadata));
@@ -306,8 +314,7 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		printf("\n");
 		*/
 
-		int inicio = obtener_inicio_pagina(pagina);
-		int direccionFree = inicio + sizeof(heapMetadata);
+		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
 		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, freeSpace, direccionFree);
 		enviarMensaje(&socketKernel, respuestaAKernel);

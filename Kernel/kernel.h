@@ -67,7 +67,6 @@ typedef struct {
 } t_semaforo;
 
 typedef struct {
-	//t_bloque_heap** bloques;
 	int pid;
 	int nro_pagina;
 	int tamanio_disponible;
