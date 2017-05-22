@@ -1709,19 +1709,13 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 					int direccion = atoi(respuesta[3]);
 					int newFreeSpace = atoi(respuesta[4]);
 
-					_Bool mismaPaginaHeap(heapElement elem){
-						return pcb->pid == pid && elem.nro_pagina == pagina;
+					_Bool mismaPaginaHeap(heapElement * elem){
+						return pcb->pid == pid && elem->nro_pagina == pagina;
 					}
 
-					//ME COPIO LA ENTRADA EXISTENTE Y LA EDITO
+					//EDITO LA ENTRADA EXISTENTE
  					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
  					entradaHeapExistente->tamanio_disponible = newFreeSpace;
-
- 					//BORRO LA ENTRADA EXISTENTE
- 					list_remove_by_condition(lista_paginas_heap, mismaPaginaHeap);
-
- 					//ACTUALIZO
- 					list_add(entradaHeapExistente, lista_paginas_heap);
 
  					printf("Se editó una página del Heap\n");
  					printf("PID: %d\n", pid);
