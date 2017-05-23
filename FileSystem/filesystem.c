@@ -93,6 +93,7 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804://de CPU a File system (cerrar)
+
 					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 
 				break;
@@ -307,7 +308,7 @@ void crear_archivo(char* flag, char* directorio){
 
 }
 
-void obtener_datos(char* directorio,  char* buffer, int size, int offset) {
+void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
         char* mensaje = string_new();
 
@@ -329,7 +330,7 @@ void obtener_datos(char* directorio,  char* buffer, int size, int offset) {
 	    } // End if file
 
 
-void guardar_datos(char* directorio, int offset, int size, char* buffer){
+void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
 
 		int encontrar_sem(t_archivosFileSystem* archivo) {

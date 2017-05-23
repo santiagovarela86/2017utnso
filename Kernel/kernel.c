@@ -67,6 +67,7 @@ int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
 int plan;
+int offsetArchivo = -1;
 t_list * lista_paginas_heap;;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
@@ -1066,6 +1067,14 @@ void * handler_conexion_cpu(void * sock) {
 				semaforo_buscado = mensajeDesdeCPU[1];
 				waitSemaforo(socketCliente, semaforo_buscado);
 				break;
+
+			case 805: //mover cursor (offset)
+
+				//lista_posicionEnArchivos
+				offsetArchivo = atoi(mensajeDesdeCPU[1]);
+				break;
+
+
 			case 804: //escribir archivo
 
 
@@ -1074,7 +1083,7 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				escribirArchivo(fd, pid_mensaje, infofile, tamanio);
+				escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				break;
 
@@ -2472,38 +2481,62 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 	free(mensajeACPU);
 }
 
-void escribirArchivo(int fd, int pid_mensaje, char * info, int tamanio){
+t_fileGlobal* traducirFDaPath(int fd)
+{
+	int encontrar_archProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+	t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
+	regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
 
-/*	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-	regTablaGlobal = traducirFDaPath(fd);
-	char* mensajeAFS = string_new();
-	string_append(&mensajeAFS, "800");
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, ((char*)info));
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, string_itoa(tamanio));
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, regTablaGlobal->path);
-	string_append(&mensajeAFS, ";");
+	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+	regTablaGlobal = list_get(lista_File_global, ((int)regTablaProceso->global_fd));
 
-	//free(archAbrir1);
+	return regTablaGlobal;
 	free(regTablaGlobal);
-
-	enviarMensaje(&skt_filesystem, mensajeAFS);
-
-	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
-
-	if (result > 0) {
-		puts("archivo cerrado correctamente");
-	}
-	else {
-		perror("Error no se pudo leer \n");
-	}
-
-	free(mensajeAFS);*/
-	return;
+	free(regTablaProceso);
 
 }
+
+void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
+	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
+	{
+		char* mensajeFS= string_new();
+		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+		regTablaGlobal = traducirFDaPath(fd);
+
+		string_append(&mensajeFS, "800");
+		string_append(&mensajeFS, ";");
+		string_append(&mensajeFS, regTablaGlobal->path);
+		string_append(&mensajeFS, ";");
+		string_append(&mensajeFS, string_itoa(tamanio));
+		string_append(&mensajeFS, ";");
+		string_append(&mensajeFS, ((char*)infofile));
+		string_append(&mensajeFS, ";");
+		string_append(&mensajeFS, string_itoa(offsetArchivo));
+		string_append(&mensajeFS, ";");
+
+		//free(archAbrir1);
+		free(regTablaGlobal);
+
+		enviarMensaje(&skt_filesystem, mensajeFS);
+
+		int result = recv(skt_filesystem, mensajeFS, sizeof(mensajeFS), 0);
+
+		if (result > 0) {
+			puts("archivo cerrado correctamente");
+		}
+		else {
+			perror("Error no se pudo leer \n");
+		}
+		free(mensajeFS);
+		//return mensajeAFS;
+	}
+}
+
 
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
@@ -2627,16 +2660,20 @@ void cerrarArchivo(int pid_mensaje, int fd)
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
+	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
+	{
 	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
 	regTablaGlobal = traducirFDaPath(fd);
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "800");
 	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, ((char*)infofile));
+	string_append(&mensajeAFS, regTablaGlobal->path);
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, string_itoa(tamanio));
 	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, regTablaGlobal->path);
+	string_append(&mensajeAFS, ((char*)infofile));
+	string_append(&mensajeAFS, ";");
+	string_append(&mensajeAFS, string_itoa(offsetArchivo));
 	string_append(&mensajeAFS, ";");
 
 	//free(archAbrir1);
@@ -2654,26 +2691,11 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	}
 	free(mensajeAFS);
 	return mensajeAFS;
-
-}
-
-t_fileGlobal* traducirFDaPath(int fd)
-{
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
 	}
-	t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
-	regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
-
-	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-	regTablaGlobal = list_get(lista_File_global, regTablaProceso->global_fd);
-
-	return regTablaGlobal;
-	//free(regTablaGlobal);
-	//free(regTablaProceso);
+	else
+	{
+		return "";
+	}
 
 }
 
