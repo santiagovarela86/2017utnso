@@ -2594,7 +2594,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
 	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
 	puts("hasta acá estamos");
-	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor)
+	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor);
 	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
 	puts("parece que lo removió bien");
 	int encontrar_archGlobal(t_fileGlobal* glo){
