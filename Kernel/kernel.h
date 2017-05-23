@@ -91,6 +91,12 @@ typedef struct {
 }t_nuevo;
 
 typedef struct {
+	int fd;
+	int offset;
+}t_offsetArch;
+
+
+typedef struct {
 	int pid;
 	char* sem;
 }t_bloqueo;

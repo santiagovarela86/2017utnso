@@ -67,7 +67,7 @@ int numerador_pcb = 1000;
 int skt_memoria;
 int skt_filesystem;
 int plan;
-int offsetArchivo = -1;
+t_list * offsetArch;
 t_list * lista_paginas_heap;;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
@@ -136,6 +136,7 @@ void inicializarEstructuras(char * pathConfig){
 	lista_procesos = list_create();
 	registro_bloqueados = list_create();
 	lista_estadistica = list_create();
+	offsetArch = list_create();
 
 	cola_listos = crear_cola_pcb();
 	cola_bloqueados = crear_cola_pcb();
@@ -1069,9 +1070,16 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 805: //mover cursor (offset)
-
+				;
 				//lista_posicionEnArchivos
-				offsetArchivo = atoi(mensajeDesdeCPU[1]);
+				t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
+
+				regOffset->fd = atoi(mensajeDesdeCPU[1]);
+				regOffset->offset = atoi(mensajeDesdeCPU[2]);
+				list_add(offsetArch,regOffset);
+
+				free(regOffset);
+
 				break;
 
 
@@ -1088,12 +1096,12 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 803: //de CPU a File system (abrir)
-
+				puts("y este");
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
 				 int fdNuevo = abrirArchivo(pid_mensaje, direccion, flag);
-
+				// printf("el nuevo fddddd es %d", fdNuevo);
 				enviarMensaje(socketCliente, string_itoa(fdNuevo));
 				break;
 
@@ -1101,7 +1109,7 @@ void * handler_conexion_cpu(void * sock) {
 
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
-
+				 puts("hasta acá venimos bien");
 				 borrarArchivo(pid_mensaje, fd);
 
 				break;
@@ -2516,7 +2524,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		string_append(&mensajeFS, ";");
 		string_append(&mensajeFS, ((char*)infofile));
 		string_append(&mensajeFS, ";");
-		string_append(&mensajeFS, string_itoa(offsetArchivo));
+		//string_append(&mensajeFS, string_itoa(offsetArchivo));
 		string_append(&mensajeFS, ";");
 
 		//free(archAbrir1);
@@ -2541,7 +2549,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
 	int fdNuevo;
-	 if(lista_File_global->elements_count != 0)
+	 if((int)lista_File_global->elements_count != 0)
 	 {
 		 fdNuevo = lista_File_global->elements_count + 1;
 	 }
@@ -2551,11 +2559,11 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	 }
 
 	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
-
 	archNuevo->cantidadDeAperturas = 1;
 	archNuevo->fdGlobal = fdNuevo;
 	archNuevo->path = direccion;
-
+	//puts("este puts lo veo?");
+	//printf("el flag es %s", flag);
 	list_add(lista_File_global,archNuevo);
 
 	char* mensajeAFS = string_new();
@@ -2569,7 +2577,6 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	free(archNuevo);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
-
 
 	free(mensajeAFS);
 	return fdNuevo;
@@ -2673,7 +2680,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, ((char*)infofile));
 	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, string_itoa(offsetArchivo));
+	//string_append(&mensajeAFS, string_itoa(offsetArchivo));
 	string_append(&mensajeAFS, ";");
 
 	//free(archAbrir1);

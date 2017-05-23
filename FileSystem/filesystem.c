@@ -231,6 +231,7 @@ void atender_peticiones(int socket){
 */
 int validar_archivo(char* directorio){
 
+
 	int encontrar_sem(t_archivosFileSystem* archivo) {
 		return string_starts_with(directorio, archivo->path);
 	}
@@ -244,6 +245,7 @@ int validar_archivo(char* directorio){
 	}
 	else
 	{
+
 		return 1;
 	}
 	/*char* path = string_new();
@@ -283,7 +285,6 @@ void crear_archivo(char* flag, char* directorio){
 
    	  if (result == 1)
    	  {
-
    		  FILE * pFile;
    		  pFile = fopen (directorio,"w"); //por defecto lo crea
    		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
@@ -294,6 +295,7 @@ void crear_archivo(char* flag, char* directorio){
    	  }
    	  else
    	  {
+
 			int encontrar_Arch(t_archivosFileSystem* archivo) {
 				return string_starts_with(directorio, archivo->path);
 			}
@@ -343,7 +345,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 		{
 			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
 		}
-        fputs((FILE*)archBuscado->referenciaArchivo, buffer);
+        fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
 
         //return mensaje;
 
@@ -356,7 +358,7 @@ void borrarArchivo(char* directorio){
 		}
 
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
-		close((FILE*)archDestroy->referenciaArchivo);
+		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
 
         //return mensaje;

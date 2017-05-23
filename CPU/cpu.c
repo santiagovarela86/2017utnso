@@ -779,7 +779,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 		if (result > 0){
 			puts("archivo se abrió correctamente");
 			int fdNuevo = atoi(mensajeAKernel);
-			printf("el file descriptor nuevo es %d", fdNuevo);
+			printf("el file descriptor nuevo es %d \n", fdNuevo);
 			return ((t_descriptor_archivo)fdNuevo);
 
 		} else {
