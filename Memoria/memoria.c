@@ -370,7 +370,7 @@ void * hilo_conexiones_cpu(){
 void * handler_conexiones_cpu(void * socketCliente) {
 	int sock = (int *) socketCliente;
 
-	int paginaNueva = false;
+	int paginaNueva = 0;
 
 	handShakeListen(&sock, "500", "202", "299", "CPU");
 
@@ -391,23 +391,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
 
-			int direccion = atoi(mensajeDesdeCPU[1]);
-			int valor = 0;
-			//Valor en Cache
-			if (direccion == VARIABLE_EN_CACHE){
-
-				int pid = atoi(mensajeDesdeCPU[2]);
-				int nro_pagina = atoi(mensajeDesdeCPU[3]);
-				int offset = atoi(mensajeDesdeCPU[4]);
-				valor = atoi(mensajeDesdeCPU[5]);
-				t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
-				int inicio = obtener_inicio_pagina(pagina);
-				direccion = inicio + offset;
-			} else {
-				valor = atoi(mensajeDesdeCPU[2]);
-			}
-			grabar_valor(direccion, valor);
-
+			asignarVariable(mensajeDesdeCPU);
 
 		} else if (codigo == 512) {
 
@@ -432,7 +416,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
 
-				paginaNueva = true;
+				paginaNueva = 1;
 
 				if (pag_a_cargar == NULL){
 					//No hay pagina para asignar
@@ -576,6 +560,29 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	printf("Se desconecto un CPU\n");
 
 	return EXIT_SUCCESS;
+}
+
+void asignarVariable(char** mensajeDesdeCPU){
+
+	int valor = 0;
+	int direccion = atoi(mensajeDesdeCPU[1]);
+
+	//Valor en Cache
+	if (direccion == VARIABLE_EN_CACHE){
+
+		int pid = atoi(mensajeDesdeCPU[2]);
+		int nro_pagina = atoi(mensajeDesdeCPU[3]);
+		int offset = atoi(mensajeDesdeCPU[4]);
+		valor = atoi(mensajeDesdeCPU[5]);
+		t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
+		int inicio = obtener_inicio_pagina(pagina);
+		direccion = inicio + offset;
+	} else {
+		valor = atoi(mensajeDesdeCPU[2]);
+	}
+
+	grabar_valor(direccion, valor);
+
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){

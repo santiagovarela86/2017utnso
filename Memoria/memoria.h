@@ -111,6 +111,7 @@ void finalizar_programa(int pid);
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos);
 void obtenerPosicionVariable(int pid, int pagina, int offset, int sock);
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock);
+void asignarVariable(char** mensajeDesdeCPU);
 
 #define VARIABLE_EN_CACHE -2
 
