@@ -554,30 +554,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 513) {
 
-			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
-
-			char* valor_variable  = string_new();
-
-			if (posicion_de_la_Variable == VARIABLE_EN_CACHE){
-
-				int pid = atoi(mensajeDesdeCPU[2]);
-				int pagina = atoi(mensajeDesdeCPU[3]);
-				int offset = atoi(mensajeDesdeCPU[4]);
-				int tamanio = atoi(mensajeDesdeCPU[5]);
-				valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
-			}
-			else {
-				valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
-			}
-
-			int valor = atoi(valor_variable);
-
-			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, string_itoa(valor));
-			string_append(&mensajeACpu, ";");
-
-			enviarMensaje(&sock, mensajeACpu);
-			free(mensajeACpu);
+			obtenerValorDeVariable(mensajeDesdeCPU, sock);
 
 		} else if (codigo == 601) {
 
@@ -599,6 +576,33 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	printf("Se desconecto un CPU\n");
 
 	return EXIT_SUCCESS;
+}
+
+void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
+
+	char* valor_variable  = string_new();
+	int posicion_de_la_variable = atoi(mensajeDesdeCPU[1]);
+
+	if (posicion_de_la_variable == VARIABLE_EN_CACHE){
+
+		int pid = atoi(mensajeDesdeCPU[2]);
+		int pagina = atoi(mensajeDesdeCPU[3]);
+		int offset = atoi(mensajeDesdeCPU[4]);
+		int tamanio = atoi(mensajeDesdeCPU[5]);
+		valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+	}
+	else {
+		valor_variable = leer_memoria(posicion_de_la_variable, OFFSET_VAR);
+	}
+
+	int valor = atoi(valor_variable);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(valor));
+	string_append(&mensajeACpu, ";");
+
+	enviarMensaje(&sock, mensajeACpu);
+	free(mensajeACpu);
 }
 
 void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
