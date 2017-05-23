@@ -588,54 +588,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//Ocurre el retardo para acceder a la memoria principal
 			//retardo_acceso_memoria();
 
-			t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
-
-			if (entrada_cache == NULL){
-				//CACHE_MISS
-
-				//Ocurre el retardo para acceder a la memoria principal
-				retardo_acceso_memoria();
-
-				t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
-				if (pagina_buscada != NULL){
-
-					int inicio = obtener_inicio_pagina(pagina_buscada);
-					int direccion_memoria = inicio + offset;
-
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(direccion_memoria));
-					string_append(&mensajeACpu, ";");
-
-					enviarMensaje(&sock, mensajeACpu);
-					free(mensajeACpu);
-				}
-
-				//Se carga la nueva pagina en cache
-				if (cache_habilitada)
-					almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
-
-			} else {
-
-				//Si encontro la entrada en cache
-
-				//Le aviso a la CPU que la variable se encuentra en cache
-				//Y que debe leerla utilizando pid, pagina, offset y tamanio
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
-				string_append(&mensajeACpu, ";");
-
-				enviarMensaje(&sock, mensajeACpu);
-				free(mensajeACpu);
-
-				//Hago el reemplazo de paginas y ordeno
-				int indice_cache = list_size(tabla_cache) + 1;
-				int indice_antiguo = entrada_cache->indice;
-				entrada_cache->indice = indice_cache;
-
-				list_replace(tabla_cache, indice_antiguo, entrada_cache);
-
-				reorganizar_indice_cache_y_ordenar();
-			}
+			obtenerPosicionVariable(pid, pagina, offset, sock);
 		}
 
 		free(mensajeDesdeCPU);
@@ -648,65 +601,55 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	return EXIT_SUCCESS;
 }
 
-int marco_libre_para_variables(){
+void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
+	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
-	t_pagina_invertida* pag;
-	int i = 0;
+	if (entrada_cache == NULL){
+		//CACHE_MISS
 
-	int encontrado = 0;
+		//Ocurre el retardo para acceder a la memoria principal
+		retardo_acceso_memoria();
 
-	while (encontrado == 0){
-		int encontrar_pag(t_pagina_invertida *pagina) {
-			return ((pagina->nro_marco == configuracion->marcos - i) && (pagina->pid == 0));
+		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+		if (pagina_buscada != NULL){
+
+			int inicio = obtener_inicio_pagina(pagina_buscada);
+			int direccion_memoria = inicio + offset;
+
+			char* mensajeACpu = string_new();
+			string_append(&mensajeACpu, string_itoa(direccion_memoria));
+			string_append(&mensajeACpu, ";");
+
+			enviarMensaje(&sock, mensajeACpu);
+			free(mensajeACpu);
 		}
 
-		pag = list_find(tabla_paginas, (void*) encontrar_pag);
-		if(pag != NULL){
-			encontrado = 1;
-		}
-		i++;
+		//Se carga la nueva pagina en cache
+		if (cache_habilitada)
+			almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+
+	} else {
+
+		//Si encontro la entrada en cache
+
+		//Le aviso a la CPU que la variable se encuentra en cache
+		//Y que debe leerla utilizando pid, pagina, offset y tamanio
+		char* mensajeACpu = string_new();
+		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
+		string_append(&mensajeACpu, ";");
+
+		enviarMensaje(&sock, mensajeACpu);
+		free(mensajeACpu);
+
+		//Hago el reemplazo de paginas y ordeno
+		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_antiguo = entrada_cache->indice;
+		entrada_cache->indice = indice_cache;
+
+		list_replace(tabla_cache, indice_antiguo, entrada_cache);
+
+		reorganizar_indice_cache_y_ordenar();
 	}
-
-	if(pag != NULL){
-		return pag->nro_marco;
-	}else{
-		return -1;
-	}
-}
-
-t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
-
-	t_pagina_invertida* pag;
-
-	int size = list_size(lista);
-	int i;
-	int maximo = 0;
-	int igual = 1;
-
-	for(i = 0; i < size; i++){
-		int num_marco = ((t_pagina_invertida*) list_get(lista, i))->nro_marco;
-
-		if(num_marco == maximo){
-			igual++;
-		}else if(num_marco > maximo){
-			maximo = num_marco;
-		}
-	}
-
-
-	if(igual == size){
-		return NULL;
-	}else{
-
-		int encontrar_pagina_maxima(t_pagina_invertida *pag) {
-			return (pag->nro_marco == maximo);
-		}
-
-		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
-
-		return pag;
-	}
-
 }
 
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
