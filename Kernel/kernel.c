@@ -1096,7 +1096,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 803: //de CPU a File system (abrir)
-				puts("y este");
+
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
@@ -1109,7 +1109,6 @@ void * handler_conexion_cpu(void * sock) {
 
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
-				 puts("hasta acá venimos bien");
 				 borrarArchivo(pid_mensaje, fd);
 
 				break;
@@ -2583,17 +2582,21 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
-
+	puts("hasta aca llegamos");
+	printf("la cantidad de archivos es /d", lista_File_global->elements_count );
 	int encontrar_archProceso(t_fileProceso* glo){
 		if(fd == glo->fileDescriptor)
 			return 1;
 		else
 			return 0;
 	}
+
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
 	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
+	puts("hasta acá estamos");
+	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor)
 	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
-
+	puts("parece que lo removió bien");
 	int encontrar_archGlobal(t_fileGlobal* glo){
 		if(archAbrir1->global_fd == glo->fdGlobal)
 			return 1;
@@ -2602,7 +2605,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 	}
 	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
-
+	printf("el valorcito del fd global es %d", archAbrir1->global_fd);
 	if(archAbrir2->cantidadDeAperturas != 0)
 	{
 		puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
