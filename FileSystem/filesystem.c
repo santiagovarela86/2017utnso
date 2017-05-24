@@ -25,6 +25,8 @@ char* montaje;
 t_list* lista_archivos;
 FileSystem_Config * configuracion;
 
+FILE* metadataSadica;
+
 int socketFileSystem;
 struct sockaddr_in direccionSocket;
 
@@ -58,9 +60,36 @@ void inicializarEstructuras(char * pathConfig){
 	montaje = string_new();
 	montaje = configuracion->punto_montaje;
 
+	//crearMetadataSadica(montaje);
+
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
+}
+void crearMetadataSadica(char* montaje)
+{
+	char* pathAbsoluto = string_new();
+	string_append(&pathAbsoluto, montaje);
+	string_append(&pathAbsoluto, "Metadata/Metadata.bin");
+
+	metadataSadica = fopen(pathAbsoluto, "w");
+	char* tamanioBloques = string_new();
+	char* cantidadBloques = string_new();
+	char* magicNumber = string_new();
+	string_append(&tamanioBloques, "TamañoDeBloques=64");
+	string_append(&cantidadBloques, "CantidadDeBloques=30");
+	string_append(&magicNumber, "MagicNumber=SADICA");
+
+	fseek(metadataSadica, 0, SEEK_SET);
+    fputs(tamanioBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques), SEEK_SET);
+    fputs(cantidadBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques)+string_length(magicNumber), SEEK_SET);
+    fputs(cantidadBloques, metadataSadica);
+
+    free(tamanioBloques);
+    free(cantidadBloques);
+    free(magicNumber);
 }
 
 void liberarEstructuras(){
