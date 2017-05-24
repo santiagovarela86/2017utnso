@@ -65,6 +65,10 @@ typedef struct {
 	char* id;
 	int valor;
 } t_semaforo;
+typedef struct {
+	int fd;
+	int offset;
+}t_offsetArch;
 
 typedef struct {
 	int pid;
