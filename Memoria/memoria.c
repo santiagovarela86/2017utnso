@@ -30,16 +30,13 @@ int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
-pthread_mutex_t mutex_cache;
-//int semaforo = 0;
+
 t_list* tabla_paginas;
 t_list* tabla_cache;
 int stack_size = 0;
 char* bloque_memoria;
-char* bloque_cache;
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
-t_list* tabla_programas;
 t_list* lista_paginas_stack;
 bool cache_habilitada = false;
 
@@ -90,12 +87,10 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
-	pthread_mutex_init(&mutex_cache, NULL);
 
 	configuracion = leerConfiguracion(pathConfig);
 
 	bloque_memoria = string_new();
-	bloque_cache = string_new();
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
@@ -103,11 +98,6 @@ void inicializarEstructuras(char * pathConfig){
 	bloque_memoria = calloc(configuracion->marcos, configuracion->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
-	}
-
-	bloque_cache = calloc(configuracion->entradas_cache, configuracion->marco_size);
-	if (bloque_cache == NULL){
-		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
 	}
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
@@ -120,7 +110,6 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 	tabla_cache = list_create();
-	tabla_programas = list_create();
 	lista_paginas_stack = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
@@ -136,13 +125,11 @@ void liberarEstructuras(){
 	pthread_mutex_destroy(&mutex_bloque_memoria);
 
 	list_destroy_and_destroy_elements(tabla_cache, free);
-	list_destroy_and_destroy_elements(tabla_programas, free);
 	list_destroy_and_destroy_elements(lista_paginas_stack, free);
 
 	free(configuracion);
 	free(tamanio_maximo);
 	free(bloque_memoria);
-	free(bloque_cache);
 
 	sem_destroy(&semaforoKernel);
 
