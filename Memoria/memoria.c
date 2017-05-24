@@ -415,9 +415,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int pagina = atoi(mensajeDesdeCPU[2]);
 			int offset = atoi(mensajeDesdeCPU[3]);
 
-			//Ocurre el retardo para acceder a la memoria principal
-			//retardo_acceso_memoria();
-
 			obtenerPosicionVariable(pid, pagina, offset, sock);
 		}
 
@@ -1014,7 +1011,7 @@ void log_estructuras_memoria_in_disk() {
 
 			if (pagina->pid != -1 && pagina->pid != 0
 					&& list_find(listado_procesos_activos, (void *)_encontrar_procesos_activo) == 0){
-				list_add(listado_procesos_activos, pagina->pid);
+				list_add(listado_procesos_activos, (int*)pagina->pid);
 				string_append(&dump_procesos_activos, "PID: ");
 				string_append(&dump_procesos_activos, string_itoa(pagina->pid));
 				string_append(&dump_procesos_activos, "\n");
