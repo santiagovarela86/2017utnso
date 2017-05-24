@@ -335,7 +335,7 @@ void * hilo_conexiones_cpu(){
 	struct sockaddr_in direccionCPU;
 	socklen_t length = sizeof direccionCPU;
 
-	while (socketCPU = accept(socketMemoria, (struct sockaddr *) &direccionCPU, &length)){
+	while ((socketCPU = accept(socketMemoria, (struct sockaddr *) &direccionCPU, &length)) > 0){
 		pthread_t thread_cpu;
 
 		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
