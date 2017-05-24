@@ -1,6 +1,12 @@
 ///CODIGOS
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //499 FIL A OTR - RESPUESTA A CONEXION INCORRECTA
+//805 mover cursor (esta solo en kernel)
+//804 Escribir
+//803 Abrir/Crear archivo
+//802 Borrar
+//801 Cerrar (esta solo en kernel)
+//800 Leer
 
 #include <sys/stat.h>
 #include <sys/types.h>
