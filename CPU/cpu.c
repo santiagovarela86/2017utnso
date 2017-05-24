@@ -774,7 +774,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 
 		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		free(mensajeAKernel);
+
 
 		if (result > 0){
 			puts("archivo se abrió correctamente");
@@ -788,7 +788,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 		}
 
 
-
+		free(mensajeAKernel);
 }
 
 void borrar(t_descriptor_archivo descriptor){
