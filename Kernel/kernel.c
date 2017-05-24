@@ -2569,7 +2569,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	int fdNuevo;
 	 if((int)lista_File_global->elements_count != 0)
 	 {
-		 fdNuevo = lista_File_global->elements_count + 1;
+		 fdNuevo = lista_File_global->elements_count + 3;
 	 }
 	 else
 	 {
