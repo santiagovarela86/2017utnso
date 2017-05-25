@@ -319,10 +319,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		printf("Se creo la primer pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
 				pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 
-		if (cache_habilitada){
-			almacenar_pagina_en_cache_para_pid(pid, pagina);
-		}
-
 		free(respuestaAKernel);
 	} else {
 		perror("Error al crear Pagina de Heap\n");
