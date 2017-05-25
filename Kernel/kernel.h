@@ -190,8 +190,9 @@ void bloqueoDePrograma(int pid_a_buscar);
 void matarProceso(int pidAMatar);
 void abrir_subconsola_dos(t_pcb* p);
 t_pcb* existe_proceso(int pid);
-t_estadistica* encontrar_estadistica(t_pcb* p);
+t_estadistica* encontrar_estadistica(int p);
 void finalizarProgramaEnMemoria(int pid);
+int obtener_pid_de_cpu(int* skt);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
