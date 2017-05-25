@@ -524,7 +524,7 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 2:
 				accion_correcta = 1;
 
-				est = encontrar_estadistica(p);
+				est = encontrar_estadistica(p->pid);
 
 				printf("La cantidad de operaciones privilegiadas son: %d \n", est->cant_oper_privilegiadas);
 				break;
@@ -539,21 +539,21 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 5:
 				accion_correcta = 1;
 
-				est = encontrar_estadistica(p);
+				est = encontrar_estadistica(p->pid);
 
 				printf("La cantidad de acciones alocar son: %d \n", est->cant_alocar);
 				break;
 			case 6:
 				accion_correcta = 1;
 
-				est = encontrar_estadistica(p);
+				est = encontrar_estadistica(p->pid);
 
 				printf("La cantidad de acciones liberar son: %d \n", est->cant_liberar);
 				break;
 			case 7:
 				accion_correcta = 1;
 
-				est = encontrar_estadistica(p);
+				est = encontrar_estadistica(p->pid);
 
 				printf("La cantidad Syscalls son: %d \n", est->cant_syscalls);
 				break;
@@ -657,7 +657,7 @@ void matarProceso(int pidAMatar){
 
 }
 
-t_estadistica* encontrar_estadistica(t_pcb* p){
+t_estadistica* encontrar_estadistica(int pid){
 	int inicio = 0;
 	int fin = list_size(lista_estadistica);
 	int encontrado = 0;
@@ -666,7 +666,7 @@ t_estadistica* encontrar_estadistica(t_pcb* p){
 	while(inicio < fin && encontrado == 0){
 		est = (t_estadistica*) list_get(lista_estadistica, inicio);
 
-		if(est->pid == p->pid){
+		if(est->pid == pid){
 			encontrado = 1;
 		}
 
@@ -1048,8 +1048,17 @@ void * handler_conexion_cpu(void * sock) {
 		char* infofile;
 		int pid_recibido;
 
+		int pid_del_programa = obtener_pid_de_cpu(socketCliente);
+
+		t_estadistica* est = encontrar_estadistica(pid_del_programa);
+
+		est->cant_oper_privilegiadas++;
+		est->cant_syscalls++;
+
 		switch (operacion){
 			case 530:
+
+				enviarMensaje(socketCliente, "530");
 				finDeQuantum(socketCliente);
 				break;
 
@@ -1217,6 +1226,33 @@ void * handler_conexion_cpu(void * sock) {
 	}
 
 	return EXIT_SUCCESS;
+}
+
+int obtener_pid_de_cpu(int* skt){
+
+	int fin = queue_size(cola_cpu);
+	int encontrado = 0;
+	estruct_cpu* cp;
+
+	while(fin > 0 && encontrado == 0){
+
+		pthread_mutex_lock(&mtx_cpu);
+		cp = queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if(cp->socket == *(skt)){
+			encontrado = 1;
+		}
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, cp);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		fin--;
+	}
+
+	return cp->pid_asignado;
+
 }
 
 t_pcb *nuevo_pcb(int pid, int* socket_consola){
