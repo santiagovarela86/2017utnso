@@ -1057,6 +1057,8 @@ void * handler_conexion_cpu(void * sock) {
 
 		switch (operacion){
 			case 530:
+
+				enviarMensaje(socketCliente, "530");
 				finDeQuantum(socketCliente);
 				break;
 

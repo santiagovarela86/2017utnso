@@ -165,8 +165,9 @@ void* manejo_kernel(void *args) {
 
         	enviarMensaje(&socketKernel, mensajeAKernel);
 
-        	//ACA RESTAURO EL VALOR NO SE SI VA ACA
         	pcb->quantum = q;
+
+        	recv(socketKernel, mensajeAKernel, MAXBUF, 0);
 
         	char* mensajeAKernel2 = serializar_pcb(pcb);
 
