@@ -31,6 +31,6 @@ int validar_archivo(char* directorio);
 void crear_archivo(char* directorio, char* flag);
 void borrarArchivo(char* directorio);
 void guardar_datos(char* directorio, int size, char* buffer, int offset);
-
+void crearMetadataSadica(char* montaje);
 #endif /* FILESYSTEM_H_ */
 

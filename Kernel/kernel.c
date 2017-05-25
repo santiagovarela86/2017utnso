@@ -2523,8 +2523,27 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		string_append(&mensajeFS, ";");
 		string_append(&mensajeFS, ((char*)infofile));
 		string_append(&mensajeFS, ";");
-		//string_append(&mensajeFS, string_itoa(offsetArchivo));
-		string_append(&mensajeFS, ";");
+
+		int encontrar_archProceso(t_fileProceso* glo) {
+			if (fd == glo->fileDescriptor)
+				return 1;
+			else
+				return 0;
+		}
+		t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
+		regOffset = list_find(offsetArch, (void*)encontrar_archProceso);
+		if(regTablaGlobal != NULL)
+		{
+
+			string_append(&mensajeFS, string_itoa(regOffset->offset));
+			string_append(&mensajeFS, ";");
+
+		}
+		else
+		{
+			string_append(&mensajeFS, string_itoa(-1));
+			string_append(&mensajeFS, ";");
+		}
 
 		//free(archAbrir1);
 		free(regTablaGlobal);
@@ -2550,7 +2569,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	int fdNuevo;
 	 if((int)lista_File_global->elements_count != 0)
 	 {
-		 fdNuevo = lista_File_global->elements_count + 1;
+		 fdNuevo = lista_File_global->elements_count + 3;
 	 }
 	 else
 	 {
@@ -2594,7 +2613,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
 	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
 	puts("hasta acá estamos");
-	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor)
+	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor);
 	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
 	puts("parece que lo removió bien");
 	int encontrar_archGlobal(t_fileGlobal* glo){
@@ -2683,8 +2702,27 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, ((char*)infofile));
 	string_append(&mensajeAFS, ";");
-	//string_append(&mensajeAFS, string_itoa(offsetArchivo));
-	string_append(&mensajeAFS, ";");
+
+	int encontrar_archProceso(t_fileProceso* glo) {
+		if (fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+	t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
+	regOffset = list_find(offsetArch, (void*)encontrar_archProceso);
+	if (regTablaGlobal != NULL)
+	{
+
+		string_append(&mensajeAFS, string_itoa(regOffset->offset));
+		string_append(&mensajeAFS, ";");
+
+	}
+	else
+	{
+		string_append(&mensajeAFS, string_itoa(-1));
+		string_append(&mensajeAFS, ";");
+	}
 
 	//free(archAbrir1);
 	free(regTablaGlobal);
@@ -2708,4 +2746,3 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	}
 
 }
-

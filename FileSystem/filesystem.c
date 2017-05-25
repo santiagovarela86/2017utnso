@@ -1,6 +1,12 @@
 ///CODIGOS
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //499 FIL A OTR - RESPUESTA A CONEXION INCORRECTA
+//805 mover cursor (esta solo en kernel)
+//804 Escribir
+//803 Abrir/Crear archivo
+//802 Borrar
+//801 Cerrar (esta solo en kernel)
+//800 Leer
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +30,8 @@ int socketKernel;
 char* montaje;
 t_list* lista_archivos;
 FileSystem_Config * configuracion;
+
+FILE* metadataSadica;
 
 int socketFileSystem;
 struct sockaddr_in direccionSocket;
@@ -56,10 +64,38 @@ void inicializarEstructuras(char * pathConfig){
 	lista_archivos = list_create();
 
 	montaje = string_new();
+	montaje = configuracion->punto_montaje;
+
+	//crearMetadataSadica(montaje);
 
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
+}
+void crearMetadataSadica(char* montaje)
+{
+	char* pathAbsoluto = string_new();
+	string_append(&pathAbsoluto, montaje);
+	string_append(&pathAbsoluto, "Metadata/Metadata.bin");
+
+	metadataSadica = fopen(pathAbsoluto, "w");
+	char* tamanioBloques = string_new();
+	char* cantidadBloques = string_new();
+	char* magicNumber = string_new();
+	string_append(&tamanioBloques, "TamañoDeBloques=64");
+	string_append(&cantidadBloques, "CantidadDeBloques=30");
+	string_append(&magicNumber, "MagicNumber=SADICA");
+
+	fseek(metadataSadica, 0, SEEK_SET);
+    fputs(tamanioBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques), SEEK_SET);
+    fputs(cantidadBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques)+string_length(magicNumber), SEEK_SET);
+    fputs(cantidadBloques, metadataSadica);
+
+    free(tamanioBloques);
+    free(cantidadBloques);
+    free(magicNumber);
 }
 
 void liberarEstructuras(){
@@ -231,9 +267,12 @@ void atender_peticiones(int socket){
 */
 int validar_archivo(char* directorio){
 
+	char* pathAbsoluto = string_new();
+	string_append(&pathAbsoluto, montaje);
+	string_append(&pathAbsoluto, directorio);
 
 	int encontrar_sem(t_archivosFileSystem* archivo) {
-		return string_starts_with(directorio, archivo->path);
+		return string_starts_with(pathAbsoluto, archivo->path);
 	}
 
 
@@ -248,6 +287,7 @@ int validar_archivo(char* directorio){
 
 		return 1;
 	}
+	free(pathAbsoluto);
 	/*char* path = string_new();
 
 	path = string_substring(montaje,1,string_length(montaje));
@@ -281,41 +321,50 @@ int validar_archivo(char* directorio){
 
 void crear_archivo(char* flag, char* directorio){
 
+	  char* pathAbsoluto = string_new();
+	  string_append(&pathAbsoluto, montaje);
+	  string_append(&pathAbsoluto, directorio);
+
    	  int result = validar_archivo(directorio);
 
    	  if (result == 1)
    	  {
    		  FILE * pFile;
-   		  pFile = fopen (directorio,"w"); //por defecto lo crea
+   		  pFile = fopen (pathAbsoluto,"w"); //por defecto lo crea
    		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
    		  archNuevo->referenciaArchivo = pFile;
-   		  archNuevo->path = directorio;
-		  list_add(lista_archivos, directorio);
+   		  archNuevo->path = pathAbsoluto;
+		  list_add(lista_archivos, pathAbsoluto);
 
    	  }
    	  else
    	  {
 
 			int encontrar_Arch(t_archivosFileSystem* archivo) {
-				return string_starts_with(directorio, archivo->path);
+				return string_starts_with(pathAbsoluto, archivo->path);
 			}
 
 		  t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_Arch);
 		  list_remove_by_condition(lista_archivos,(void*) encontrar_Arch);
    		  FILE * pFileReabrir;
-   		  pFileReabrir = freopen(directorio,flag,archBuscado->referenciaArchivo); //le cambio el tipo de apertura
+   		  pFileReabrir = freopen(pathAbsoluto,flag,archBuscado->referenciaArchivo); //le cambio el tipo de apertura
    		  archBuscado->referenciaArchivo = pFileReabrir;
    		  list_add(lista_archivos, archBuscado);
    	  }
 
+	  free(pathAbsoluto);
 }
 
 void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
+    	char* pathAbsoluto = string_new();
+		string_append(&pathAbsoluto, montaje);
+		string_append(&pathAbsoluto, directorio);
+
         char* mensaje = string_new();
 
 			int encontrar_sem(t_archivosFileSystem* archivo) {
-				return string_starts_with(directorio, archivo->path);
+				return string_starts_with(pathAbsoluto, archivo->path);
 			}
 
 			t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
@@ -324,9 +373,10 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 			{
 				fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
 			}
-	        fgets(mensaje, size, archBuscado->referenciaArchivo );
+	        fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
 
 	    	enviarMensaje(&socketKernel, mensaje);
+			free(pathAbsoluto);
 	        return ;
 
 	    } // End if file
@@ -334,9 +384,13 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
+		char* pathAbsoluto = string_new();
+		string_append(&pathAbsoluto, montaje);
+		string_append(&pathAbsoluto, directorio);
+
 
 		int encontrar_sem(t_archivosFileSystem* archivo) {
-			return string_starts_with(directorio, archivo->path);
+			return string_starts_with(pathAbsoluto, archivo->path);
 		}
 
 		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
@@ -346,21 +400,25 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
 		}
         fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
-
+		free(pathAbsoluto);
         //return mensaje;
 
     } // End if file
 
 void borrarArchivo(char* directorio){
 
+		char* pathAbsoluto = string_new();
+		string_append(&pathAbsoluto, montaje);
+		string_append(&pathAbsoluto, directorio);
+
 		int encontrar_sem(t_archivosFileSystem* archivo) {
-			return string_starts_with(directorio, archivo->path);
+			return string_starts_with(pathAbsoluto, archivo->path);
 		}
 
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
 		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
-
+		free(pathAbsoluto);
         //return mensaje;
 
     } // End if file

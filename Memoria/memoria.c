@@ -30,16 +30,13 @@ int tiempo_retardo;
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
-pthread_mutex_t mutex_cache;
-//int semaforo = 0;
+
 t_list* tabla_paginas;
 t_list* tabla_cache;
 int stack_size = 0;
 char* bloque_memoria;
-char* bloque_cache;
 Memoria_Config* configuracion;
 t_max_cantidad_paginas* tamanio_maximo;
-t_list* tabla_programas;
 t_list* lista_paginas_stack;
 bool cache_habilitada = false;
 
@@ -90,12 +87,10 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_init(&mutex_tiempo_retardo, NULL);
 	pthread_mutex_init(&mutex_estructuras_administrativas, NULL);
 	pthread_mutex_init(&mutex_bloque_memoria, NULL);
-	pthread_mutex_init(&mutex_cache, NULL);
 
 	configuracion = leerConfiguracion(pathConfig);
 
 	bloque_memoria = string_new();
-	bloque_cache = string_new();
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
@@ -103,11 +98,6 @@ void inicializarEstructuras(char * pathConfig){
 	bloque_memoria = calloc(configuracion->marcos, configuracion->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
-	}
-
-	bloque_cache = calloc(configuracion->entradas_cache, configuracion->marco_size);
-	if (bloque_cache == NULL){
-		perror("No se pudo reservar el bloque para la memoria cache del Sistema\n");
 	}
 
 	pthread_mutex_lock(&mutex_tiempo_retardo);
@@ -120,7 +110,6 @@ void inicializarEstructuras(char * pathConfig){
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 	tabla_cache = list_create();
-	tabla_programas = list_create();
 	lista_paginas_stack = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
@@ -136,13 +125,11 @@ void liberarEstructuras(){
 	pthread_mutex_destroy(&mutex_bloque_memoria);
 
 	list_destroy_and_destroy_elements(tabla_cache, free);
-	list_destroy_and_destroy_elements(tabla_programas, free);
 	list_destroy_and_destroy_elements(lista_paginas_stack, free);
 
 	free(configuracion);
 	free(tamanio_maximo);
 	free(bloque_memoria);
-	free(bloque_cache);
 
 	sem_destroy(&semaforoKernel);
 
@@ -332,10 +319,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		printf("Se creo la primer pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
 				pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 
-		if (cache_habilitada){
-			almacenar_pagina_en_cache_para_pid(pid, pagina);
-		}
-
 		free(respuestaAKernel);
 	} else {
 		perror("Error al crear Pagina de Heap\n");
@@ -348,7 +331,7 @@ void * hilo_conexiones_cpu(){
 	struct sockaddr_in direccionCPU;
 	socklen_t length = sizeof direccionCPU;
 
-	while (socketCPU = accept(socketMemoria, (struct sockaddr *) &direccionCPU, &length)){
+	while ((socketCPU = accept(socketMemoria, (struct sockaddr *) &direccionCPU, &length)) > 0){
 		pthread_t thread_cpu;
 
 		printf("%s:%d conectado\n", inet_ntoa(direccionCPU.sin_addr), ntohs(direccionCPU.sin_port));
@@ -370,7 +353,7 @@ void * hilo_conexiones_cpu(){
 void * handler_conexiones_cpu(void * socketCliente) {
 	int sock = (int *) socketCliente;
 
-	int paginaNueva = false;
+	int paginaNueva = 0;
 
 	handShakeListen(&sock, "500", "202", "299", "CPU");
 
@@ -391,23 +374,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
 
-			int direccion = atoi(mensajeDesdeCPU[1]);
-			int valor = 0;
-			//Valor en Cache
-			if (direccion == VARIABLE_EN_CACHE){
-
-				int pid = atoi(mensajeDesdeCPU[2]);
-				int nro_pagina = atoi(mensajeDesdeCPU[3]);
-				int offset = atoi(mensajeDesdeCPU[4]);
-				valor = atoi(mensajeDesdeCPU[5]);
-				t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
-				int inicio = obtener_inicio_pagina(pagina);
-				direccion = inicio + offset;
-			} else {
-				valor = atoi(mensajeDesdeCPU[2]);
-			}
-			grabar_valor(direccion, valor);
-
+			asignarVariable(mensajeDesdeCPU);
 
 		} else if (codigo == 512) {
 
@@ -417,167 +384,13 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			char nombreVariable = *mensajeDesdeCPU[1];
 
 			int pid = atoi(mensajeDesdeCPU[2]);
-
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]);
 
-			t_pagina_invertida* pag_encontrada;
-
-			t_pagina_proceso * manejo_programa = get_manejo_programa(pid);
-
-			if(manejo_programa == NULL){
-
-				//puts("primera variable del programa");
-
-				pthread_mutex_lock(&mutex_estructuras_administrativas);
-
-				t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
-
-				paginaNueva = true;
-
-				if (pag_a_cargar == NULL){
-					//No hay pagina para asignar
-					//Se avisa a la CPU que no se pudo asignar Memoria
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
-					string_append(&mensajeACpu, ";");
-					enviarMensaje(&sock, mensajeACpu);
-					break;
-				}
-
-				//t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
-
-				pag_a_cargar->nro_pagina = paginaParaVariables;
-				pag_a_cargar->pid = pid;
-				
-				list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
-
-				manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
-				list_add(lista_paginas_stack, manejo_programa);
-
-				pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-				t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
-
-				grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
-
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
-				string_append(&mensajeACpu, ";");
-				string_append(&mensajeACpu, string_itoa(paginaNueva));
-				string_append(&mensajeACpu, ";");
-				string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
-				string_append(&mensajeACpu, ";");
-				enviarMensaje(&sock, mensajeACpu);
-				paginaNueva = false;
-
-				free(entrada_stack);
-				free(mensajeACpu);
-
-			} else {
-
-				//puts("ya existen otras variables de ese programa");
-
-				pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->pagina);
-
-				if (!pagina_llena(pag_encontrada)) {
-
-					pthread_mutex_lock(&mutex_estructuras_administrativas);
-					list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
-					pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-					t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
-
-					grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
-
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
-					string_append(&mensajeACpu, ";");
-					string_append(&mensajeACpu, string_itoa(paginaNueva));
-					string_append(&mensajeACpu, ";");
-					string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
-					string_append(&mensajeACpu, ";");
-
-					enviarMensaje(&sock, mensajeACpu);
-					free(mensajeACpu);
-				}
-				else {
-
-					bool _paginas_stack_de_proceso(void *pagina) {
-		                return ((t_pagina_proceso *)pagina)->pid == pid;
-		            }
-
-					int cantPaginasStackAsignadas = list_count_satisfying(lista_paginas_stack, _paginas_stack_de_proceso);
-
-					if (cantPaginasStackAsignadas < stack_size){
-						//El proceso no supera el limite de stack
-						//Se le asigna una nueva pagina
-
-						pag_encontrada = buscar_pagina_para_insertar(pid, cantPaginasStackAsignadas + 1);
-
-						pthread_mutex_lock(&mutex_estructuras_administrativas);
-						list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
-
-						t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
-
-						pag_stack->pagina = pag_encontrada->nro_pagina;
-						pag_stack->pid = pid;
-						list_add(lista_paginas_stack, pag_stack);
-
-						t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
-						grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
-
-						pthread_mutex_unlock(&mutex_estructuras_administrativas);
-
-						char* mensajeACpu = string_new();
-						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
-						string_append(&mensajeACpu, ";");
-						string_append(&mensajeACpu, string_itoa(paginaNueva));
-						string_append(&mensajeACpu, ";");
-						string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
-						string_append(&mensajeACpu, ";");
-						enviarMensaje(&sock, mensajeACpu);
-
-						free(entrada_stack);
-						free(mensajeACpu);
-
-					}
-					else {
-						//Entonces llego al limite de paginas de stack
-						//Se envia mensaje a CPU informando que no puede continuar la ejecucion
-						char* mensajeACpu = string_new();
-						string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
-						string_append(&mensajeACpu, ";");
-						enviarMensaje(&sock, mensajeACpu);
-					}
-				}
-			}
+			definirVariable(nombreVariable, pid, paginaParaVariables, &paginaNueva, sock);
 
 		} else if (codigo == 513) {
 
-			int posicion_de_la_Variable = atoi(mensajeDesdeCPU[1]);
-
-			char* valor_variable  = string_new();
-
-			if (posicion_de_la_Variable == VARIABLE_EN_CACHE){
-
-				int pid = atoi(mensajeDesdeCPU[2]);
-				int pagina = atoi(mensajeDesdeCPU[3]);
-				int offset = atoi(mensajeDesdeCPU[4]);
-				int tamanio = atoi(mensajeDesdeCPU[5]);
-				valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
-			}
-			else {
-				valor_variable = leer_memoria(posicion_de_la_Variable, OFFSET_VAR);
-			}
-
-			int valor = atoi(valor_variable);
-
-			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, string_itoa(valor));
-			string_append(&mensajeACpu, ";");
-
-			enviarMensaje(&sock, mensajeACpu);
-			free(mensajeACpu);
+			obtenerValorDeVariable(mensajeDesdeCPU, sock);
 
 		} else if (codigo == 601) {
 
@@ -585,57 +398,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int pagina = atoi(mensajeDesdeCPU[2]);
 			int offset = atoi(mensajeDesdeCPU[3]);
 
-			//Ocurre el retardo para acceder a la memoria principal
-			//retardo_acceso_memoria();
-
-			t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
-
-			if (entrada_cache == NULL){
-				//CACHE_MISS
-
-				//Ocurre el retardo para acceder a la memoria principal
-				retardo_acceso_memoria();
-
-				t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
-				if (pagina_buscada != NULL){
-
-					int inicio = obtener_inicio_pagina(pagina_buscada);
-					int direccion_memoria = inicio + offset;
-
-					char* mensajeACpu = string_new();
-					string_append(&mensajeACpu, string_itoa(direccion_memoria));
-					string_append(&mensajeACpu, ";");
-
-					enviarMensaje(&sock, mensajeACpu);
-					free(mensajeACpu);
-				}
-
-				//Se carga la nueva pagina en cache
-				if (cache_habilitada)
-					almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
-
-			} else {
-
-				//Si encontro la entrada en cache
-
-				//Le aviso a la CPU que la variable se encuentra en cache
-				//Y que debe leerla utilizando pid, pagina, offset y tamanio
-				char* mensajeACpu = string_new();
-				string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
-				string_append(&mensajeACpu, ";");
-
-				enviarMensaje(&sock, mensajeACpu);
-				free(mensajeACpu);
-
-				//Hago el reemplazo de paginas y ordeno
-				int indice_cache = list_size(tabla_cache) + 1;
-				int indice_antiguo = entrada_cache->indice;
-				entrada_cache->indice = indice_cache;
-
-				list_replace(tabla_cache, indice_antiguo, entrada_cache);
-
-				reorganizar_indice_cache_y_ordenar();
-			}
+			obtenerPosicionVariable(pid, pagina, offset, sock);
 		}
 
 		free(mensajeDesdeCPU);
@@ -648,65 +411,244 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	return EXIT_SUCCESS;
 }
 
-int marco_libre_para_variables(){
+void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock){
 
-	t_pagina_invertida* pag;
-	int i = 0;
+	t_pagina_invertida* pag_encontrada;
+	t_pagina_proceso * manejo_programa = get_manejo_programa(pid);
 
-	int encontrado = 0;
+	if(manejo_programa == NULL){
+		//puts("Primera variable del programa");
+		definirPrimeraVariable(nombreVariable, pid, paginaParaVariables, paginaNueva, sock);
+	} else {
+		//puts("ya existen otras variables de ese programa");
+		pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->pagina);
 
-	while (encontrado == 0){
-		int encontrar_pag(t_pagina_invertida *pagina) {
-			return ((pagina->nro_marco == configuracion->marcos - i) && (pagina->pid == 0));
+		if (!pagina_llena(pag_encontrada)) {
+			definirVariableEnPagina(nombreVariable, pag_encontrada, paginaNueva, sock);
 		}
+		else {
 
-		pag = list_find(tabla_paginas, (void*) encontrar_pag);
-		if(pag != NULL){
-			encontrado = 1;
+			bool _paginas_stack_de_proceso(void *pagina) {
+                return ((t_pagina_proceso *)pagina)->pid == pid;
+            }
+
+			int cantPaginasStackAsignadas = list_count_satisfying(lista_paginas_stack, _paginas_stack_de_proceso);
+
+			if (cantPaginasStackAsignadas < stack_size){
+				//El proceso no supera el limite de stack
+				//Se le asigna una nueva pagina
+				definirVariableEnNuevaPagina(nombreVariable, pid, cantPaginasStackAsignadas, paginaNueva, sock);
+			}
+			else {
+				//Entonces llego al limite de paginas de stack
+				//Se envia mensaje a CPU informando que no puede continuar la ejecucion
+				char* mensajeACpu = string_new();
+				string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
+				string_append(&mensajeACpu, ";");
+				enviarMensaje(&sock, mensajeACpu);
+			}
 		}
-		i++;
-	}
-
-	if(pag != NULL){
-		return pag->nro_marco;
-	}else{
-		return -1;
 	}
 }
 
-t_pagina_invertida* list_encontrar_pag_variables(t_list* lista){
+void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock){
 
-	t_pagina_invertida* pag;
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
 
-	int size = list_size(lista);
-	int i;
-	int maximo = 0;
-	int igual = 1;
+	t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, paginaParaVariables);
 
-	for(i = 0; i < size; i++){
-		int num_marco = ((t_pagina_invertida*) list_get(lista, i))->nro_marco;
+	*paginaNueva = 1;
 
-		if(num_marco == maximo){
-			igual++;
-		}else if(num_marco > maximo){
-			maximo = num_marco;
-		}
+	if (pag_a_cargar == NULL){
+		//No hay pagina para asignar
+		//Se avisa a la CPU que no se pudo asignar Memoria
+		char* mensajeACpu = string_new();
+		string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
+		string_append(&mensajeACpu, ";");
+		enviarMensaje(&sock, mensajeACpu);
+		return;
 	}
 
+	pag_a_cargar->nro_pagina = paginaParaVariables;
+	pag_a_cargar->pid = pid;
 
-	if(igual == size){
-		return NULL;
-	}else{
+	list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
-		int encontrar_pagina_maxima(t_pagina_invertida *pag) {
-			return (pag->nro_marco == maximo);
-		}
+	t_pagina_proceso* manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
+	list_add(lista_paginas_stack, manejo_programa);
 
-		pag = (t_pagina_invertida*) list_find(lista, (void *) encontrar_pagina_maxima);
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
-		return pag;
+	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
+
+	grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, string_itoa(*paginaNueva));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+	string_append(&mensajeACpu, ";");
+	enviarMensaje(&sock, mensajeACpu);
+	*paginaNueva = 0;
+
+	free(entrada_stack);
+	free(mensajeACpu);
+}
+
+void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock){
+
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
+	list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
+	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+
+	grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, string_itoa(*paginaNueva));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+	string_append(&mensajeACpu, ";");
+
+	enviarMensaje(&sock, mensajeACpu);
+	free(mensajeACpu);
+}
+
+void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock){
+
+	t_pagina_invertida* pag_encontrada = buscar_pagina_para_insertar(pid, cantPaginasStackAsignadas + 1);
+
+	pthread_mutex_lock(&mutex_estructuras_administrativas);
+	list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
+
+	t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
+
+	pag_stack->pagina = pag_encontrada->nro_pagina;
+	pag_stack->pid = pid;
+	list_add(lista_paginas_stack, pag_stack);
+
+	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
+	grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+
+	pthread_mutex_unlock(&mutex_estructuras_administrativas);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, string_itoa(*paginaNueva));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
+	string_append(&mensajeACpu, ";");
+	enviarMensaje(&sock, mensajeACpu);
+
+	free(entrada_stack);
+	free(mensajeACpu);
+}
+
+void asignarVariable(char** mensajeDesdeCPU){
+
+	int valor = 0;
+	int direccion = atoi(mensajeDesdeCPU[1]);
+
+	//Valor en Cache
+	if (direccion == VARIABLE_EN_CACHE){
+
+		int pid = atoi(mensajeDesdeCPU[2]);
+		int nro_pagina = atoi(mensajeDesdeCPU[3]);
+		int offset = atoi(mensajeDesdeCPU[4]);
+		valor = atoi(mensajeDesdeCPU[5]);
+		t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
+		int inicio = obtener_inicio_pagina(pagina);
+		direccion = inicio + offset;
+	} else {
+		valor = atoi(mensajeDesdeCPU[2]);
 	}
 
+	grabar_valor(direccion, valor);
+
+}
+
+void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
+
+	char* valor_variable  = string_new();
+	int posicion_de_la_variable = atoi(mensajeDesdeCPU[1]);
+
+	if (posicion_de_la_variable == VARIABLE_EN_CACHE){
+
+		int pid = atoi(mensajeDesdeCPU[2]);
+		int pagina = atoi(mensajeDesdeCPU[3]);
+		int offset = atoi(mensajeDesdeCPU[4]);
+		int tamanio = atoi(mensajeDesdeCPU[5]);
+		valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+	}
+	else {
+		valor_variable = leer_memoria(posicion_de_la_variable, OFFSET_VAR);
+	}
+
+	int valor = atoi(valor_variable);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(valor));
+	string_append(&mensajeACpu, ";");
+
+	enviarMensaje(&sock, mensajeACpu);
+	free(mensajeACpu);
+}
+
+void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
+	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
+
+	if (entrada_cache == NULL){
+		//CACHE_MISS
+
+		//Ocurre el retardo para acceder a la memoria principal
+		retardo_acceso_memoria();
+
+		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
+		if (pagina_buscada != NULL){
+
+			int inicio = obtener_inicio_pagina(pagina_buscada);
+			int direccion_memoria = inicio + offset;
+
+			char* mensajeACpu = string_new();
+			string_append(&mensajeACpu, string_itoa(direccion_memoria));
+			string_append(&mensajeACpu, ";");
+
+			enviarMensaje(&sock, mensajeACpu);
+			free(mensajeACpu);
+		}
+
+		//Se carga la nueva pagina en cache
+		if (cache_habilitada)
+			almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+
+	} else {
+
+		//Si encontro la entrada en cache
+
+		//Le aviso a la CPU que la variable se encuentra en cache
+		//Y que debe leerla utilizando pid, pagina, offset y tamanio
+		char* mensajeACpu = string_new();
+		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
+		string_append(&mensajeACpu, ";");
+
+		enviarMensaje(&sock, mensajeACpu);
+		free(mensajeACpu);
+
+		//Hago el reemplazo de paginas y ordeno
+		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_antiguo = entrada_cache->indice;
+		entrada_cache->indice = indice_cache;
+
+		list_replace(tabla_cache, indice_antiguo, entrada_cache);
+
+		reorganizar_indice_cache_y_ordenar();
+	}
 }
 
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
@@ -1052,7 +994,7 @@ void log_estructuras_memoria_in_disk() {
 
 			if (pagina->pid != -1 && pagina->pid != 0
 					&& list_find(listado_procesos_activos, (void *)_encontrar_procesos_activo) == 0){
-				list_add(listado_procesos_activos, pagina->pid);
+				list_add(listado_procesos_activos, (int*)pagina->pid);
 				string_append(&dump_procesos_activos, "PID: ");
 				string_append(&dump_procesos_activos, string_itoa(pagina->pid));
 				string_append(&dump_procesos_activos, "\n");

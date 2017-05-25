@@ -772,23 +772,24 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 
 		enviarMensaje(&sktKernel, mensajeAKernel);
 
-		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+		char* mensajeDeKernel = string_new();
+		int result =recv(sktKernel, mensajeDeKernel, sizeof(mensajeDeKernel), 0);
 
-		free(mensajeAKernel);
+
 
 		if (result > 0){
 			puts("archivo se abrió correctamente");
-			int fdNuevo = atoi(mensajeAKernel);
+			int fdNuevo = atoi(mensajeDeKernel);
 			printf("el file descriptor nuevo es %d \n", fdNuevo);
 			return ((t_descriptor_archivo)fdNuevo);
 
 		} else {
 			perror("Error al abrir el archivo \n");
-			return 0;
+			return ((t_descriptor_archivo)0);
 		}
 
-
-
+		free(mensajeDeKernel);
+		free(mensajeAKernel);
 }
 
 void borrar(t_descriptor_archivo descriptor){
