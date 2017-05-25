@@ -94,13 +94,13 @@ void crearMetadataSadica(char* montaje)
 	fseek(metadataSadica, string_length(tamanioBloques)+string_length(magicNumber), SEEK_SET);
     fputs(cantidadBloques, metadataSadica);
 
-    //char* bitarray = string_new();
-    //t_bitarray* bitmap = bitarray_create_with_mode(bitarray, 30, LSB_FIRST);
+    char* bitarray = string_new();
+    t_bitarray* bitmap = bitarray_create_with_mode(bitarray, (size_t)30, LSB_FIRST);
 
 	char* pathAbsolutoBitmap = string_new();
 	string_append(&pathAbsolutoBitmap, montaje);
 	string_append(&pathAbsolutoBitmap, "Metadata/Bitmap.bin");
-	bitmapArchivo = fopen(pathAbsolutoMetadata, "w");
+	bitmapArchivo = fopen(pathAbsolutoBitmap, "w");
 
     free(tamanioBloques);
     free(cantidadBloques);
