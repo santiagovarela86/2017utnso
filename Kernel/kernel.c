@@ -2581,7 +2581,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			string_append(&mensajeFS, ";");
 		}
 
-		//free(archAbrir1);
+
 		free(regTablaGlobal);
 
 		enviarMensaje(&skt_filesystem, mensajeFS);
@@ -2616,8 +2616,6 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	archNuevo->cantidadDeAperturas = 1;
 	archNuevo->fdGlobal = fdNuevo;
 	archNuevo->path = direccion;
-	//puts("este puts lo veo?");
-	//printf("el flag es %s", flag);
 	list_add(lista_File_global,archNuevo);
 
 	t_fileProceso* archTablaProcesos = malloc(sizeof(t_fileProceso));
@@ -2644,10 +2642,6 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
-	puts("hasta acá llega2");
-	printf("el valor del fd es %d", fd);
-	puts("hasta acá llega");
-
 	int encontrar_archProceso(t_fileProceso* regFileProcess){
 		if(fd == (int)regFileProcess->fileDescriptor)
 			return 1;
@@ -2655,49 +2649,30 @@ void borrarArchivo(int pid_mensaje, int fd)
 			return 0;
 	}
 
-
 	t_fileProceso* archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
-	puts("no tiene problemas en encontrar el valor en la tabla de procesos");
-	puts("1");
-	puts("1");
-	printf("valor de fd %d ;",(int)archAbrir1->fileDescriptor);
-	printf("valor de fd %d ;",(int)archAbrir1->pid);
-	printf("valor de fd %s ;", archAbrir1->flags);
-	printf("valor de fd %d ;",(int)archAbrir1->pid);
-	puts("1");
-	puts("1");
 
-	//list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
+    list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
 
-	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-	puts("no hay problemas con esto");
-	archAbrir2 = list_get(lista_File_global, (archAbrir1->global_fd-2));
-	puts("muere acá");
-	puts("1");
-	puts("1");
-	printf("valor de fd %d ;",archAbrir2->cantidadDeAperturas);
-	printf("valor de fd %d ;",archAbrir2->fdGlobal);
-	printf("valor de fd %s ;", archAbrir2->path);
+	t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
+	int index = ((int)archAbrir1->global_fd) - 3;
+	archFileGlobal = list_get(lista_File_global, index);
 
-	puts("1");
-	puts("1");
-
-	if(archAbrir2->cantidadDeAperturas != 0)
+	if(archFileGlobal->cantidadDeAperturas < 1)
 	{
 		puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 	}
 	else
 	{
-		puts("pued parece que entra");
+
 		char* mensajeAFS = string_new();
 		string_append(&mensajeAFS, "802");
 		string_append(&mensajeAFS, ";");
-		string_append(&mensajeAFS, archAbrir2->path);
+		string_append(&mensajeAFS, archFileGlobal->path);
 		string_append(&mensajeAFS, ";");
 
 		free(archAbrir1);
-		free(archAbrir2);
-	puts("envia a lo loco");
+		free(archFileGlobal);
+
 		enviarMensaje(&skt_filesystem, mensajeAFS);
 
 		/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);

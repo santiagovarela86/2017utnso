@@ -276,9 +276,11 @@ void atender_peticiones(int socket){
 */
 int validar_archivo(char* directorio){
 
+	char* directorioAux = string_new();
+	directorioAux = strtok(directorio, "\n");
 	char* pathAbsoluto = string_new();
 	string_append(&pathAbsoluto, montaje);
-	string_append(&pathAbsoluto, directorio);
+	string_append(&pathAbsoluto, directorioAux);
 
 	int encontrar_sem(t_archivosFileSystem* archivo) {
 		return string_starts_with(pathAbsoluto, archivo->path);
@@ -330,13 +332,13 @@ int validar_archivo(char* directorio){
 
 void crear_archivo(char* flag, char* directorio){
 
-	char* directorio2 = string_new();
-	directorio2 = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
+	char* directorioAux = string_new();
+	directorioAux = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
 	  char* pathAbsoluto = string_new();
 	  string_append(&pathAbsoluto, montaje);
-	  string_append(&pathAbsoluto, directorio2);
+	  string_append(&pathAbsoluto, directorioAux);
 
-   	  int result = validar_archivo(directorio2);
+   	  int result = validar_archivo(directorioAux);
 
    	  if (result == 1)
    	  {
@@ -344,8 +346,11 @@ void crear_archivo(char* flag, char* directorio){
    		  pFile = fopen (pathAbsoluto,"w"); //por defecto lo crea
    		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
    		  archNuevo->referenciaArchivo = pFile;
-   		  archNuevo->path = pathAbsoluto;
-		  list_add(lista_archivos, pathAbsoluto);
+
+   		  archNuevo->path = string_new();
+   		  string_append(&archNuevo->path, pathAbsoluto);
+
+		  list_add(lista_archivos, archNuevo);
 
    	  }
    	  else
@@ -368,9 +373,12 @@ void crear_archivo(char* flag, char* directorio){
 
 void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
-    	char* pathAbsoluto = string_new();
+		char* directorioAux = string_new();
+		directorioAux = strtok(directorio, "\n");
+
+		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
-		string_append(&pathAbsoluto, directorio);
+		string_append(&pathAbsoluto, directorioAux);
 
         char* mensaje = string_new();
 
@@ -388,6 +396,7 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 	    	enviarMensaje(&socketKernel, mensaje);
 			free(pathAbsoluto);
+			free(directorioAux);
 	        return ;
 
 	    } // End if file
@@ -395,9 +404,12 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
+	char* directorioAux = string_new();
+	directorioAux = strtok(directorio, "\n");
+
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
-		string_append(&pathAbsoluto, directorio);
+		string_append(&pathAbsoluto, directorioAux);
 
 
 		int encontrar_sem(t_archivosFileSystem* archivo) {
@@ -412,24 +424,44 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 		}
         fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
 		free(pathAbsoluto);
+		free(directorioAux);
         //return mensaje;
 
     } // End if file
 
 void borrarArchivo(char* directorio){
 
+		char* directorioAux = string_new();
+		directorioAux = strtok(directorio, "\n");
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
-		string_append(&pathAbsoluto, directorio);
+		string_append(&pathAbsoluto, directorioAux);
 
 		int encontrar_sem(t_archivosFileSystem* archivo) {
-			return string_starts_with(directorio, archivo->path);
+
+			return (int)string_contains(pathAbsoluto, (char*)archivo->path);
+
 		}
 
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
+
+		printf("la lista tiene %s", (char*)archDestroy->path);
+		//printf("la lista tiene %s", (char*)archDestroy->referenciaArchivo);
+		int result = remove((char*)archDestroy->path);
+		if(result == 0)
+		{
+			puts("El archivo ha sido eliminado con exito");
+		}
+		else
+		{
+			puts("El archivo no pudo eliminarse, revise el path");
+
+		}
 		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
 		free(pathAbsoluto);
+		free(directorioAux);
         //return mensaje;
+
 
     } // End if file
