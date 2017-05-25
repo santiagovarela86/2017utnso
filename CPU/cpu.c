@@ -765,7 +765,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(pcb->pid));
 		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, direccion);
+		string_append(&mensajeAKernel, ((char*)(direccion)));
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(flags.creacion));
 		string_append(&mensajeAKernel, ";");

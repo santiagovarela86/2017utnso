@@ -32,6 +32,7 @@ t_list* lista_archivos;
 FileSystem_Config * configuracion;
 
 FILE* metadataSadica;
+FILE* bitmapArchivo;
 
 int socketFileSystem;
 struct sockaddr_in direccionSocket;
@@ -66,7 +67,7 @@ void inicializarEstructuras(char * pathConfig){
 	montaje = string_new();
 	montaje = configuracion->punto_montaje;
 
-	//crearMetadataSadica(montaje);
+	crearMetadataSadica(montaje);
 
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
@@ -74,11 +75,11 @@ void inicializarEstructuras(char * pathConfig){
 }
 void crearMetadataSadica(char* montaje)
 {
-	char* pathAbsoluto = string_new();
-	string_append(&pathAbsoluto, montaje);
-	string_append(&pathAbsoluto, "Metadata/Metadata.bin");
+	char* pathAbsolutoMetadata = string_new();
+	string_append(&pathAbsolutoMetadata, montaje);
+	string_append(&pathAbsolutoMetadata, "Metadata/Metadata.bin");
 
-	metadataSadica = fopen(pathAbsoluto, "w");
+	metadataSadica = fopen(pathAbsolutoMetadata, "w");
 	char* tamanioBloques = string_new();
 	char* cantidadBloques = string_new();
 	char* magicNumber = string_new();
@@ -92,6 +93,14 @@ void crearMetadataSadica(char* montaje)
     fputs(cantidadBloques, metadataSadica);
 	fseek(metadataSadica, string_length(tamanioBloques)+string_length(magicNumber), SEEK_SET);
     fputs(cantidadBloques, metadataSadica);
+
+    //char* bitarray = string_new();
+    //t_bitarray* bitmap = bitarray_create_with_mode(bitarray, 30, LSB_FIRST);
+
+	char* pathAbsolutoBitmap = string_new();
+	string_append(&pathAbsolutoBitmap, montaje);
+	string_append(&pathAbsolutoBitmap, "Metadata/Bitmap.bin");
+	bitmapArchivo = fopen(pathAbsolutoMetadata, "w");
 
     free(tamanioBloques);
     free(cantidadBloques);
@@ -321,11 +330,13 @@ int validar_archivo(char* directorio){
 
 void crear_archivo(char* flag, char* directorio){
 
+	char* directorio2 = string_new();
+	directorio2 = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
 	  char* pathAbsoluto = string_new();
 	  string_append(&pathAbsoluto, montaje);
-	  string_append(&pathAbsoluto, directorio);
+	  string_append(&pathAbsoluto, directorio2);
 
-   	  int result = validar_archivo(directorio);
+   	  int result = validar_archivo(directorio2);
 
    	  if (result == 1)
    	  {
