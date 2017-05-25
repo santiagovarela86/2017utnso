@@ -7,11 +7,14 @@
 
 #ifndef CONSOLA_H_
 #define CONSOLA_H_
+#define SIZE_FECHA  11
+
+
 
 typedef struct{
 	int pid;
-	int inicio;
-	int fin;
+	struct tm *inicio;
+	struct tm *fin;
 	int duracion;
 	int mensajes;
 	int socket_kernel;

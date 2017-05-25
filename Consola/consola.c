@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <stdint.h>
 #include <fcntl.h>
+#include <time.h>
 #include <stddef.h>
 #include <errno.h>
 #include <stdio.h>
@@ -26,6 +27,11 @@
 #include "helperFunctions.h"
 #include "consola.h"
 #include <signal.h>
+#define BST (-3)
+
+   time_t rawtime;
+   struct tm *info;
+
 
 t_queue* cola_programas;
 
@@ -202,19 +208,24 @@ void * escuchar_Kernel(void * args){
 			if(atoi(respuesta_kernel[0]) == 103){
 				programa* program = malloc(sizeof(program));
 
+				  time(&rawtime);
+				   /* Get GMT time */
+				   info = gmtime(&rawtime );
+
 				program->pid = atoi(respuesta_kernel[1]);
-				program->duracion = 0;
+				program->inicio =gmtime(&rawtime );
 				program->fin = 0;
-				program->inicio = 0;
+				program->duracion = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
 
 				queue_push(cola_programas, program);
-
+				 printf("Hora es: %2d:%02d\n", (program->inicio->tm_hour), program->inicio->tm_min);
 			}else if(atoi(respuesta_kernel[0]) == 197){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else if (atoi(respuesta_kernel[0]) == 575){
 				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
+
 			}
 
 			//free(respuesta_kernel);
@@ -294,4 +305,19 @@ void socketDestroyer(void * socket){
 void destruirEstado(InfoConsola * infoConsola){
 	list_destroy(infoConsola->threads);
 	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
+}
+
+unsigned char *cGetDate() {
+     time_t hora;
+     struct tm *tiempo;
+     char *fecha;
+
+     hora = time(NULL);
+     tiempo = localtime(&hora);
+
+     fecha = (char *)malloc(sizeof(char)*SIZE_FECHA);
+     if (fecha==NULL) {perror ("No hay memoria"); return "";}
+
+     sprintf (fecha,"%02d/%02d/%4d",tiempo->tm_mday, tiempo->tm_mon+1, tiempo->tm_year+1900);
+     return fecha;
 }
