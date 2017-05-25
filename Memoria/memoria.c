@@ -680,8 +680,25 @@ void finalizar_programa(int pid){
 		return p->pid == pid;
 	}
 
-	list_remove_by_condition(tabla_cache, (void*) _obtenerCacheProceso);
-	list_remove_by_condition(lista_paginas_stack, (void*) _obtenerPaginaStackProceso);
+	void destruir_pagina_stack(t_pagina_proceso *self){
+		free(self);
+	}
+
+	int i = 0;
+	int cant_paginas_de_cache = list_count_satisfying(tabla_cache, (void*) _obtenerCacheProceso);
+
+	while (i < cant_paginas_de_cache){
+		list_remove_and_destroy_by_condition(tabla_cache, (void*) _obtenerCacheProceso, (void*) destruir_entrada_cache);
+		i++;
+	}
+
+	i = 0;
+	int cant_paginas_de_stack = list_count_satisfying(lista_paginas_stack, (void*) _obtenerPaginaStackProceso);
+
+	while (i < cant_paginas_de_stack){
+		list_remove_and_destroy_by_condition(lista_paginas_stack, (void*) _obtenerPaginaStackProceso, (void*) destruir_pagina_stack);
+		i++;
+	}
 
 	t_pagina_invertida* paginaProceso = NULL;
 	while((paginaProceso = list_find(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
