@@ -45,7 +45,7 @@ metadata_Config* leerMetaData(char* mnt){
 	char* directorio = string_new();
 	directorio = string_substring(mnt,0,string_length(mnt));
 
-	string_append(&directorio,"Metadata/Metadata");
+	string_append(&directorio,"Metadata/Metadata.bin");
 
 	printf("DIR: %s\n", directorio);
 
@@ -106,11 +106,12 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 		buffer[num*sizeof(char)] = '\0';
 	}*/
 	char* buffer = string_new();
-	char* pathAbsolutoBitmap = string_new();
-	string_append(&pathAbsolutoBitmap, mnt);
-	string_append(&pathAbsolutoBitmap, "Metadata/Bitmap.bin");
-	FILE * bitmapArchivo = fopen(pathAbsolutoBitmap, "w");
 
+	char* directorio = string_new();
+	directorio = string_substring(mnt,0,string_length(mnt));
+
+	string_append(&directorio,"Metadata/Bitmap.bin");
+	FILE * bitmapArchivo = fopen(directorio, "w");
 
 
 	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
@@ -121,7 +122,7 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	fstat(fd_script, &scriptFileStat);
 	t_bitarray* bitmapeo = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);*/
 	//fclose(ptr_fich1);
-	free(pathAbsolutoBitmap);
+	free(directorio);
 
 	return bitmap;
 }
