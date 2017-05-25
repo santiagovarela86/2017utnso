@@ -1,5 +1,16 @@
 #include "configuracion.h"
-
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <stdint.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 FileSystem_Config* leerConfiguracion(char* path) {
 
 	if (path == NULL) {
@@ -32,16 +43,15 @@ metadata_Config* leerMetaData(char* mnt){
 	}
 
 	char* directorio = string_new();
-	directorio = string_substring(mnt,1,string_length(mnt));
+	directorio = string_substring(mnt,0,string_length(mnt));
 
-	string_append(&directorio,"Metadata/Metadata.bin");
+	string_append(&directorio,"Metadata/Metadata");
 
 	printf("DIR: %s\n", directorio);
 
 	t_config* metadata = config_create(directorio);
 
 	metadata_Config* fileSystem_metadata = malloc(sizeof(metadata_Config));
-
 	fileSystem_metadata->tamanio_bloques = config_get_int_value(metadata, "TAMANIO_BLOQUES");
 	fileSystem_metadata->cantidad_bloques = config_get_int_value(metadata, "CANTIDAD_BLOQUES");
 	fileSystem_metadata->magic_number = config_get_string_value(metadata, "MAGIC_NUMBER");
@@ -49,6 +59,25 @@ metadata_Config* leerMetaData(char* mnt){
 	free(directorio);
 	free(metadata);
 	return fileSystem_metadata;
+
+	/*char* pathAbsolutoMetadata = string_new();
+	string_append(&pathAbsolutoMetadata, montaje);
+	string_append(&pathAbsolutoMetadata, "Metadata/Metadata.bin");
+
+	metadataSadica = fopen(pathAbsolutoMetadata, "w");
+	char* tamanioBloques = string_new();
+	char* cantidadBloques = string_new();
+	char* magicNumber = string_new();
+	string_append(&tamanioBloques, "TamañoDeBloques=64");
+	string_append(&cantidadBloques, "CantidadDeBloques=30");
+	string_append(&magicNumber, "MagicNumber=SADICA");
+
+	fseek(metadataSadica, 0, SEEK_SET);
+    fputs(tamanioBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques), SEEK_SET);
+    fputs(cantidadBloques, metadataSadica);
+	fseek(metadataSadica, string_length(tamanioBloques)+string_length(magicNumber), SEEK_SET);
+    fputs(magicNumber, metadataSadica);*/
 }
 
 void imprimirMetadata(metadata_Config* meta) {
@@ -60,7 +89,7 @@ void imprimirMetadata(metadata_Config* meta) {
 }
 
 t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
-	char* directorio = string_new();
+	/*char* directorio = string_new();
 	directorio = string_substring(mnt,1,string_length(mnt));
 
 	string_append(&directorio,"Metadata/Bitmap.bin");
@@ -75,12 +104,24 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 		num = fread(buffer,sizeof(char), 1000 + 1, ptr_fich1);
 
 		buffer[num*sizeof(char)] = '\0';
-	}
+	}*/
+	char* buffer = string_new();
+	char* pathAbsolutoBitmap = string_new();
+	string_append(&pathAbsolutoBitmap, mnt);
+	string_append(&pathAbsolutoBitmap, "Metadata/Bitmap.bin");
+	FILE * bitmapArchivo = fopen(pathAbsolutoBitmap, "w");
 
-	t_bitarray* bitmap = bitarray_create(buffer,tamanio_bitmap);
 
-	fclose(ptr_fich1);
-	free(directorio);
+
+	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
+	fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
+
+	/*int fd_script = open(pathAbsolutoBitmap, O_RDWR);
+	struct stat scriptFileStat;
+	fstat(fd_script, &scriptFileStat);
+	t_bitarray* bitmapeo = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);*/
+	//fclose(ptr_fich1);
+	free(pathAbsolutoBitmap);
 
 	return bitmap;
 }
