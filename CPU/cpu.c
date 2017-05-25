@@ -803,9 +803,9 @@ void borrar(t_descriptor_archivo descriptor){
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(descriptor));
 		string_append(&mensajeAKernel, ";");
-
+		puts("por enviar");
 		enviarMensaje(&sktKernel, mensajeAKernel);
-
+		puts("envidado");
 		//recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 		//int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);

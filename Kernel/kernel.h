@@ -74,6 +74,7 @@ typedef struct {
 } heapElement;
 
 typedef struct {
+	int pid;
 	int fileDescriptor;
 	char* flags;
 	int global_fd;

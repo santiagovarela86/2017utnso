@@ -423,7 +423,7 @@ void borrarArchivo(char* directorio){
 		string_append(&pathAbsoluto, directorio);
 
 		int encontrar_sem(t_archivosFileSystem* archivo) {
-			return string_starts_with(pathAbsoluto, archivo->path);
+			return string_starts_with(directorio, archivo->path);
 		}
 
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);

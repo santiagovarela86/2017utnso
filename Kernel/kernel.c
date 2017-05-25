@@ -1106,11 +1106,11 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 802:  //de CPU a File system (borrar)
-
+				puts("1");
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
 				 borrarArchivo(pid_mensaje, fd);
-
+				 puts("2");
 				break;
 
 			case 801://de CPU a File system (cerrar)
@@ -2584,6 +2584,13 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	//printf("el flag es %s", flag);
 	list_add(lista_File_global,archNuevo);
 
+	t_fileProceso* archTablaProcesos = malloc(sizeof(t_fileProceso));
+	archTablaProcesos->fileDescriptor = fdNuevo;
+	archTablaProcesos->global_fd = fdNuevo;
+	archTablaProcesos->flags = flag;
+	archTablaProcesos->pid = pid_mensaje;
+	list_add(lista_File_proceso,archTablaProcesos);
+
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "803");
 	string_append(&mensajeAFS, ";");
@@ -2601,36 +2608,51 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
-	puts("hasta aca llegamos");
-	printf("la cantidad de archivos es /d", lista_File_global->elements_count );
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
+	puts("hasta acá llega2");
+	printf("el valor del fd es %d", fd);
+	puts("hasta acá llega");
+
+	int encontrar_archProceso(t_fileProceso* regFileProcess){
+		if(fd == (int)regFileProcess->fileDescriptor)
 			return 1;
 		else
 			return 0;
 	}
 
-	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
-	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
-	puts("hasta acá estamos");
-	printf("el valorcito del fd es %d", archAbrir1->fileDescriptor);
-	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
-	puts("parece que lo removió bien");
-	int encontrar_archGlobal(t_fileGlobal* glo){
-		if(archAbrir1->global_fd == glo->fdGlobal)
-			return 1;
-		else
-			return 0;
-	}
+
+	t_fileProceso* archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
+	puts("no tiene problemas en encontrar el valor en la tabla de procesos");
+	puts("1");
+	puts("1");
+	printf("valor de fd %d ;",(int)archAbrir1->fileDescriptor);
+	printf("valor de fd %d ;",(int)archAbrir1->pid);
+	printf("valor de fd %s ;", archAbrir1->flags);
+	printf("valor de fd %d ;",(int)archAbrir1->pid);
+	puts("1");
+	puts("1");
+
+	//list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
+
 	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
-	printf("el valorcito del fd global es %d", archAbrir1->global_fd);
+	puts("no hay problemas con esto");
+	archAbrir2 = list_get(lista_File_global, (archAbrir1->global_fd-2));
+	puts("muere acá");
+	puts("1");
+	puts("1");
+	printf("valor de fd %d ;",archAbrir2->cantidadDeAperturas);
+	printf("valor de fd %d ;",archAbrir2->fdGlobal);
+	printf("valor de fd %s ;", archAbrir2->path);
+
+	puts("1");
+	puts("1");
+
 	if(archAbrir2->cantidadDeAperturas != 0)
 	{
 		puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 	}
 	else
 	{
+		puts("pued parece que entra");
 		char* mensajeAFS = string_new();
 		string_append(&mensajeAFS, "802");
 		string_append(&mensajeAFS, ";");
@@ -2639,7 +2661,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 
 		free(archAbrir1);
 		free(archAbrir2);
-
+	puts("envia a lo loco");
 		enviarMensaje(&skt_filesystem, mensajeAFS);
 
 		/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
