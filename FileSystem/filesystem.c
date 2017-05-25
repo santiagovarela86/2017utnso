@@ -84,8 +84,8 @@ void crearMetadataSadica(char* montaje)
 	char* cantidadBloques = string_new();
 	char* magicNumber = string_new();
 	string_append(&tamanioBloques, "TamañoDeBloques=64");
-	string_append(&cantidadBloques, "CantidadDeBloques=30");
-	string_append(&magicNumber, "MagicNumber=SADICA");
+	string_append(&cantidadBloques, ";CantidadDeBloques=30");
+	string_append(&magicNumber, ";MagicNumber=SADICA");
 
 	fseek(metadataSadica, 0, SEEK_SET);
     fputs(tamanioBloques, metadataSadica);
@@ -332,8 +332,8 @@ int validar_archivo(char* directorio){
 
 void crear_archivo(char* flag, char* directorio){
 
-	char* directorioAux = string_new();
-	directorioAux = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
+	  char* directorioAux = string_new();
+      directorioAux = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
 	  char* pathAbsoluto = string_new();
 	  string_append(&pathAbsoluto, montaje);
 	  string_append(&pathAbsoluto, directorioAux);
@@ -350,7 +350,23 @@ void crear_archivo(char* flag, char* directorio){
    		  archNuevo->path = string_new();
    		  string_append(&archNuevo->path, pathAbsoluto);
 
+			char* tamanio = string_new();
+			char* bloques = string_new();
+			string_append(&tamanio, "TamañoDeArchivo=250");
+			string_append(&bloques, "Bloques=[1]");
+
+			fseek(metadataSadica, 0, SEEK_SET);
+		    fputs(tamanio, metadataSadica);
+			fseek(metadataSadica, string_length(tamanio), SEEK_SET);
+		    fputs(bloques, metadataSadica);
+
 		  list_add(lista_archivos, archNuevo);
+
+			char* pathAbsolutoBloque = string_new();
+			string_append(&pathAbsolutoBloque, montaje);
+			string_append(&pathAbsolutoBloque, "Bloques/1.bin");
+
+			FILE* primerBloque = fopen(pathAbsolutoBloque, "w");
 
    	  }
    	  else
