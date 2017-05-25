@@ -71,6 +71,8 @@ void inicializarEstructuras(char * pathConfig){
 	metadataSadica = leerMetaData(montaje);
     bitmap = crearBitmap(montaje, (size_t)metadataSadica->cantidad_bloques);
 
+    crearBloques(montaje, (int)metadataSadica->cantidad_bloques);
+
 	creoSocket(&socketFileSystem, &direccionSocket, INADDR_ANY, configuracion->puerto);
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
@@ -330,12 +332,6 @@ void crear_archivo(char* flag, char* directorio){
 		    fputs(bloques, metadataSadica);
 
 		  list_add(lista_archivos, archNuevo);
-
-			char* pathAbsolutoBloque = string_new();
-			string_append(&pathAbsolutoBloque, montaje);
-			string_append(&pathAbsolutoBloque, "Bloques/1.bin");
-
-			FILE* primerBloque = fopen(pathAbsolutoBloque, "w");
 
    	  }
    	  else
