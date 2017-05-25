@@ -681,7 +681,7 @@ void finalizar_programa(int pid){
 	}
 
 	list_remove_by_condition(tabla_cache, (void*) _obtenerCacheProceso);
-	list_remove_by_condition(lista_paginas_stack, (void*) _obtenerPaginaProceso);
+	list_remove_by_condition(lista_paginas_stack, (void*) _obtenerPaginaStackProceso);
 
 	t_pagina_invertida* paginaProceso = NULL;
 	while((paginaProceso = list_find(tabla_paginas, (void*) _obtenerPaginaProceso)) != NULL){
@@ -690,7 +690,17 @@ void finalizar_programa(int pid){
 }
 
 void liberar_pagina(t_pagina_invertida* pagina){
+
 	pagina->pid = 0;
+	pagina->nro_pagina = 0;
+
+	int i = 0;
+	int inicioPagina = obtener_inicio_pagina(pagina);
+	int finPagina = inicioPagina + configuracion->marco_size;
+	for(i = inicioPagina; i < finPagina; i++){
+		bloque_memoria[i] = '\0';
+	}
+
 	list_replace(tabla_paginas, pagina->nro_marco, pagina);
 }
 
@@ -1297,10 +1307,6 @@ void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 		(*j)++;
 	}
 
-}
-
-int paginaLibre(t_pagina_invertida* pagina){
-	return pagina->pid == 0;
 }
 
 int f_hash_nene_malloc(int pid, int pagina) {
