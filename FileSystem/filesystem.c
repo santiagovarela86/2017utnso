@@ -309,16 +309,22 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 	 return regMetadataArch;
 
 }
+
 int buscarPrimerBloqueLibre()
 {
+	int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
 	int valor = 1;
 	int i = 0;
-	while(valor) //busco el primer bloque vacio
+	while(valor && i <= tamanioDisco) //busco el primer bloque vacio
 	{
 		i++;
 		valor = 0;
 	    valor = bitarray_test_bit(bitmap, (off_t) i);
 
+	}
+	if(i > tamanioDisco)
+	{
+	return -1;
 	}
 	bitarray_set_bit(bitmap,i);
 	return i;
@@ -350,6 +356,7 @@ void crear_archivo(char* flag, char* directorio){
 			string_append(&bloques, ";Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
+			bitarray_set_bit(bitmap, numeroBloque);
 
 			fseek((FILE*)archNuevo->referenciaArchivo, 0, SEEK_SET);
 		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
@@ -357,6 +364,8 @@ void crear_archivo(char* flag, char* directorio){
 		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
 
 		  list_add(lista_archivos, archNuevo);
+		  free(tamanio);
+		  free(bloques);
 
    	  }
    	  else
@@ -429,24 +438,78 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
 		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-		if (offset != -1)
+		if (offset != -1) //esto no esta bien. El offset tiene que estar guardado.
 		{
 			t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
 			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
 			{
-				int bloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
-				if(bloquesApedir < 1) //si es un cachito, escribo uno
+				if(!((offset+size) > (int)regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count)) //entra parte en los bloque que tiene, parte tiene que pedir
 				{
-					//pedirBloques(1);
+					int bloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
+					if(bloquesApedir < 1) //si es un cachito, escribo uno
+					{
+						int unBloque = buscarPrimerBloqueLibre();
+						if(unBloque != -1)
+						{
+							char* pathArchivoBloque = string_new();
+							string_append(&pathArchivoBloque, montaje);
+							string_append(&pathArchivoBloque, "Bloques/");
+							string_append(&pathArchivoBloque, string_itoa(unBloque));
+							string_append(&pathArchivoBloque, ".bin");
+							FILE* archBloque = fopen(pathArchivoBloque,"w");
+
+							fseek(archBloque, (offset - ((int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)), SEEK_SET);
+							fputs(buffer, archBloque); //grabo;
+							list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
+							//tengo que actualizar el archivo. tal vez fwrite o mmap
+
+							char* tamanio = string_new();
+							char* bloques = string_new();
+							string_append(&tamanio, "TamanioDeArchivo=");
+							string_append(&bloques, string_itoa((regMetaArchBuscado->tamanio + size)));
+							string_append(&bloques, ";Bloques=[");
+							int i = 0;
+							while(regMetaArchBuscado->bloquesEscritos->elements_count !=i)
+							{
+								i++;
+								string_append(&bloques, string_itoa((int)list_get(regMetaArchBuscado->bloquesEscritos, i)));
+								string_append(&bloques, ", ");
+
+							}
+							string_append(&bloques, string_itoa(unBloque));
+							string_append(&bloques, "]");
+
+							bitarray_set_bit(bitmap, unBloque);
+							free(tamanio);
+							free(bloques);
+						}
+						else
+						{
+							//dico lleno
+						}
+				   }
+				   else
+					{
+
+					}
 				}
 				else
 				{
-					//pedir cantidad mas las comas
-				}
 
+				}
+			}
+			else
+			{
+					//pido varios bloques, tantos como necesite
 			}
 
 		}
+		else
+		{
+			//escribo dentro de los bloques que ya tiene
+		}
+
+
 		fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
         fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
 		free(pathAbsoluto);
