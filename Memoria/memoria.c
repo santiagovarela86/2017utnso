@@ -570,7 +570,6 @@ void asignarVariable(char** mensajeDesdeCPU){
 	}
 
 	grabar_valor(direccion, valor);
-
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
@@ -663,7 +662,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	enviarMensaje(socketCliente, respuestaACPU);
-	free(respuestaACPU);
+	//free(respuestaACPU);
 }
 
 void finalizar_programa(int pid){
@@ -688,7 +687,7 @@ void finalizar_programa(int pid){
 	int cant_paginas_de_cache = list_count_satisfying(tabla_cache, (void*) _obtenerCacheProceso);
 
 	while (i < cant_paginas_de_cache){
-		list_remove_and_destroy_by_condition(tabla_cache, (void*) _obtenerCacheProceso, (void*) destruir_entrada_cache);
+		list_remove_by_condition(tabla_cache, (void*) _obtenerCacheProceso);
 		i++;
 	}
 
@@ -696,7 +695,7 @@ void finalizar_programa(int pid){
 	int cant_paginas_de_stack = list_count_satisfying(lista_paginas_stack, (void*) _obtenerPaginaStackProceso);
 
 	while (i < cant_paginas_de_stack){
-		list_remove_and_destroy_by_condition(lista_paginas_stack, (void*) _obtenerPaginaStackProceso, (void*) destruir_pagina_stack);
+		list_remove_by_condition(lista_paginas_stack, (void*) _obtenerPaginaStackProceso);
 		i++;
 	}
 
