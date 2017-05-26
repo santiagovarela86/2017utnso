@@ -300,6 +300,15 @@ int validar_archivo(char* directorio){
 	    return 0;*/
 		return 1;
 	}
+t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
+{
+	t_metadataArch* regMetadataArch = malloc(sizeof(t_metadataArch));
+	regMetadataArch->bloquesEscritos = list_create();
+	// fgets(arch, 1000, archBuscado->referenciaArchivo );
+
+	 return regMetadataArch;
+
+}
 int buscarPrimerBloqueLibre()
 {
 	int valor = 1;
@@ -336,16 +345,16 @@ void crear_archivo(char* flag, char* directorio){
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
-			string_append(&tamanio, "TamañoDeArchivo=0");
+			string_append(&tamanio, "TamanioDeArchivo=0");
 			int numeroBloque = buscarPrimerBloqueLibre();
-			string_append(&bloques, "Bloques=[");
+			string_append(&bloques, ";Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
 
-			/*fseek(metadataSadica, 0, SEEK_SET);
-		    fputs(tamanio, metadataSadica);
-			fseek(metadataSadica, string_length(tamanio), SEEK_SET);
-		    fputs(bloques, metadataSadica);*/
+			fseek((FILE*)archNuevo->referenciaArchivo, 0, SEEK_SET);
+		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
+			fseek((FILE*)archNuevo->referenciaArchivo, string_length(tamanio), SEEK_SET);
+		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
 
 		  list_add(lista_archivos, archNuevo);
 
@@ -368,7 +377,7 @@ void crear_archivo(char* flag, char* directorio){
 	  free(pathAbsoluto);
 }
 
-void obtener_datos(char* directorio, int size, char* buffer, int offset) {
+void obtener_datos(char* directorio, int size, char* l, int offset) {
 
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
@@ -387,6 +396,11 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 			if (offset != -1)
 			{
+				t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
+				if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
+				{
+
+				}
 				fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
 			}
 	        fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
@@ -401,8 +415,8 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
-	char* directorioAux = string_new();
-	directorioAux = strtok(directorio, "\n");
+		char* directorioAux = string_new();
+		directorioAux = strtok(directorio, "\n");
 
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
@@ -417,8 +431,23 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 
 		if (offset != -1)
 		{
-			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
+			t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
+			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
+			{
+				int bloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
+				if(bloquesApedir < 1) //si es un cachito, escribo uno
+				{
+					//pedirBloques(1);
+				}
+				else
+				{
+					//pedir cantidad mas las comas
+				}
+
+			}
+
 		}
+		fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
         fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
 		free(pathAbsoluto);
 		free(directorioAux);

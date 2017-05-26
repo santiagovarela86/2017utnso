@@ -22,6 +22,11 @@ typedef struct {
 	FILE* referenciaArchivo;
 } t_archivosFileSystem;
 
+typedef struct {
+	int tamanio;
+	t_list* bloquesEscritos;
+}t_metadataArch;
+
 void * handler_conexion_kernel(void * sock);
 
 void inicializarEstructuras(char * pathConfig);
@@ -33,5 +38,6 @@ void borrarArchivo(char* directorio);
 void guardar_datos(char* directorio, int size, char* buffer, int offset);
 void crearMetadataSadica(char* montaje);
 void crearBloques(char* montaje, int cantidad);
+int buscarPrimerBloqueLibre();
 #endif /* FILESYSTEM_H_ */
 
