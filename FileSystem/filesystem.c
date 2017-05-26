@@ -300,7 +300,20 @@ int validar_archivo(char* directorio){
 	    return 0;*/
 		return 1;
 	}
+int buscarPrimerBloqueLibre()
+{
+	int valor = 1;
+	int i = 0;
+	while(valor) //busco el primer bloque vacio
+	{
+		i++;
+		valor = 0;
+	    valor = bitarray_test_bit(bitmap, (off_t) i);
 
+	}
+	bitarray_set_bit(bitmap,i);
+	return i;
+}
 void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
@@ -323,13 +336,16 @@ void crear_archivo(char* flag, char* directorio){
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
-			string_append(&tamanio, "TamañoDeArchivo=250");
-			string_append(&bloques, "Bloques=[1]");
+			string_append(&tamanio, "TamañoDeArchivo=0");
+			int numeroBloque = buscarPrimerBloqueLibre();
+			string_append(&bloques, "Bloques=[");
+			string_append(&bloques, string_itoa(numeroBloque));
+			string_append(&bloques, "]");
 
-			fseek(metadataSadica, 0, SEEK_SET);
+			/*fseek(metadataSadica, 0, SEEK_SET);
 		    fputs(tamanio, metadataSadica);
 			fseek(metadataSadica, string_length(tamanio), SEEK_SET);
-		    fputs(bloques, metadataSadica);
+		    fputs(bloques, metadataSadica);*/
 
 		  list_add(lista_archivos, archNuevo);
 
