@@ -308,7 +308,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 
         char* linea = string_new();
         char* cfline = string_new();;
-        char* bloques = string_new();
+        char** bloques;
 		fgets(linea, sizeof(2048), arch);
 
 		linea = strtok((char *) linea, "\n");
@@ -319,7 +319,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 		linea = strstr((char *) linea, "[");
 		cfline = strtok((char *) linea, "]");
 		int cantBloques = substr_count(cfline, ",") + 1; //para saber cuantos bloques debo leer
-		&bloques = string_split((char *) cfline, ",");
+		bloques = string_split((char *) cfline, ",");
 
 		int i = -1; //porque los registros empiezan en 0
 		while(i != cantBloques)
@@ -330,7 +330,6 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 		}
 		free(linea);
 		free(cfline);
-		free(bloques);
 	 return regMetadataArch;
 }
 
