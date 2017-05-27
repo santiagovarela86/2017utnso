@@ -390,7 +390,7 @@ void crear_archivo(char* flag, char* directorio){
 		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
 		    fseek((FILE*)archNuevo->referenciaArchivo, 0, 0);
 		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
-		    fseek((FILE*)archNuevo->referenciaArchivo,0, SEEK_SET);
+		    fseek((FILE*)archNuevo->referenciaArchivo,string_length(bloques), SEEK_SET);
 
 
 		    bitarray_set_bit(bitmap, numeroBloque);
@@ -416,6 +416,34 @@ void crear_archivo(char* flag, char* directorio){
    	  }
 
 	  free(pathAbsoluto);
+}
+
+void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch)
+{
+	char* tamanio = string_new();
+	char* bloques = string_new();
+	string_append(&tamanio, "TamanioDeArchivo=");
+	string_append(&tamanio, string_itoa((regArchivo->tamanio)));
+	string_append(&tamanio, "\n");
+	string_append(&bloques, "Bloques=[");
+	int i = 0;
+	while(regArchivo->bloquesEscritos->elements_count !=i)
+	{
+		i++;
+		string_append(&bloques, string_itoa((int)list_get(regArchivo->bloquesEscritos, i)));
+		string_append(&bloques, ", ");
+
+	}
+
+	string_append(&bloques, "]");
+
+    fputs(tamanio, (FILE*)arch->referenciaArchivo);
+    fseek((FILE*)arch->referenciaArchivo, 0, 0);
+    fputs(bloques, (FILE*)arch->referenciaArchivo);
+    fseek((FILE*)arch->referenciaArchivo,string_length(bloques), SEEK_SET);
+
+	free(tamanio);
+	free(bloques);
 }
 
 void obtener_datos(char* directorio, int size, char* l, int offset) {
@@ -475,7 +503,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 			t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
 			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
 			{
-				if(!((offset+size) > (int)regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count)) //entra parte en los bloque que tiene, parte tiene que pedir
+				if(!((offset+size) > (int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)) //entra parte en los bloque que tiene, parte tiene que pedir
 				{
 					int bloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
 					if(bloquesApedir < 1) //si es un cachito, escribo uno
@@ -490,41 +518,29 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 							string_append(&pathArchivoBloque, ".bin");
 							FILE* archBloque = fopen(pathArchivoBloque,"w");
 
-							fseek(archBloque, (offset - ((int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)), SEEK_SET);
+
 							fputs(buffer, archBloque); //grabo;
+							fseek(archBloque, (offset - ((int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)), SEEK_SET);
+
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + size;
 							list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
-							//tengo que actualizar el archivo. tal vez fwrite o mmap
 
-							char* tamanio = string_new();
-							char* bloques = string_new();
-							string_append(&tamanio, "TamanioDeArchivo=");
-							string_append(&tamanio, string_itoa((regMetaArchBuscado->tamanio + size)));
-							string_append(&tamanio, "\n");
-							string_append(&bloques, "Bloques=[");
-							int i = 0;
-							while(regMetaArchBuscado->bloquesEscritos->elements_count !=i)
-							{
-								i++;
-								string_append(&bloques, string_itoa((int)list_get(regMetaArchBuscado->bloquesEscritos, i)));
-								string_append(&bloques, ", ");
 
-							}
-							string_append(&bloques, string_itoa(unBloque));
-							string_append(&bloques, "]");
+						    actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
 
 							bitarray_set_bit(bitmap, unBloque);
-							free(tamanio);
-							free(bloques);
+
 						}
 						else
 						{
 							//dico lleno
 						}
 				   }
-				   else
-					{
-
-					}
+				  else
+				  {
+					  int cantidadDeBloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
+						int unBloque = buscarPrimerBloqueLibre();
+				  }
 				}
 				else
 				{
@@ -533,7 +549,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 			}
 			else
 			{
-					//pido varios bloques, tantos como necesite
+
 			}
 
 		}
@@ -543,8 +559,6 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 		}
 
 
-		fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
-        fputs(buffer, (FILE*)archBuscado->referenciaArchivo);
 		free(pathAbsoluto);
 		free(directorioAux);
         //return mensaje;

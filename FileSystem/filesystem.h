@@ -39,5 +39,6 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset);
 void crearMetadataSadica(char* montaje);
 void crearBloques(char* montaje, int cantidad);
 int buscarPrimerBloqueLibre();
+void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
 #endif /* FILESYSTEM_H_ */
 

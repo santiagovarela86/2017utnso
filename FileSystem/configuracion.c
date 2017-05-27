@@ -115,7 +115,13 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 
 
 	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
+
+    fputs((char*)bitmap->bitarray, bitmapArchivo);
+
+    //fseek((FILE*)bitmapArchivo, string_length((char*)bitmap->bitarray), 0);
+
 	fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
+	//lfseek(bitmapArchivo,tamanio_bitmap, SEEK_SET);
 
 	/*int fd_script = open(pathAbsolutoBitmap, O_RDWR);
 	struct stat scriptFileStat;
