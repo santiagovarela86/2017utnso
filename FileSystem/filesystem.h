@@ -40,5 +40,7 @@ void crearMetadataSadica(char* montaje);
 void crearBloques(char* montaje, int cantidad);
 int buscarPrimerBloqueLibre();
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
+FILE* abrirUnArchivoBloque(int idBloque);
+void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size);
 #endif /* FILESYSTEM_H_ */
 

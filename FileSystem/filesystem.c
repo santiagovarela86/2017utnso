@@ -172,57 +172,6 @@ void * hilo_conexiones_kernel(void * args){
 	return EXIT_SUCCESS;
 }
 
-		/*int socketCliente;
-		struct sockaddr_in direccionCliente;
-		socklen_t length = sizeof direccionKernel;
-
-		socketCliente = accept(threadSocketInfoKernel->sock, (struct sockaddr *) &direccionCliente, &length);
-
-		printf("%s:%d conectado\n", inet_ntoa(direccionCliente.sin_addr), ntohs(direccionCliente.sin_port));
-
-		handShakeListen(&socketCliente, "100", "401", "499", "Kernel");
-
-		atender_peticiones(socketCliente);
-
-		shutdown(socketCliente, 0);
-		close(socketCliente);
-
-		//Lo comento porque es un while 1
-		//La idea seria usar el message en el while de arriba para transmitirse mensajes
-		//entre el kernel y el FS
-		//atender_peticiones(socketCliente);*/
-
-
-void atender_peticiones(int socket){
-/*
-	puts("escriba path archivo");
-	char directorio[1000];
-
-	scanf("%s", directorio);
-
-	char permi = 'r';
-
-	if(validar_archivo(directorio) == 1){
-
-		char* archi = abrir_archivo(directorio, permi);
-
-	}else{
-	puts("El archivo no existe");
-					int i= 0;
-				while (i < atoi(message[1])){
-					t_fileProceso * elem = malloc(sizeof(elem));
-					elem->fileDescriptor = atoi(message[i]);
-					i++;
-					elem->flags = (message[i]);
-					i++;
-					elem->global_fd = atoi(message[i]);
-					i++;
-					list_add(lista_File_proceso, elem);
-				}
-	}
-*/
-}
-
 
 /*char* abrir_archivo(char* directorio){
 
@@ -293,36 +242,8 @@ int validar_archivo(char* directorio){
 		return 1;
 	}
 	free(pathAbsoluto);
-	/*char* path = string_new();
-
-	path = string_substring(montaje,1,string_length(montaje));
-
-	string_append(&path,"Archivos/");
-	string_append(&path,directorio);
-
-	if (fopen(path, "r") == NULL){
-	 //El archivo no existe
-		return -1;
-	}else{
-	 //El archivo existe
-	  FILE * pFile;
-	  pFile = fopen (directorio,"w"); //por defecto lo crea
-	  if (pFile!=NULL)
-	  {
-	    fputs ("asigno_Bloque_Prueba",pFile);
-		int fd_script = open(directorio, O_WRONLY);
-		struct stat scriptFileStat;
-		fstat(fd_script, &scriptFileStat);
-
-			char* arch = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-			list_add(lista_archivos, arch);
-			close(fd_script);
-		    fclose (pFile);
-			return arch;
-	  	  }
-	    return 0;*/
 		return 1;
-	}
+}
 t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 {
 	t_metadataArch* regMetadataArch = malloc(sizeof(t_metadataArch));
@@ -356,7 +277,6 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 	 return regMetadataArch;
 }
 
-
 void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
@@ -388,7 +308,7 @@ void crear_archivo(char* flag, char* directorio){
 
 
 		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
-		    fseek((FILE*)archNuevo->referenciaArchivo, 0, 0);
+		    fseek((FILE*)archNuevo->referenciaArchivo, string_length(tamanio), 0);
 		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
 		    fseek((FILE*)archNuevo->referenciaArchivo,string_length(bloques), SEEK_SET);
 
@@ -416,6 +336,26 @@ void crear_archivo(char* flag, char* directorio){
    	  }
 
 	  free(pathAbsoluto);
+}
+
+FILE* abrirUnArchivoBloque(int idBloque)
+{
+	char* pathArchivoBloque = string_new();
+	string_append(&pathArchivoBloque, montaje);
+	string_append(&pathArchivoBloque, "Bloques/");
+	string_append(&pathArchivoBloque, string_itoa(idBloque));
+	string_append(&pathArchivoBloque, ".bin");
+
+	FILE* archBloque = fopen(pathArchivoBloque,"w");
+
+	return archBloque;
+}
+
+void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size)
+{
+	bitarray_set_bit(bitmap, idBloque);
+	fputs(buffer, archBloque); //grabo;
+	fseek(archBloque, size, SEEK_SET);
 }
 
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch)
@@ -448,41 +388,41 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 
 void obtener_datos(char* directorio, int size, char* l, int offset) {
 
-		char* directorioAux = string_new();
-		directorioAux = strtok(directorio, "\n");
+	char* directorioAux = string_new();
+	directorioAux = strtok(directorio, "\n");
 
-		char* pathAbsoluto = string_new();
-		string_append(&pathAbsoluto, montaje);
-		string_append(&pathAbsoluto, directorioAux);
+	char* pathAbsoluto = string_new();
+	string_append(&pathAbsoluto, montaje);
+	string_append(&pathAbsoluto, directorioAux);
 
-        char* mensaje = string_new();
+	char* mensaje = string_new();
 
-			int encontrar_sem(t_archivosFileSystem* archivo) {
-				return string_starts_with(pathAbsoluto, archivo->path);
-			}
+		int encontrar_sem(t_archivosFileSystem* archivo) {
+			return string_starts_with(pathAbsoluto, archivo->path);
+		}
 
-			t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
+		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-			if (offset != -1)
+		if (offset != -1)
+		{
+			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
+			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
 			{
-				t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
-				if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
-				{
 
-				}
-				fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
 			}
-	        fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
+			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
+		}
+		fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
 
-	    	enviarMensaje(&socketKernel, mensaje);
-			free(pathAbsoluto);
-			free(directorioAux);
-	        return ;
+		enviarMensaje(&socketKernel, mensaje);
+		free(pathAbsoluto);
+		free(directorioAux);
+		return ;
 
-	    } // End if file
+	} // End if file
 
-
-void guardar_datos(char* directorio, int size, char* buffer, int offset){
+void guardar_datos(char* directorio, int size, char* buffer, int offset)
+{
 
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
@@ -501,69 +441,96 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 		if (offset != -1) //esto no esta bien. El offset tiene que estar guardado.
 		{
 			t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
-			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
+
+			int posicionesParaGuardar = (int)regMetaArchBuscado->bloquesEscritos->elements_count * (int)metadataSadica->tamanio_bloques;
+
+			if(offset+size < posicionesParaGuardar) //entra todo en los arch/bloques que ya tiene
 			{
-				if(!((offset+size) > (int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)) //entra parte en los bloque que tiene, parte tiene que pedir
-				{
-					int bloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
-					if(bloquesApedir < 1) //si es un cachito, escribo uno
-					{
-						int unBloque = buscarPrimerBloqueLibre();
-						if(unBloque != -1)
+
+			}
+			else
+			{
+			  if((offset < ((int)regMetaArchBuscado->tamanio)) && ((offset+size) > ((int)regMetaArchBuscado->tamanio))) //entra parte en los bloque que tiene, parte tiene que pedir
+			  {
+
+		      }
+			  else //no entra nada, pido bloques y grabo todo en ellos
+			  {
+			   if((offset -(regMetaArchBuscado->bloquesEscritos->elements_count * regMetaArchBuscado->tamanio) / metadataSadica->tamanio_bloques) > 1) // hay saltos de bloques?
+			   {
+					 int cantBloquesEnBlanco =  (offset -(regMetaArchBuscado->bloquesEscritos->elements_count * regMetaArchBuscado->tamanio) / metadataSadica->tamanio_bloques);
+					 while(cantBloquesEnBlanco != 0)  //meto bloques en blanco exceptuando el que voy a escribir
+					 {
+
+						int unBloqueEnBlanco = buscarPrimerBloqueLibre();
+						if(unBloqueEnBlanco != -1)
 						{
-							char* pathArchivoBloque = string_new();
-							string_append(&pathArchivoBloque, montaje);
-							string_append(&pathArchivoBloque, "Bloques/");
-							string_append(&pathArchivoBloque, string_itoa(unBloque));
-							string_append(&pathArchivoBloque, ".bin");
-							FILE* archBloque = fopen(pathArchivoBloque,"w");
-
-
-							fputs(buffer, archBloque); //grabo;
-							fseek(archBloque, (offset - ((int)regMetaArchBuscado->tamanio * (int)regMetaArchBuscado->bloquesEscritos->elements_count)), SEEK_SET);
-
-							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + size;
-							list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
-
-
-						    actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
-
-							bitarray_set_bit(bitmap, unBloque);
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
+							list_add(regMetaArchBuscado->bloquesEscritos, unBloqueEnBlanco);
+							bitarray_set_bit(bitmap, unBloqueEnBlanco);
 
 						}
 						else
 						{
-							//dico lleno
+							//disco lleno
 						}
-				   }
-				  else
-				  {
-					  int cantidadDeBloquesApedir = (offset / regMetaArchBuscado->tamanio) - regMetaArchBuscado->bloquesEscritos->elements_count;
-						int unBloque = buscarPrimerBloqueLibre();
-				  }
-				}
-				else
+					}
+			    }
+				int cantidadDeBloquesApedir = (size) / metadataSadica->tamanio_bloques; // el "/" hace división entera no mas, sin resto
+				if(((size) % metadataSadica->tamanio_bloques) != 0) //pregunto si hay resto, o sea un cachito de bloque mas
 				{
-
+					  cantidadDeBloquesApedir++;
 				}
-			}
-			else
-			{
+				while(cantidadDeBloquesApedir != 0)
+				{
+					int unBloque = buscarPrimerBloqueLibre();
+					if(unBloque != -1)
+					{
+						FILE* archBloque = abrirUnArchivoBloque(unBloque);
 
-			}
+						if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
+						{
+							char* bufferaux = string_substring(buffer,0,(metadataSadica->tamanio_bloques));
 
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
+							list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
+							grabarUnArchivoBloque(archBloque, unBloque, bufferaux, metadataSadica->tamanio_bloques); //meto todo el bloque
+
+						}
+						else
+						{
+							char* bufferaux = string_substring(buffer,0, ((size) % metadataSadica->tamanio_bloques)); //lo que me falta grabar
+
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + ((size) % metadataSadica->tamanio_bloques);
+							list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
+							grabarUnArchivoBloque(archBloque, unBloque, bufferaux, ((size) % metadataSadica->tamanio_bloques));
+						}
+
+						cantidadDeBloquesApedir--;
+					}
+					else
+					{
+					//disco lleno
+					}
+
+			   }
+
+	   		 }
 		}
-		else
-		{
-			//escribo dentro de los bloques que ya tiene
-		}
+   		actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
+  	}
 
+
+	else
+	{
+		//nunca se posicionó el archivo
+	}
 
 		free(pathAbsoluto);
 		free(directorioAux);
         //return mensaje;
 
-    } // End if file
+}
 
 void borrarArchivo(char* directorio){
 
