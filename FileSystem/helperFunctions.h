@@ -23,5 +23,6 @@ char *trim(char *s);
 char *rtrim(char *s);
 char *ltrim(char *s);
 char * serializarMensaje(int cant, ... );
+int substr_count (char* string,char *string2);
 
 #endif /* HELPERFUNCTIONS_H_ */

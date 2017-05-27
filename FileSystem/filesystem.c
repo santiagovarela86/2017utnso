@@ -306,8 +306,32 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 	regMetadataArch->bloquesEscritos = list_create();
 	// fgets(arch, 1000, archBuscado->referenciaArchivo );
 
-	 return regMetadataArch;
+        char* linea = string_new();
+        char* cfline = string_new();;
+        char** bloques = string_new();;
+		fgets(linea, sizeof(2048), arch);
 
+		linea = strtok((char *) linea, "\n");
+		cfline = strstr((char *) linea, "=");
+		regMetadataArch->tamanio = atoi(cfline);
+
+		fgets(linea, sizeof(2048), arch);
+		linea = strstr((char *) linea, "[");
+		cfline = strtok((char *) linea, "]");
+		int cantBloques = substr_count(cfline, ",") + 1; //para saber cuantos bloques debo leer
+		bloques = string_split((char *) cfline, ",");
+
+		int i = -1; //porque los registros empiezan en 0
+		while(i != cantBloques)
+		{
+			i++;
+			list_add(regMetadataArch->bloquesEscritos, bloques[i]);
+
+		}
+		free(linea);
+		free(cfline);
+		free(bloques);
+	 return regMetadataArch;
 }
 
 int buscarPrimerBloqueLibre()
@@ -324,10 +348,13 @@ int buscarPrimerBloqueLibre()
 	}
 	if(i > tamanioDisco)
 	{
-	return -1;
+		return -1;
 	}
-	bitarray_set_bit(bitmap,i);
-	return i;
+	else
+	{
+		bitarray_set_bit(bitmap,i);
+		return i;
+	}
 }
 void crear_archivo(char* flag, char* directorio){
 
@@ -351,9 +378,9 @@ void crear_archivo(char* flag, char* directorio){
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
-			string_append(&tamanio, "TamanioDeArchivo=0");
-			int numeroBloque = buscarPrimerBloqueLibre();
-			string_append(&bloques, ";Bloques=[");
+			string_append(&tamanio, "TamanioDeArchivo=0\n");
+			int numeroBloque = buscarPrimerBloqueLibre(); //Por defecto tengo que asignarle un bloque
+			string_append(&bloques, "Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
 			bitarray_set_bit(bitmap, numeroBloque);

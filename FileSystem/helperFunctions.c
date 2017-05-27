@@ -161,3 +161,10 @@ char * serializarMensaje(int cant, ... ){
 
 	return message;
 }
+
+int substr_count (char* string,char *string2){
+	int i,h,j = 1;
+	for (i = 0,h = 0;i < strlen(string) && string2[h];i++)
+		if (string[i] == *string2 && string[i] != string[i-strlen(string)]) j++;
+	return j-1;
+}
