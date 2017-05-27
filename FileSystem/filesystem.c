@@ -77,7 +77,29 @@ void inicializarEstructuras(char * pathConfig){
 	bindSocket(&socketFileSystem, &direccionSocket);
 	escuchoSocket(&socketFileSystem);
 }
+int buscarPrimerBloqueLibre()
+{
+	int tamanioDisco = ((int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques);
+	int valor = 1;
+	int i = 0;
+	while(valor && i <= tamanioDisco) //busco el primer bloque vacio
+	{
+		i++;
+		valor = 0;
+	    valor = bitarray_test_bit(bitmap, (off_t) i);
 
+	}
+	if(i > tamanioDisco)
+	{
+		return -1;
+	}
+	else
+	{
+		bitarray_set_bit(bitmap,i);
+
+		return i;
+	}
+}
 
 void liberarEstructuras(){
 	free(configuracion);
@@ -87,7 +109,6 @@ void liberarEstructuras(){
 }
 
 void * hilo_conexiones_kernel(void * args){
-
 
 	struct sockaddr_in direccionKernel;
 	socklen_t length = sizeof direccionKernel;
@@ -102,6 +123,7 @@ void * hilo_conexiones_kernel(void * args){
 		int result = recv(socketKernel, message, sizeof(message), 0);
 
 		while (result > 0) {
+
 			printf("%s", message);
 
 			char**mensajeAFileSystem = string_split(message, ";");
@@ -109,6 +131,7 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804://de CPU a File system (cerrar)
+
 
 					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 
@@ -304,7 +327,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 {
 	t_metadataArch* regMetadataArch = malloc(sizeof(t_metadataArch));
 	regMetadataArch->bloquesEscritos = list_create();
-	// fgets(arch, 1000, archBuscado->referenciaArchivo );
+
 
         char* linea = string_new();
         char* cfline = string_new();;
@@ -333,28 +356,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 	 return regMetadataArch;
 }
 
-int buscarPrimerBloqueLibre()
-{
-	int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
-	int valor = 1;
-	int i = 0;
-	while(valor && i <= tamanioDisco) //busco el primer bloque vacio
-	{
-		i++;
-		valor = 0;
-	    valor = bitarray_test_bit(bitmap, (off_t) i);
 
-	}
-	if(i > tamanioDisco)
-	{
-		return -1;
-	}
-	else
-	{
-		bitarray_set_bit(bitmap,i);
-		return i;
-	}
-}
 void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
@@ -377,17 +379,21 @@ void crear_archivo(char* flag, char* directorio){
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
-			string_append(&tamanio, "TamanioDeArchivo=0\n");
+			string_append(&tamanio, "TamanioeArchivo=0\n");
+
 			int numeroBloque = buscarPrimerBloqueLibre(); //Por defecto tengo que asignarle un bloque
 			string_append(&bloques, "Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
-			bitarray_set_bit(bitmap, numeroBloque);
 
-			fseek((FILE*)archNuevo->referenciaArchivo, 0, SEEK_SET);
+
 		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
-			fseek((FILE*)archNuevo->referenciaArchivo, string_length(tamanio), SEEK_SET);
+		    fseek((FILE*)archNuevo->referenciaArchivo, 0, 0);
 		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
+		    fseek((FILE*)archNuevo->referenciaArchivo,0, SEEK_SET);
+
+
+		    bitarray_set_bit(bitmap, numeroBloque);
 
 		  list_add(lista_archivos, archNuevo);
 		  free(tamanio);
@@ -492,8 +498,9 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset){
 							char* tamanio = string_new();
 							char* bloques = string_new();
 							string_append(&tamanio, "TamanioDeArchivo=");
-							string_append(&bloques, string_itoa((regMetaArchBuscado->tamanio + size)));
-							string_append(&bloques, ";Bloques=[");
+							string_append(&tamanio, string_itoa((regMetaArchBuscado->tamanio + size)));
+							string_append(&tamanio, "\n");
+							string_append(&bloques, "Bloques=[");
 							int i = 0;
 							while(regMetaArchBuscado->bloquesEscritos->elements_count !=i)
 							{
