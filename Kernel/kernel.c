@@ -2096,8 +2096,6 @@ void finDeQuantum(int * socketCliente){
 
 	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
 
-		printf("Libero CPU\n");
-
 		pthread_mutex_lock(&mtx_cpu);
 		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
 		pthread_mutex_unlock(&mtx_cpu);
