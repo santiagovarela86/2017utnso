@@ -412,15 +412,32 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 			{
 				bloquePosicion = 1;
 			}
-			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion);
+			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
 
 			FILE* archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
 
-			fseek(archBloqueAleer, size, SEEK_SET);
-			fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
+			if(size > metadataSadica->tamanio_bloques)
+			{
+				int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques;
+				if((size % metadataSadica->tamanio_bloques) != 0)
+				{
+					cantidadDeBloquesALeer++;
+				}
+				while(cantidadDeBloquesALeer != 0)
+				{
+					char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
+					fseek(archBloqueAleer, size, SEEK_SET);
+					string_append(buffer, valorLeido);
+					cantidadDeBloquesALeer--;
+				}
+			}
+			else
+			{
+				fseek(archBloqueAleer, size, SEEK_SET);
+				fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
+			}
+
 		}
-
-
 		enviarMensaje(&socketKernel, mensaje);
 		free(pathAbsoluto);
 		free(directorioAux);
@@ -519,20 +536,15 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 					{
 					//disco lleno
 					}
-
-			   }
-
+			     }
 	   		 }
 		}
    		actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
   	}
-
-
 	else
 	{
 		//nunca se posicionó el archivo
 	}
-
 		free(pathAbsoluto);
 		free(directorioAux);
         //return mensaje;
