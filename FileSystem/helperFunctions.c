@@ -173,7 +173,7 @@ int substr_count (char* string,char *string2){
 int encontrarPosicionEnListaDeBloques (int idBloque, t_list* lista_bloques)
 {
 int indexBloque =0;
-int i = 1;
+int i = 0;
 
 	void encontrar_bloque(int bloque) {
 		if (idBloque == bloque)
