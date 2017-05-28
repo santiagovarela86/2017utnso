@@ -662,7 +662,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	enviarMensaje(socketCliente, respuestaACPU);
-	//free(respuestaACPU);
+	free(respuestaACPU);
 }
 
 void finalizar_programa(int pid){
