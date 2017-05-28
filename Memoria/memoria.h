@@ -117,7 +117,7 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock);
 void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock);
 
-#define VARIABLE_EN_CACHE -2
+#define VARIABLE_EN_CACHE 99
 
 
 #endif /* MEMORIA_H_ */
