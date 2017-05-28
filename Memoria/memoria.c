@@ -1538,6 +1538,9 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		t_entrada_cache* entrada_cache = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
 
+		printf("PID: %d\n", pagina->pid);
+		printf("PAGINA: %d\n", pagina->nro_pagina);
+
 		list_add(tabla_cache, entrada_cache);
 	}
 	else if (nro_paginas_en_cache == configuracion->cache_x_proc) {
@@ -1570,8 +1573,10 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 	bool updateOK = true;
 
+	printf("CONTENIDO: %s\n", contenido);
+
 	int _encontrar_entrada_cache(t_entrada_cache* entrada){
-		return entrada->pid == pid && entrada->nro_pagina;
+		return entrada->pid == pid && entrada->nro_pagina == pagina;
 	}
 
 	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_encontrar_entrada_cache);
