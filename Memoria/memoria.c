@@ -592,6 +592,7 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 	int valor = atoi(valor_variable);
 
 	char* mensajeACpu = string_new();
+	printf("VALOR: %d\n", valor);
 	string_append(&mensajeACpu, string_itoa(valor));
 	string_append(&mensajeACpu, ";");
 
@@ -1211,6 +1212,7 @@ void grabar_valor(int direccion, int valor){
 		valor_string[1] = bloque_memoria[direccion + 1];
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
+		valor_string[4] = '\0';
 
 		if (cache_habilitada)
 			grabar_valor_en_cache(direccion, valor_string);
@@ -1230,6 +1232,7 @@ void grabar_valor(int direccion, int valor){
 		valor_string[1] = bloque_memoria[direccion + 1];
 		valor_string[2] = bloque_memoria[direccion + 2];
 		valor_string[3] = bloque_memoria[direccion + 3];
+		valor_string[4] = '\0';
 
 		if (cache_habilitada)
 			grabar_valor_en_cache(direccion, valor_string);
@@ -1244,10 +1247,11 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 2] = (char) (decena + 48);
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
 
-		valor_string[0] = bloque_memoria[direccion];
-		valor_string[1] = bloque_memoria[direccion + 1];
-		valor_string[2] = bloque_memoria[direccion + 2];
-		valor_string[3] = bloque_memoria[direccion + 3];
+		valor_string[0] = '0';
+		valor_string[1] = '0';
+		valor_string[2] = (char) (decena + 48);
+		valor_string[3] = (char) (unidad + 48);
+		valor_string[4] = '\0';
 
 		if (cache_habilitada)
 			grabar_valor_en_cache(direccion, valor_string);
@@ -1261,10 +1265,11 @@ void grabar_valor(int direccion, int valor){
 		bloque_memoria[direccion + 2] = '0';
 		bloque_memoria[direccion + 3] = (char) (unidad + 48);
 
-		valor_string[0] = bloque_memoria[direccion];
-		valor_string[1] = bloque_memoria[direccion + 1];
-		valor_string[2] = bloque_memoria[direccion + 2];
-		valor_string[3] = bloque_memoria[direccion + 3];
+		valor_string[0] = '0';
+		valor_string[1] = '0';
+		valor_string[2] = '0';
+		valor_string[3] = (char) (unidad + 48);
+		valor_string[4] = '\0';
 
 		if (cache_habilitada)
 			grabar_valor_en_cache(direccion, valor_string);
@@ -1573,8 +1578,6 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 	bool updateOK = true;
 
-	printf("CONTENIDO: %s\n", contenido);
-
 	int _encontrar_entrada_cache(t_entrada_cache* entrada){
 		return entrada->pid == pid && entrada->nro_pagina == pagina;
 	}
@@ -1609,9 +1612,10 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 void grabar_valor_en_cache(int direccion, char* valor){
 
 	int indice_tabla_paginas = direccion / configuracion->marco_size;
+
 	t_pagina_invertida* pagina = list_get(tabla_paginas, indice_tabla_paginas);
 
-	char * contenido = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
+	char* contenido = string_substring(bloque_memoria, obtener_inicio_pagina(pagina), configuracion->marco_size);
 
 	string_append(&contenido, valor);
 
