@@ -386,7 +386,7 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 	free(bloques);
 }
 
-void obtener_datos(char* directorio, int size, char* l, int offset) {
+void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 	char* directorioAux = string_new();
 	directorioAux = strtok(directorio, "\n");
@@ -406,13 +406,20 @@ void obtener_datos(char* directorio, int size, char* l, int offset) {
 		if (offset != -1)
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
-			if(offset > (regMetaArchBuscado->tamanio * regMetaArchBuscado->bloquesEscritos->elements_count))
-			{
 
+			int bloquePosicion = offset / regMetaArchBuscado->bloquesEscritos->elements_count;
+			if((offset % ((int)regMetaArchBuscado->bloquesEscritos->elements_count)) == 0)
+			{
+				bloquePosicion = 1;
 			}
-			fseek(archBuscado->referenciaArchivo, offset, SEEK_SET);
+			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion);
+
+			FILE* archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+
+			fseek(archBloqueAleer, size, SEEK_SET);
+			fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
 		}
-		fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
+
 
 		enviarMensaje(&socketKernel, mensaje);
 		free(pathAbsoluto);
