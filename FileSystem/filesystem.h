@@ -42,5 +42,8 @@ int buscarPrimerBloqueLibre();
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
 FILE* abrirUnArchivoBloque(int idBloque);
 void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size);
+void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
+void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
+void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
 #endif /* FILESYSTEM_H_ */
 
