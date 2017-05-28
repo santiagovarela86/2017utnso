@@ -465,7 +465,11 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 			tamanio_a_leer_cache = entrada_encontrada->direccion.size;
 		}
 
+
+		printf("Se obtuvo la posición %d \n", valor);
+
 		return valor;
+
 	}
 	else {
 		return NULL;
@@ -559,7 +563,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 				paginaNueva = false;
 			}
 
-			printf("La variable %c se guardo en la pos: %d \n\n", entrada_stack->nombre_variable , entrada_stack->direccion.offset);
+			printf("La variable %c se guardo en la pag %d con offset %d\n\n", entrada_stack->nombre_variable , entrada_stack->direccion.pagina ,entrada_stack->direccion.offset);
 
 			free(mensajeAMemoria);
 
@@ -609,7 +613,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	}
 
 	free(msj);
-
+	printf("El valor de la compartida es: %d \n", valor);
 	return valor;
 }
 
@@ -627,6 +631,8 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 	free(mensajeAKernel);
+
+	printf("Se asigno el valor %d \n", valor);
 
 	return valor;
 }
