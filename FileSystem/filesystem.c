@@ -438,10 +438,16 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
 {
-       if((offset -(regMetaArchBuscado->bloquesEscritos->elements_count * regMetaArchBuscado->tamanio) / metadataSadica->tamanio_bloques) > 1) // hay saltos de bloques?
-	   {
-		  int cantBloquesEnBlanco =  (offset -(regMetaArchBuscado->bloquesEscritos->elements_count * regMetaArchBuscado->tamanio) / metadataSadica->tamanio_bloques);
-		  while(cantBloquesEnBlanco != 0)  //meto bloques en blanco exceptuando el que voy a escribir
+		int cantidadDeBloquesDelOffset = (offset / metadataSadica->tamanio_bloques);
+		if(offset % metadataSadica->tamanio_bloques)
+		{
+			cantidadDeBloquesDelOffset++;
+		}
+	    int cantBloquesEnBlancoASaltar =  cantidadDeBloquesDelOffset - regMetaArchBuscado->bloquesEscritos->elements_count;
+        if(cantBloquesEnBlancoASaltar >1) // hay saltos de bloques?
+	    {
+
+		  while(cantBloquesEnBlancoASaltar != 1)  //meto bloques en blanco exceptuando el que voy a escribir
 		  {
 
 			int unBloqueEnBlanco = buscarPrimerBloqueLibre();
@@ -455,6 +461,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 			{
 				//disco lleno
 			}
+			cantBloquesEnBlancoASaltar--;
 		  }
 		}
 		int cantidadDeBloquesApedir = (size) / metadataSadica->tamanio_bloques; // el "/" hace división entera no mas, sin resto
@@ -462,6 +469,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 		{
 			  cantidadDeBloquesApedir++;
 		}
+		int desdeDondeComenizoALeer = 0;
 		while(cantidadDeBloquesApedir != 0)
 		{
 		 int unBloque = buscarPrimerBloqueLibre();
@@ -471,15 +479,16 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 
 			if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
 			{
-				char* bufferaux = string_substring(buffer,0,(metadataSadica->tamanio_bloques));
+				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer,(metadataSadica->tamanio_bloques));
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
+				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
-				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, metadataSadica->tamanio_bloques); //meto todo el bloque
+				desdeDondeComenizoALeer =  desdeDondeComenizoALeer + (metadataSadica->tamanio_bloques);
 
 			}
 			else
 			{
-				char* bufferaux = string_substring(buffer,0, ((size) % metadataSadica->tamanio_bloques)); //lo que me falta grabar
+				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer, ((size) % metadataSadica->tamanio_bloques)); //lo que me falta grabar
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + ((size) % metadataSadica->tamanio_bloques);
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
 				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, ((size) % metadataSadica->tamanio_bloques));
@@ -487,11 +496,11 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 
 			cantidadDeBloquesApedir--;
 		 }
-	else
-	{
-		//disco lleno
-	}
-   }
+		else
+		{
+			//disco lleno
+		}
+      }
  }
 
 void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
@@ -501,13 +510,12 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 	{
 		  bloquePosicion++; //si lo tiene significa que graba en el siguiente bloque.
 	}
-	int index = encontrarPosicionEnListaDeBloques(bloquePosicion, regMetaArchBuscado->bloquesEscritos); //busco en que posición esta ese bloque en la lsita de bloques que tiene guardada
-	int idbloqueAGrabar = (int)list_get(regMetaArchBuscado->bloquesEscritos, index); //bloque donde comienza lo que quiero grabar
 
-	FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
+	int idbloqueAGrabar = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
-	  char* bufferaux = string_substring(buffer,0, ( metadataSadica->tamanio_bloques -  (offset % ((int)metadataSadica->tamanio_bloques)))); //lo que me falta grabar
-
+	  FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
+	  int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
+	  char* bufferaux = string_substring(buffer,0, offsetRelativo); //grabo lo que tengo que grabar en ese bloque
 
 	  regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + string_length(bufferaux);
 	  grabarUnArchivoBloque(archBloqueAGrabar, idbloqueAGrabar, bufferaux, string_length(bufferaux));
@@ -524,8 +532,8 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 	{
 		  bloquePosicion++; //si lo tiene significa que graba en el siguiente bloque.
 	}
-	int index = encontrarPosicionEnListaDeBloques(bloquePosicion, regMetaArchBuscado->bloquesEscritos); //busco en que posición esta ese bloque en la lsita de bloques que tiene guardada
-	int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, index); //bloque donde comienza lo que quiero grabar
+
+	int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
 	FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 
@@ -549,7 +557,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer,(metadataSadica->tamanio_bloques));
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
-				idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, index+1); // dame el siguiente bloque de la lista
+				idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); // dame el siguiente bloque de la lista
 				archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 				desdeDondeComenizoALeer =  desdeDondeComenizoALeer + (metadataSadica->tamanio_bloques);
 			}
