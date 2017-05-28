@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <commons/collections/list.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -167,4 +168,20 @@ int substr_count (char* string,char *string2){
 	for (i = 0,h = 0;i < strlen(string) && string2[h];i++)
 		if (string[i] == *string2 && string[i] != string[i-strlen(string)]) j++;
 	return j-1;
+}
+
+int encontrarPosicionEnListaDeBloques (int idBloque, t_list* lista_bloques)
+{
+int indexBloque =0;
+int i = 1;
+
+	void encontrar_bloque(int bloque) {
+		if (idBloque == bloque)
+			indexBloque = i;
+		else
+			i++;
+	}
+	 list_iterate(lista_bloques, (void*)encontrar_bloque);
+
+	return indexBloque;
 }

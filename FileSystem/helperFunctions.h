@@ -10,6 +10,7 @@
 
 #define MAXBUF 2048
 #define MAXLIST 20
+#include <commons/collections/list.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto);
 void bindSocket(int * sock, struct sockaddr_in * direccion);
@@ -24,5 +25,6 @@ char *rtrim(char *s);
 char *ltrim(char *s);
 char * serializarMensaje(int cant, ... );
 int substr_count (char* string,char *string2);
+int encontrarPosicionEnListaDeBloques (int idBloque, t_list* lista_bloques);
 
 #endif /* HELPERFUNCTIONS_H_ */
