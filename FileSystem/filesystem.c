@@ -407,11 +407,8 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
 
-			int bloquePosicion = offset / regMetaArchBuscado->bloquesEscritos->elements_count;
-			if((offset % ((int)regMetaArchBuscado->bloquesEscritos->elements_count)) == 0)
-			{
-				bloquePosicion = 1;
-			}
+			int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques);
+
 			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
 
 			FILE* archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
@@ -425,9 +422,21 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 				}
 				while(cantidadDeBloquesALeer != 0)
 				{
-					char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
-					fseek(archBloqueAleer, size, SEEK_SET);
-					string_append(buffer, valorLeido);
+					if(cantidadDeBloquesALeer != 1)
+					{
+						char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
+						fseek(archBloqueAleer, metadataSadica->tamanio_bloques, SEEK_SET);
+						string_append(buffer, (char*)valorLeido);
+						idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
+						archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+					}
+					else
+					{
+						char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
+						fseek(archBloqueAleer,(size % metadataSadica->tamanio_bloques), SEEK_SET);
+						string_append(buffer, (char*)valorLeido);
+
+					}
 					cantidadDeBloquesALeer--;
 				}
 			}
@@ -471,6 +480,56 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 			if(offset+size < posicionesParaGuardar) //entra todo en los arch/bloques que ya tiene
 			{
 
+				int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques);
+
+				int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
+
+				FILE* archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+
+			 if(size > metadataSadica->tamanio_bloques)
+			 {
+				{
+					bloquePosicion = 1;
+				}
+				int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
+
+				FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
+
+				if(size > metadataSadica->tamanio_bloques)
+				{
+					int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques;
+					if((size % metadataSadica->tamanio_bloques) != 0)
+					{
+						cantidadDeBloquesALeer++;
+					}
+					while(cantidadDeBloquesALeer != 0)
+					{
+						if(cantidadDeBloquesALeer != 1)
+						{
+							char* bufferaux = string_substring(buffer,0,(metadataSadica->tamanio_bloques));
+
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
+							list_add(regMetaArchBuscado->bloquesEscritos, idbloqueALeer);
+							grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, metadataSadica->tamanio_bloques); //meto todo el bloque
+							idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
+							archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
+						}
+						else
+						{
+							char* bufferaux = string_substring(buffer,0, ((size) % metadataSadica->tamanio_bloques)); //lo que me falta grabar
+
+							regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + ((size) % metadataSadica->tamanio_bloques);
+							list_add(regMetaArchBuscado->bloquesEscritos, idbloqueALeer);
+							grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, ((size) % metadataSadica->tamanio_bloques));
+
+						}
+						cantidadDeBloquesALeer--;
+					}
+				}
+				else
+				{
+					grabarUnArchivoBloque(archBuscado->referenciaArchivo, idbloqueALeer, buffer, size); //meto todo el bloque
+				}
 			}
 			else
 			{
@@ -548,7 +607,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 		free(pathAbsoluto);
 		free(directorioAux);
         //return mensaje;
-
+	}
 }
 
 void borrarArchivo(char* directorio){
