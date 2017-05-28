@@ -1574,6 +1574,8 @@ void * multiprogramar() {
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
 	char* mensajeInicioPrograma = string_new();
+	string_append(&mensajeInicioPrograma, "250");
+	string_append(&mensajeInicioPrograma, ";");
 	string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
 	string_append(&mensajeInicioPrograma, ";");
 	string_append(&mensajeInicioPrograma, nue->codigo);
@@ -1646,18 +1648,22 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 
 	pthread_mutex_lock(&mtx_listos);
 	queue_push(cola_listos, new_pcb);
+	list_add(lista_procesos, new_pcb);
 	pthread_mutex_unlock(&mtx_listos);
 }
 
 void informoAConsola(int socketConsola, int pid){
 	// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
+
+	char* info_pid = string_new();
 	char* respuestaAConsola = string_new();
-	string_append(&respuestaAConsola, "103");
-	string_append(&respuestaAConsola, ";");
-	string_append(&respuestaAConsola, string_itoa(pid));
-	string_append(&respuestaAConsola, ";");
+	string_append(&info_pid, "103");
+	string_append(&info_pid, ";");
+	string_append(&info_pid, string_itoa(pid));
+	string_append(&respuestaAConsola, info_pid);
 	enviarMensaje(&socketConsola, respuestaAConsola);
 
+	free(info_pid);
 	free(respuestaAConsola);
 }
 
