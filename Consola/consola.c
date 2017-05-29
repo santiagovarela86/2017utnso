@@ -205,6 +205,8 @@ void * escuchar_Kernel(void * args){
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ";");
 
+			printf("CODIGO: %s\n", respuesta_kernel[0]);
+
 			if(atoi(respuesta_kernel[0]) == 103){
 				programa* program = malloc(sizeof(program));
 
@@ -225,6 +227,9 @@ void * escuchar_Kernel(void * args){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else if (atoi(respuesta_kernel[0]) == 575){
 				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
+
+			}else if (atoi(respuesta_kernel[0]) == 666){
+				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]));
 
 			}
 

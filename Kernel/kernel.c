@@ -599,8 +599,21 @@ void matarProceso(int pidAMatar){
 				pthread_mutex_unlock(&mtx_listos);
 
 			}else{
+
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+
+				int* sock = (int*) &temporalP->socket_consola;
+				printf("SOCKET DE CONSOLA: %d\n", temporalP->socket_consola);
+
+				char* msjAConsolaXEstadistica = string_new();
+				string_append(&msjAConsolaXEstadistica, "666;");
+				int pidDelMatado = temporalP->pid;
+				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+				enviarMensaje(temporalP->pid, msjAConsolaXEstadistica);
+				free(msjAConsolaXEstadistica);
+
+
 				pthread_mutex_unlock(&mtx_terminados);
 			}
 
@@ -1809,6 +1822,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 		pthread_mutex_unlock(&mtx_nuevos);
 	} else {
 		//Se crea programa nuevo
+		printf("SOCKET DE CONSOLA: %d\n",socketCliente);
 		t_pcb * new_pcb = nuevo_pcb(pid, &socketCliente);
 
 		char * mensajeInicioPrograma = string_new();
