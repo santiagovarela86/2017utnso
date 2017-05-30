@@ -41,6 +41,9 @@ typedef struct {
 } t_Direccion;
 
 typedef struct {
+	t_list* args;
+	int retPost;
+	int retVar;
 	t_Direccion direccion;
 	char nombre_variable;
 	char nombre_funcion;
