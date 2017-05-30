@@ -661,10 +661,12 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	puts("Llamar Con Retorno");
 	puts("");
-
-	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
-	    pcb->program_counter = instruccion;
-	    pcb->program_counter++;
+		t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
+	    t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	    stackFuncion->retPost = instruccion;
+	    stackFuncion->retVar = donde_retornar;
+	    list_add(pcb->indiceStack, stackFuncion);
+	    free(stackFuncion);
 		//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -672,11 +674,19 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 void finalizar(void){
 	puts("FIN DEL PROGRAMA");
 	puts("");
+
 	return;
 }
 
 void retornar(t_valor_variable retorno){
-	puts("Retornar");
+	  puts("Retornar");
+
+	  t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
+	  stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count);
+	  retorno = stackFuncion->retVar;
+	  t_puntero_instruccion instruccion = stackFuncion->retPost;
+	  pcb->program_counter = instruccion;
+	  pcb->program_counter++;
 	return;
 }
 
