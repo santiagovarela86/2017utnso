@@ -110,22 +110,25 @@ void * handlerConsola(void * args){
 		 int numero =	atoi(valorIngresado);
 				switch(numero){
 				case 1:
+					intentos_fallidos = 0;
 					iniciar_programa(socketKernel);
 					break;
 				case 2:
+					intentos_fallidos = 0;
 					terminar_proceso(socketKernel);
 					break;
 				case 3:
+					intentos_fallidos = 0;
 					desconectar_consola(socketKernel);
 					break;
 				case 4:
+					intentos_fallidos = 0;
 					limpiar_mensajes();
 					break;
 				default:
-
+					intentos_fallidos++;
 					break;
 				}
-				intentos_fallidos++;
 
 				if(intentos_fallidos == 10){
 					return 0;
