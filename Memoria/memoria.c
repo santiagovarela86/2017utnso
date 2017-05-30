@@ -14,6 +14,7 @@
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
+//617 MEM A KER - FINALIZAR PROGRAMA POR ERROR DE HEAP
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -249,46 +250,67 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	//BUSCO LA PAGINA EXISTENTE
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
+	printf("USO UNA PAGINA EXISTENTE\n");
 
 	//Recupero la Primer Metadata Libre de la Página
-	int posicion = obtener_inicio_pagina(pagina);
+	int posicionActual = obtener_inicio_pagina(pagina);
+	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicionActual);
+	printf("Metadata Posicion: %d, Free: %d, Size %d\n", posicionActual, metadata->isFree, metadata->size);
 
-	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicion);
-
-	printf("Metadata Posicion: %d, Free: %d, Size %d\n", posicion, metadata->isFree, metadata->size);
-
-	int posicionAnterior = posicion;
-	int boundary = posicion + configuracion->marco_size - sizeof(heapMetadata);
+	int posicionAnterior = posicionActual;
+	//BOUNDARY = POSICION DONDE IRIA LA ULTIMA METADATA QUE INDICA EL ESPACIO LIBRE
+	int boundary = posicionActual + configuracion->marco_size - sizeof(heapMetadata);
 	printf("Boundary: %d\n", boundary);
 
-	//while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicion <= boundary){
-	while (metadata->isFree != true && posicion <= boundary){
-		posicionAnterior = posicion;
-		posicion = posicion + sizeof(heapMetadata) + metadata->size;
-		metadata = (heapMetadata *) (bloque_memoria + posicion);
-		printf("Posicion: %d, Metadata Free: %d, Size %d\n", posicion, metadata->isFree, metadata->size);
+	//MIENTRAS LA METADATA ESTE OCUPADA, O NO ESTE OCUPADA PERO NO ME ALCANCE EL ESPACIO Y ADEMAS ME QUEDE ESPACIO PARA LA ULTIMA METADATA
+	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicionActual < boundary){
+	//while (metadata->isFree != true && direccionInicioPagina <= boundary){
+		posicionAnterior = posicionActual;
+		posicionActual = posicionActual + sizeof(heapMetadata) + metadata->size;
+		metadata = (heapMetadata *) (bloque_memoria + posicionActual);
+		printf("Posicion: %d, Metadata Free: %d, Size %d\n", posicionActual, metadata->isFree, metadata->size);
 	}
 
 	//SI ME PASE DEL BUFFER
-	if (posicion > boundary){
-		printf("Posicion: %d\n", posicion);
+	if (posicionActual > boundary){
+		printf("Posicion: %d\n", posicionActual);
 		perror("Error buscando Metadata Heap\n");
 	} else {
-		//CREO EL NUEVO METADATA
-		heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicion + sizeof(heapMetadata) + bytesPedidos);
-		metadataNuevo->isFree = true;
-		metadataNuevo->size = metadata->size - bytesPedidos	- sizeof(heapMetadata);
-		printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicion, metadataNuevo->isFree, metadataNuevo->size);
+		//SI ESTE NO VA A SER EL ULTIMO METADATA DE LA PAGINA
+		if (metadata->size - bytesPedidos != 0){
+			//CREO EL NUEVO METADATA
+			heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
+			metadataNuevo->isFree = true;
+			metadataNuevo->size = metadata->size - bytesPedidos	- sizeof(heapMetadata);
+			printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, metadataNuevo->isFree, metadataNuevo->size);
 
-		//EDITO EL ACTUAL
-		metadata->isFree = false;
-		metadata->size = bytesPedidos;
-		printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
+			//EDITO EL ACTUAL
+			metadata->isFree = false;
+			metadata->size = bytesPedidos;
+			printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
 
-		//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
-		int direccion = posicion + sizeof(heapMetadata);
+			//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
+			int direccion = posicionActual + sizeof(heapMetadata);
 
-		enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, metadataNuevo->size));
+			enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, metadataNuevo->size));
+		} else {
+			//CREO EL ULTIMO METADATA
+			heapMetadata * ultimoMetadata = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
+			ultimoMetadata->isFree = true;
+			ultimoMetadata->size = 0;
+			printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, ultimoMetadata->isFree, ultimoMetadata->size);
+
+			//EDITO EL ACTUAL
+			metadata->isFree = false;
+			metadata->size = bytesPedidos;
+			printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
+
+			//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
+			int direccion = posicionActual + sizeof(heapMetadata);
+
+			enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, ultimoMetadata->size));
+		}
+
 	}
 }
 
@@ -316,12 +338,15 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		enviarMensaje(&socketKernel, respuestaAKernel);
 		//printf("Envie mensaje: %s\n", respuestaAKernel);
 
-		printf("Se creo la primer pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+		printf("Se creo una pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
 				pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 
 		free(respuestaAKernel);
 	} else {
-		perror("Error al crear Pagina de Heap\n");
+		printf("Error al crear Pagina de Heap\n");
+		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
+		char * respuestaAKernel = serializarMensaje(2, 617, pid);
+		enviarMensaje(&socketKernel, respuestaAKernel);
 	}
 }
 
