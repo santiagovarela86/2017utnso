@@ -264,7 +264,6 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 
 	//MIENTRAS LA METADATA ESTE OCUPADA, O NO ESTE OCUPADA PERO NO ME ALCANCE EL ESPACIO Y ADEMAS ME QUEDE ESPACIO PARA LA ULTIMA METADATA
 	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicionActual < boundary){
-	//while (metadata->isFree != true && direccionInicioPagina <= boundary){
 		posicionAnterior = posicionActual;
 		posicionActual = posicionActual + sizeof(heapMetadata) + metadata->size;
 		metadata = (heapMetadata *) (bloque_memoria + posicionActual);
@@ -276,48 +275,36 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 		printf("Posicion: %d\n", posicionActual);
 		perror("Error buscando Metadata Heap\n");
 	} else {
+		//CREO EL ULTIMO METADATA
+		heapMetadata * ultimoMetadata = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
+		ultimoMetadata->isFree = true;
+
 		//SI ESTE NO VA A SER EL ULTIMO METADATA DE LA PAGINA
 		if (metadata->size - bytesPedidos != 0){
-			//CREO EL NUEVO METADATA
-			heapMetadata * metadataNuevo = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
-			metadataNuevo->isFree = true;
-			metadataNuevo->size = metadata->size - bytesPedidos	- sizeof(heapMetadata);
-			printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, metadataNuevo->isFree, metadataNuevo->size);
-
-			//EDITO EL ACTUAL
-			metadata->isFree = false;
-			metadata->size = bytesPedidos;
-			printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
-
-			//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
-			int direccion = posicionActual + sizeof(heapMetadata);
-
-			enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, metadataNuevo->size));
+			ultimoMetadata->size = metadata->size - bytesPedidos - sizeof(heapMetadata);
 		} else {
-			//CREO EL ULTIMO METADATA
-			heapMetadata * ultimoMetadata = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
-			ultimoMetadata->isFree = true;
+			//SI ES EL ULTIMO METADATA POSIBLE
 			ultimoMetadata->size = 0;
-			printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, ultimoMetadata->isFree, ultimoMetadata->size);
-
-			//EDITO EL ACTUAL
-			metadata->isFree = false;
-			metadata->size = bytesPedidos;
-			printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
-
-			//LA DIRECCION DEL ESPACIO QUE ACABO DE UTILIZAR
-			int direccion = posicionActual + sizeof(heapMetadata);
-
-			enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, ultimoMetadata->size));
 		}
 
+		printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, ultimoMetadata->isFree, ultimoMetadata->size);
+
+		//EDITO EL ACTUAL
+		metadata->isFree = false;
+		metadata->size = bytesPedidos;
+		printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
+
+		//LA DIRECCION DEL ESPACIO QUE ACABO DE CREAR
+		int direccion = posicionActual + sizeof(heapMetadata);
+
+		enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, ultimoMetadata->size));
 	}
 }
 
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 	//VERIFICO QUE EL ESPACIO QUE PIDEN QUEPA EN UNA PAGINA
 	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
-	if (bytesPedidos < freeSpace){
+	if (bytesPedidos <= freeSpace){
 		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
 		pagina->nro_pagina = paginaActual;
 		pagina->pid = pid;
