@@ -11,6 +11,7 @@
 //802 CPU A KER - BORRAR ARCHIVO
 //803 CPU A KER - ABRIR ARCHIVO
 //600 CPU A KER - RESERVAR MEMORIA HEAP
+//700 CPU A KER - ELIMINAR MEMORIA HEAP
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
 //777 CPU A KER - SUMAR UNA PAGINA AL PCB
 
@@ -750,15 +751,14 @@ t_puntero reservar(t_valor_variable espacio){
 	puts("Reservar");
 	puts("");
 
-	char * buffer = serializarMensaje(3, 600, pcb->pid, espacio);
-	enviarMensaje(&sktKernel, buffer);
+	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
 
 	printf("Espero a que el Kernel me mande la direccion\n");
-	char * buffer2 = string_new();
-	int result = recv(sktKernel, buffer2, MAXBUF, 0);
+	char * buffer= string_new();
+	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
 	if (result > 0){
-		char ** respuesta = string_split(buffer2, ";");
+		char ** respuesta = string_split(buffer, ";");
 		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
 		return atoi(respuesta[0]);
 	} else {
@@ -770,7 +770,18 @@ t_puntero reservar(t_valor_variable espacio){
 void liberar(t_puntero puntero){
 	puts("Liberar");
 	puts("");
-	return;
+
+	enviarMensaje(&sktKernel, serializarMensaje(3, 700, pcb->pid, puntero));
+
+	printf("Espero a que el Kernel me mande la confirmacion de eliminacion de memoria reservada\n");
+	char * buffer= string_new();
+	int result = recv(sktKernel, buffer, MAXBUF, 0);
+
+	if (result > 0){
+		printf("Se eliminó la direccion de memoria reservada %d correctamente\n", puntero);
+	} else {
+		perror("Error liberando Memoria de Heap\n");
+	}
 }
 
 t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
