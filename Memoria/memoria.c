@@ -248,9 +248,11 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 }
 
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
+	printf("Me pasaron: PID: %d, Pagina: %d, Bytes: %d\n", pid, paginaExistente, bytesPedidos);
 	//BUSCO LA PAGINA EXISTENTE
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
 	printf("USO UNA PAGINA EXISTENTE\n");
+	printf("Marco: %d, Pagina: %d, Pid: %d\n", pagina->nro_marco, pagina->nro_pagina, pagina->pid);
 
 	//Recupero la Primer Metadata Libre de la Página
 	int posicionActual = obtener_inicio_pagina(pagina);
@@ -297,7 +299,9 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 		//LA DIRECCION DEL ESPACIO QUE ACABO DE CREAR
 		int direccion = posicionActual + sizeof(heapMetadata);
 
-		enviarMensaje(&socketKernel, serializarMensaje(5, 607, pagina->pid, pagina->nro_pagina,direccion, ultimoMetadata->size));
+		printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size);
+
+		enviarMensaje(&socketKernel, serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size));
 	}
 }
 

@@ -1746,12 +1746,18 @@ void finalizarProgramaEnMemoria(int pid){
 }
 
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
+	printf("PID: %d, Bytes; %d\n", pcb->pid, bytes);
+
 	_Bool coincideHeapPID(heapElement * elem){
 		return elem->pid == pcb->pid;
 	}
 
 	_Bool hayLugarHeap (heapElement * elem){
 		return elem->tamanio_disponible >= bytes;
+	}
+
+	_Bool hayLugarHeapMismoPID(heapElement * elem){
+		return hayLugarHeap(elem) && coincideHeapPID(elem);
 	}
 
 	//Verifico si todavía no hay paginas de Heap para este proceso
@@ -1762,8 +1768,9 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 		if (list_any_satisfy(lista_paginas_heap, hayLugarHeap)){
 			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
 			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
-			heapElement * paginaHeapLibre = list_find(lista_paginas_heap, hayLugarHeap);
+			heapElement * paginaHeapLibre = list_find(lista_paginas_heap, hayLugarHeapMismoPID);
 			//ENVIO A MEMORIA LA SOLICITUD DE GRABAR EN PAGINA HEAP EXISTENTE
+			printf("Encontre la siguiente pagina de Heap Libre, PID: %d, PAGINA: %d, Bytes Libres: %d\n", paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, paginaHeapLibre->tamanio_disponible);
 			enviarMensaje(&skt_memoria, serializarMensaje(4, 607, paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, bytes));
 
 			char * buffer = malloc(MAXBUF);
@@ -1772,7 +1779,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 			if (result > 0) {
 				char ** respuesta = string_split(buffer, ";");
 
-				if (strcmp(respuesta[0], "607") == 0) {
+				if (strcmp(respuesta[0], "608") == 0) {
 					int pid = atoi(respuesta[1]);
 					int pagina = atoi(respuesta[2]);
 					int direccion = atoi(respuesta[3]);
@@ -1783,6 +1790,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 					}
 
 					//EDITO LA ENTRADA EXISTENTE
+					printf("");
  					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
  					entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
