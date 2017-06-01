@@ -1786,7 +1786,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
  					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
  					entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
- 					enviarMensaje(&socketCPU, serializarMensaje(2, 620, direccion));
+ 					enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
 
 				}else{
 					perror("Error en el protocolo de mensajes entre procesos\n");
@@ -1824,13 +1824,14 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 
 			pcb->cantidadPaginas++;
 
-			enviarMensaje(&socketCPU, serializarMensaje(2, 620, direccion));
+			enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
 		} else {
 			//SI HAY UN ERROR DE RESERVA DE HEAP EL PROCESO DEBE FINALIZAR
 			if (strcmp(respuesta[0], "617") == 0){
 				printf("No hay espacio suficiente para su reserva de heap\n");
 				finalizarPrograma(atoi(respuesta[1]));
-				enviarMensaje(&socketCPU, serializarMensaje(1, 621));
+				printf("Resta ver qué sucede con el CPU en este punto\n");
+				//enviarMensaje(&socketCPU, serializarMensaje(1, 621));
 			} else {
 				perror("Error en el protocolo de mensajes entre procesos\n");
 			}
