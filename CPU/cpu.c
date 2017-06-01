@@ -158,25 +158,19 @@ void* manejo_kernel(void *args) {
         	free(mensajeAKernel);
 
     	}else{ //FIN DE QUANTUM
+    		char * buffer = malloc(MAXBUF);
 
-    		char* mensajeAKernel = string_new();
-
-        	string_append(&mensajeAKernel, "530");
-        	string_append(&mensajeAKernel, ";");
-
-        	enviarMensaje(&socketKernel, mensajeAKernel);
+    		enviarMensaje(&socketKernel, serializarMensaje(1, 530));
 
         	pcb->quantum = q;
 
-        	recv(socketKernel, mensajeAKernel, MAXBUF, 0);
+        	//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
+        	recv(socketKernel, buffer, MAXBUF, 0);
 
-        	char* mensajeAKernel2 = serializar_pcb(pcb);
+        	//ENVIO EL PCB AL KERNEL NUEVAMENTE
+        	enviarMensaje(&socketKernel, serializar_pcb(pcb));
 
-        	//printf("Enviando mensaje %s \n", mensajeAKernel);
-        	enviarMensaje(&socketKernel, mensajeAKernel2);
-
-        	free(mensajeAKernel);
-        	free(mensajeAKernel2);
+        	free(buffer);
     	}
 
 
@@ -763,7 +757,8 @@ t_puntero reservar(t_valor_variable espacio){
 		return atoi(respuesta[0]);
 	} else {
 		perror("Error reservando Memoria de Heap\n");
-		return 0;
+		//HAY QUE BUSCAR LA FORMA DE QUE SIGA EJECUTANDO OTRO PROCESO LUEGO DE TERMINAR DE ESTA MANERA
+		exit(errno);
 	}
 }
 
