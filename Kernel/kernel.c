@@ -1072,11 +1072,10 @@ void * handler_conexion_cpu(void * sock) {
 
 	int * socketCliente = (int *) &sock;
 
-	int result = recv(* socketCliente, message, sizeof(message), 0);
+	int result = recv(* socketCliente, message, MAXBUF, 0);
 
 	while (result > 0) {
 
-		char* mensajeFileSystem = string_new();
 		char**mensajeDesdeCPU = string_split(message, ";");
 		int operacion = atoi(mensajeDesdeCPU[0]);
 		int pid_mensaje;
@@ -1229,7 +1228,7 @@ void * handler_conexion_cpu(void * sock) {
 
 
 
-		result = recv(* socketCliente, message, sizeof(message), 0);
+		result = recv(* socketCliente, message, MAXBUF, 0);
 	}
 
 	if (result <= 0) {
@@ -1622,7 +1621,7 @@ void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
 
 	char message[MAXBUF];
 
-	int result = recv(skt_memoria, message, sizeof(message), 0);
+	int result = recv(skt_memoria, message, MAXBUF, 0);
 
 	if (result > 0){
 		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
@@ -1757,7 +1756,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 			//ENVIO A MEMORIA LA SOLICITUD DE GRABAR EN PAGINA HEAP EXISTENTE
 			enviarMensaje(&skt_memoria, serializarMensaje(4, 607, paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, bytes));
 
-			char * buffer = string_new();
+			char * buffer = malloc(MAXBUF);
 			int result = recv(skt_memoria, buffer, MAXBUF, 0);
 
 			if (result > 0) {
@@ -1790,8 +1789,6 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
 		}
 	}
-
-	//free(buffer);
 }
 
 void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
@@ -1800,7 +1797,7 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 
 	enviarMensaje(&skt_memoria, serializarMensaje(4, 605, pcb->pid, paginaActual, bytes));
 
-	char * buffer = string_new();
+	char * buffer = malloc(MAXBUF);
 	int result = recv(skt_memoria, buffer, MAXBUF, 0);
 
 	if (result > 0) {
@@ -1811,7 +1808,6 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 			heapElem->pid = atoi(respuesta[1]);
 			heapElem->nro_pagina = atoi(respuesta[2]);
 			heapElem->tamanio_disponible = atoi(respuesta[3]);
-			//heapElem->direccion = atoi(respuesta[4]);
 			int direccion = atoi(respuesta[4]);
 
 			list_add(lista_paginas_heap, heapElem);
@@ -1862,7 +1858,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 		enviarMensaje(&skt_memoria, mensajeInicioPrograma);
 
 		char message[MAXBUF];
-		recv(skt_memoria, message, sizeof(message), 0);
+		recv(skt_memoria, message, MAXBUF, 0);
 
 		//Recepcion de respuesta de la Memoria sobre validacion de espacio para almacenar script
 		char** respuesta_Memoria = string_split(message, ";");
@@ -2096,7 +2092,7 @@ void cerrarConsola(int socketCliente) {
 
 void finDeQuantum(int * socketCliente){
 	char message[MAXBUF];
-	recv(* socketCliente, &message, sizeof(message), 0);
+	recv(* socketCliente, &message, MAXBUF, 0);
 
 	t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
 	pcb_deserializado = deserializar_pcb(message);
@@ -2320,7 +2316,7 @@ void finDePrograma(int * socketCliente) {
 
 	enviarMensaje(socketCliente, "531;");
 
-	int result = recv(*socketCliente, &message, sizeof(message), 0);
+	int result = recv(*socketCliente, &message, MAXBUF, 0);
 
 	if (result > 0) {
 		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
@@ -2630,7 +2626,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 
 		enviarMensaje(&skt_filesystem, mensajeFS);
 
-		int result = recv(skt_filesystem, mensajeFS, sizeof(mensajeFS), 0);
+		int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
 
 		if (result > 0) {
 			puts("archivo cerrado correctamente");
@@ -2806,7 +2802,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
-	int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+	int result = recv(skt_filesystem, mensajeAFS, MAXBUF, 0);
 
 	if (result > 0) {
 		puts("archivo cerrado correctamente");
