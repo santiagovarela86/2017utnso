@@ -10,7 +10,7 @@
 //511 CPU A MEM - ASIGNAR VARIABLE
 //512 CPU A MEM - DEFINIR VARIABLE
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
-//600 KER A MEM - RESERVAR MEMORIA HEAP
+//605 KER A MEM - RESERVAR MEMORIA HEAP
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
@@ -330,10 +330,12 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 		free(respuestaAKernel);
 	} else {
-		printf("Error al crear Pagina de Heap\n");
 		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
-		char * respuestaAKernel = serializarMensaje(2, 617, pid);
-		enviarMensaje(&socketKernel, respuestaAKernel);
+		printf("Error al crear Pagina de Heap\n");
+		enviarMensaje(&socketKernel, serializarMensaje(2, 617, pid));
+		printf("Se notifica al Kernel la finalizacion del proceso\n");
+		finalizar_programa(pid);
+		printf("Se finaliza el programa %d en memoria\n", pid);
 	}
 }
 

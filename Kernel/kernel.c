@@ -12,11 +12,13 @@
 //401 FIL A KER - RESPUESTA HANDSHAKE DE FS
 //500 CPU A KER - HANDSHAKE DEL CPU
 //600 CPU A KER - RESERVAR MEMORIA HEAP
+//700 CPU A KER - ELIMINAR MEMORIA HEAP
 //605 KER A MEM - NUEVA PAGINA
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
 //777 CPU A KER - SUMO EN UNO LA CANTIDAD DE PAGINAS DE UN PCB
+//617 MEM A KER - FINALIZAR PROGRAMA POR ERROR DE HEAP
 
 #include <stdio.h>
 #include <string.h>
@@ -1211,6 +1213,14 @@ void * handler_conexion_cpu(void * sock) {
 				reservarMemoriaHeap(pcb, bytes, * socketCliente);
 				break;
 
+			case 700:
+				;
+				int otro_pid = atoi(mensajeDesdeCPU[1]);
+				int direccion = atoi(mensajeDesdeCPU[2]);
+				t_pcb * otro_pcb = pcbFromPid(otro_pid);
+				eliminarMemoriaHeap(otro_pcb, direccion, * socketCliente);
+				break;
+
 			case 615:
 				;
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
@@ -1776,7 +1786,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
  					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
  					entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
- 					enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
+ 					enviarMensaje(&socketCPU, serializarMensaje(2, 620, direccion));
 
 				}else{
 					perror("Error en el protocolo de mensajes entre procesos\n");
@@ -1814,17 +1824,33 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 
 			pcb->cantidadPaginas++;
 
-			enviarMensaje(&socketCPU, serializarMensaje(1, direccion));
+			enviarMensaje(&socketCPU, serializarMensaje(2, 620, direccion));
 		} else {
-			perror("Error en el protocolo de mensajes entre procesos\n");
+			//SI HAY UN ERROR DE RESERVA DE HEAP EL PROCESO DEBE FINALIZAR
+			if (strcmp(respuesta[0], "617") == 0){
+				printf("No hay espacio suficiente para su reserva de heap\n");
+				finalizarPrograma(atoi(respuesta[1]));
+				enviarMensaje(&socketCPU, serializarMensaje(1, 621));
+			} else {
+				perror("Error en el protocolo de mensajes entre procesos\n");
+			}
 		}
 	} else {
 		perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
 	}
 }
 
-void liberarMemoriaHeap(){
+void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
+	_Bool coincideHeapPID(heapElement * elem){
+		return elem->pid == pcb->pid;
+	}
 
+	//Verifico que exista una pagina para este PID
+	if(list_any_satisfy(lista_paginas_heap, coincideHeapPID)){
+
+	}else{
+		perror("Error eliminando memoria de heap\n");
+	}
 }
 
 void heapElementDestroyer(void * heapElement){
@@ -2006,7 +2032,7 @@ void finalizarPrograma(int pidACerrar) {
 			queue_push(cola_terminados, temporalN);
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreEjec = 1;
-			printf("Se termino el proceso: %d", temporalN->pid);
+			printf("Se termino el proceso: %d\n", temporalN->pid);
 
 		} else {
 

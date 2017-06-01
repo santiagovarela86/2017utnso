@@ -193,6 +193,7 @@ t_pcb* existe_proceso(int pid);
 t_estadistica* encontrar_estadistica(int p);
 void finalizarProgramaEnMemoria(int pid);
 int obtener_pid_de_cpu(int* skt);
+void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

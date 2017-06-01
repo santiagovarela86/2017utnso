@@ -759,8 +759,13 @@ t_puntero reservar(t_valor_variable espacio){
 
 	if (result > 0){
 		char ** respuesta = string_split(buffer, ";");
-		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
-		return atoi(respuesta[0]);
+		if (strcmp(respuesta[0], "620")){
+			printf("Direccion Puntero: %d\n", atoi(respuesta[1]));
+			return atoi(respuesta[1]);
+		}else if (strcmp(respuesta[0], "621")){
+			printf("Error al reservar Memoria de Heap, El proceso debe terminar\n");
+			return 0;
+		}
 	} else {
 		perror("Error reservando Memoria de Heap\n");
 		return 0;
@@ -778,7 +783,7 @@ void liberar(t_puntero puntero){
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
 	if (result > 0){
-		printf("Se eliminó la direccion de memoria reservada %d correctamente\n", puntero);
+		printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
 	} else {
 		perror("Error liberando Memoria de Heap\n");
 	}
