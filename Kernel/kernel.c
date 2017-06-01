@@ -1233,12 +1233,15 @@ void * handler_conexion_cpu(void * sock) {
 				int pid_pcb = atoi(mensajeDesdeCPU[1]);
 				t_pcb * un_pcb = pcbFromPid(pid_pcb);
 				un_pcb->cantidadPaginas++;
+				//CONFIRMACION DEL KERNEL PARA SINCRONIZAR
+				enviarMensaje(socketCliente, serializarMensaje(1, 777));
 
 		}
 
 
 
 		result = recv(* socketCliente, message, MAXBUF, 0);
+		printf("%s\n", message);
 	}
 
 	if (result <= 0) {

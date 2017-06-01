@@ -549,13 +549,12 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 			if (paginaNueva == true) {
 				pcb->cantidadPaginas++;
-				char * mensaje = string_new();
-				string_append(&mensaje, "777");
-				string_append(&mensaje, ";");
-				string_append(&mensaje, string_itoa(pcb->pid));
-				string_append(&mensaje, ";");
-				enviarMensaje(&sktKernel, mensaje);
+				char * buffer = malloc(MAXBUF);
+				enviarMensaje(&sktKernel, serializarMensaje(2, 777, pcb->pid));
 				paginaNueva = false;
+
+				recv(sktKernel, buffer, MAXBUF, 0);
+
 			}
 
 			printf("La variable %c se guardo en la pag %d con offset %d\n\n", entrada_stack->nombre_variable , entrada_stack->direccion.pagina ,entrada_stack->direccion.offset);
@@ -746,6 +745,7 @@ t_puntero reservar(t_valor_variable espacio){
 	puts("");
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
+	printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, espacio));
 
 	printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer= string_new();
@@ -756,7 +756,7 @@ t_puntero reservar(t_valor_variable espacio){
 		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
 		return atoi(respuesta[0]);
 	} else {
-		perror("Error reservando Memoria de Heap\n");
+		printf("Error reservando Memoria de Heap\n");
 		//HAY QUE BUSCAR LA FORMA DE QUE SIGA EJECUTANDO OTRO PROCESO LUEGO DE TERMINAR DE ESTA MANERA
 		exit(errno);
 	}
