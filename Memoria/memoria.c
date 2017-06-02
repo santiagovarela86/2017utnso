@@ -1364,14 +1364,14 @@ void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 int f_hash_nene_malloc(int pid, int pagina) {
 	int nro_marco_insertar = 0;
 
-	nro_marco_insertar = tamanio_maximo->maxima_cant_paginas_administracion;
+	nro_marco_insertar = tamanio_maximo->maxima_cant_paginas_administracion + 1;
 
 	int i = 0;
 	for(i = 0; i < pagina; i++){
 		nro_marco_insertar += configuracion->marco_size + pid + i;
 	}
 
-	nro_marco_insertar = (pid + nro_marco_insertar) % configuracion->marcos + 1;
+	nro_marco_insertar = (pid + nro_marco_insertar) % configuracion->marcos;
 
 	return nro_marco_insertar;
 }
