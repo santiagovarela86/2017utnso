@@ -1778,6 +1778,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 
 			char * buffer = malloc(MAXBUF);
 			int result = recv(skt_memoria, buffer, MAXBUF, 0);
+			printf("%s\n", buffer);
 
 			if (result > 0) {
 				char ** respuesta = string_split(buffer, ";");
@@ -1789,11 +1790,10 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 					int newFreeSpace = atoi(respuesta[4]);
 
 					_Bool mismaPaginaHeap(heapElement * elem){
-						return pcb->pid == pid && elem->nro_pagina == pagina;
+						return elem->pid == pid && elem->nro_pagina == pagina;
 					}
 
 					//EDITO LA ENTRADA EXISTENTE
-					printf("");
  					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
  					entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
