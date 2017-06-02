@@ -745,16 +745,17 @@ t_puntero reservar(t_valor_variable espacio){
 	puts("Reservar");
 	puts("");
 
-	//enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
-	//printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, espacio));
+	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
+	printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, espacio));
 
 	//PONGO ESTO FIJO PARA HACER PRUEBAS
-	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, 50));
-	printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, 50));
+	//enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, 50));
+	//printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, 50));
 
 	printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer= string_new();
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
+	printf("%s\n", buffer);
 
 	if (result > 0){
 		char ** respuesta = string_split(buffer, ";");

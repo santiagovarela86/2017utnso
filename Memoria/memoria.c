@@ -49,6 +49,9 @@ int socketMemoria;
 struct sockaddr_in direccionMemoria;
 sem_t semaforoKernel;
 
+//CONTADOR CABEZA
+int contadorCabeza = 0;
+
 int main(int argc, char **argv) {
 
 	if (argc != 2) {
@@ -329,8 +332,9 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		enviarMensaje(&socketKernel, respuestaAKernel);
 		//printf("Envie mensaje: %s\n", respuestaAKernel);
 
-		printf("Se creo una pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
-				pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
+		contadorCabeza++;
+		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+				contadorCabeza, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 
 		free(respuestaAKernel);
 	} else {
