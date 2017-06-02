@@ -638,7 +638,7 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 		//CACHE_MISS
 
 		//Ocurre el retardo para acceder a la memoria principal
-		retardo_acceso_memoria();
+		//retardo_acceso_memoria();
 
 		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
 		if (pagina_buscada != NULL){
