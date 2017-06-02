@@ -106,6 +106,7 @@ void* manejo_kernel(void *args) {
     	//	printf("el program es: %d\n", pcb->program_counter);
        	//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
+    		printf("Instruccion: %s\n", instruccion);
     		analizadorLinea(instruccion, funciones, kernel);
 
 
@@ -187,31 +188,22 @@ void* manejo_kernel(void *args) {
 
 char * solicitoInstruccion(t_pcb* pcb){
 
-	char* mensajeAMemoria = string_new();
-
 	int inst_pointer = pcb->program_counter;
 
     elementoIndiceCodigo* coordenadas_instruccion = ((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
 
-	char message[MAXBUF];
+	char * message = malloc(MAXBUF);
 
-	string_append(&mensajeAMemoria, "510");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->start));
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(coordenadas_instruccion->offset));
-	string_append(&mensajeAMemoria, ";");
+	enviarMensaje(&socketMemoria, serializarMensaje(4, 510, pcb->pid, coordenadas_instruccion->start, coordenadas_instruccion->offset));
 
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
-
-	free(mensajeAMemoria);
-
-	int result = recv(socketMemoria, message, sizeof(message), 0);
+	int result = recv(socketMemoria, message, MAXBUF, 0);
 
 	if (result > 0){
-		return &message;
+		//printf("Mensaje antes del Trim: %s\n", message);
+		//message = string_substring(message, 0, strlen(message));
+		//printf("Mensaje después del Trim: %s\n", message);
+		message = string_substring(message, 0, strlen(message));
+		return message;
 	}else{
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
@@ -424,45 +416,27 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	return;
 }
 
-//ACA A VECES NO ESTA LLEGANDO EL IDENTIFICADOR CORRECTO (LLEGA VACIO Y EL PROGRAMA PINCHA)
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
 
 	int encontrar_var(t_Stack* var){
-		printf("Test Encontrar var: Var Nombre Var: %d, ID Variable: %d\n", var->nombre_variable, identificador_variable);
+		//printf("Test Encontrar var: Var Nombre Var: %d, ID Variable: %d\n", var->nombre_variable, identificador_variable);
 		return (var->nombre_variable == identificador_variable);
 	}
 
-	printf("Pasa y antes de buscar entrada\n");
-
 	t_Stack* entrada_encontrada = list_find(pcb->indiceStack, (void*) encontrar_var);
 
-	printf("Pasa y despues de  de buscar entrada\n");
+	char * buffer = malloc(MAXBUF);
 
-	char* mensajeAMemoria = string_new();
-	string_append(&mensajeAMemoria, "601");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.pagina));
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.offset));
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(entrada_encontrada->direccion.size));
-	string_append(&mensajeAMemoria, ";");
+	enviarMensaje(&socketMemoria, serializarMensaje(5, 601, pcb->pid, entrada_encontrada->direccion.pagina, entrada_encontrada->direccion.offset, entrada_encontrada->direccion.size));
 
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
-
-	printf("Pasa y despues de  mandar mensaje a memoria\n");
-
-	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
+	int result = recv(socketMemoria, buffer, MAXBUF, 0);
+	buffer = string_substring(buffer, 0, strlen(buffer));
 
 	if(result > 0){
-		char**mensajeDesdeMemoria = string_split(mensajeAMemoria, ";");
+		char**mensajeDesdeMemoria = string_split(buffer, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
-
-		printf("Pasa y despues de  recibir mensaje dememormia\n");
 
 		if (valor == VARIABLE_EN_CACHE){
 			pagina_a_leer_cache = entrada_encontrada->direccion.pagina;
@@ -470,8 +444,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 			tamanio_a_leer_cache = entrada_encontrada->direccion.size;
 		}
 
-
-		printf("Se obtuvo la posición %d \n", valor);
+		//printf("Se obtuvo el valor %d \n", valor);
 
 		return valor;
 
@@ -479,8 +452,6 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	else {
 		return NULL;
 	}
-
-	free(mensajeAMemoria);
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable){
@@ -750,7 +721,6 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	return;
 }
 
-//ME LLEGA MAL "ESPACIO" A VECES
 t_puntero reservar(t_valor_variable espacio){
 	puts("Reservar");
 	puts("");
@@ -758,14 +728,11 @@ t_puntero reservar(t_valor_variable espacio){
 	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
 	printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, espacio));
 
-	//PONGO ESTO FIJO PARA HACER PRUEBAS
-	//enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, 50));
-	//printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, 50));
-
 	printf("Espero a que el Kernel me mande la direccion\n");
-	char * buffer= string_new();
+	char * buffer = malloc(MAXBUF);
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
-	printf("%s\n", buffer);
+	buffer = string_substring(buffer, 0, strlen(buffer));
+	printf("Buffer que viene del Kernel: %s\n", buffer);
 
 	if (result > 0){
 		char ** respuesta = string_split(buffer, ";");

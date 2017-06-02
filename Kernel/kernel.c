@@ -1789,6 +1789,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 			char * buffer = malloc(MAXBUF);
 			int result = recv(skt_memoria, buffer, MAXBUF, 0);
 			//printf("%s\n", buffer);
+			buffer = string_substring(buffer, 0, strlen(buffer));
 
 			if (result > 0) {
 				char ** respuesta = string_split(buffer, ";");
