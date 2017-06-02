@@ -424,15 +424,21 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	return;
 }
 
+//ACA A VECES NO ESTA LLEGANDO EL IDENTIFICADOR CORRECTO (LLEGA VACIO Y EL PROGRAMA PINCHA)
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
 
 	int encontrar_var(t_Stack* var){
-		return (var->nombre_variable == (char) identificador_variable);
+		printf("Test Encontrar var: Var Nombre Var: %d, ID Variable: %d\n", var->nombre_variable, identificador_variable);
+		return (var->nombre_variable == identificador_variable);
 	}
 
+	printf("Pasa y antes de buscar entrada\n");
+
 	t_Stack* entrada_encontrada = list_find(pcb->indiceStack, (void*) encontrar_var);
+
+	printf("Pasa y despues de  de buscar entrada\n");
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "601");
@@ -448,11 +454,15 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
+	printf("Pasa y despues de  mandar mensaje a memoria\n");
+
 	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
 
 	if(result > 0){
 		char**mensajeDesdeMemoria = string_split(mensajeAMemoria, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
+
+		printf("Pasa y despues de  recibir mensaje dememormia\n");
 
 		if (valor == VARIABLE_EN_CACHE){
 			pagina_a_leer_cache = entrada_encontrada->direccion.pagina;

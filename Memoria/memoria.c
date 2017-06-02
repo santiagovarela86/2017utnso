@@ -265,14 +265,20 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	int posicionAnterior = posicionActual;
 	//BOUNDARY = POSICION DONDE IRIA LA ULTIMA METADATA QUE INDICA EL ESPACIO LIBRE
 	int boundary = posicionActual + configuracion->marco_size - sizeof(heapMetadata);
+	//int boundary = posicionActual + configuracion->marco_size;
 	printf("Boundary: %d\n", boundary);
 
 	//MIENTRAS LA METADATA ESTE OCUPADA, O NO ESTE OCUPADA PERO NO ME ALCANCE EL ESPACIO Y ADEMAS ME QUEDE ESPACIO PARA LA ULTIMA METADATA
-	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicionActual < boundary){
+	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos + sizeof(heapMetadata))) && posicionActual < boundary){
 		posicionAnterior = posicionActual;
 		posicionActual = posicionActual + sizeof(heapMetadata) + metadata->size;
 		metadata = (heapMetadata *) (bloque_memoria + posicionActual);
 		printf("Posicion: %d, Metadata Free: %d, Size %d\n", posicionActual, metadata->isFree, metadata->size);
+	}
+
+	if (posicionActual == boundary + sizeof(heapMetadata)){
+		printf("Posicion Actual Igual a boundary mas size of heap metadata\n");
+		crearPaginaHeap(pid, paginaExistente + 1, bytesPedidos);
 	}
 
 	//SI ME PASE DEL BUFFER
@@ -305,6 +311,7 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 		printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size);
 
 		enviarMensaje(&socketKernel, serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size));
+		printf("%s", serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size));
 	}
 }
 
