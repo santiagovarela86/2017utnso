@@ -1788,14 +1788,14 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
 
 			char * buffer = malloc(MAXBUF);
 			int result = recv(skt_memoria, buffer, MAXBUF, 0);
-			printf("%s\n", buffer);
+			//printf("%s\n", buffer);
 
 			if (result > 0) {
 				char ** respuesta = string_split(buffer, ";");
 
 				//printf("pasa y recibe algo de memorIa\n");
 
-				if (strcmp(respuesta[0], "608") == 0) {
+				if (strcmp(respuesta[0], "608") == 0 || strcmp(respuesta[0], "605") == 0) {
 					int pid = atoi(respuesta[1]);
 					int pagina = atoi(respuesta[2]);
 					int direccion = atoi(respuesta[3]);
