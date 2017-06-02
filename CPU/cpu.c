@@ -150,10 +150,12 @@ void* manejo_kernel(void *args) {
 					enviarMensaje(&socketKernel, mensajeAKernel2);
 					free(mensajeAKernel2);
         		}else{
-        			perror("Error en protocolo de mensajes entre procesos\n");
+        			printf("Error en protocolo de mensajes entre procesos\n");
+        			exit(errno);
         		}
         	}else{
-        		perror("Error de comunicacion de fin de programa con el Kernel\n");
+        		printf("Error de comunicacion de fin de programa con el Kernel\n");
+        		exit(errno);
         	}
 
         	free(mensajeAKernel);
@@ -758,7 +760,8 @@ void liberar(t_puntero puntero){
 	if (result > 0){
 		printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
 	} else {
-		perror("Error liberando Memoria de Heap\n");
+		printf("Error liberando Memoria de Heap\n");
+		exit(errno);
 	}
 }
 
@@ -790,7 +793,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
 			return ((t_descriptor_archivo)fdNuevo);
 
 		} else {
-			perror("Error al abrir el archivo \n");
+			printf("Error al abrir el archivo \n");
 			return ((t_descriptor_archivo)0);
 		}
 
@@ -851,7 +854,7 @@ void cerrar(t_descriptor_archivo descriptor){
 		if (result > 0){
 			puts("archivo cerrado correctamente");
 		} else {
-			perror("Error el archivo no se pudo cerrar \n");
+			printf("Error el archivo no se pudo cerrar \n");
 		}
 
 
@@ -940,7 +943,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset, t_valor_var
 		printf("el contenido es %s", mensaje);
 	}
 	else {
-		perror("Error no se pudo leer \n");
+		printf("Error no se pudo leer \n");
 	}
 	free(mensaje);
 	return;
