@@ -1818,10 +1818,12 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int socketCPU){
  					//printf("pasa el enviar mensaje a CPU\n");
 
 				}else{
-					perror("Error en el protocolo de mensajes entre procesos\n");
+					printf("Error en el protocolo de mensajes entre procesos\n");
+					exit(errno);
 				}
 			} else {
-				perror("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+				printf("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+				exit(errno);
 			}
 		}else{
 			//TENGO QUE PEDIR UNA PAGINA NUEVA
@@ -1842,6 +1844,7 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 
 	char * buffer = malloc(MAXBUF);
 	int result = recv(skt_memoria, buffer, MAXBUF, 0);
+	buffer = string_substring(buffer, 0, strlen(buffer));
 
 	if (result > 0) {
 		char ** respuesta = string_split(buffer, ";");
@@ -1869,11 +1872,13 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int socketCPU) {
 				printf("Resta ver qué sucede con el CPU en este punto\n");
 				//enviarMensaje(&socketCPU, serializarMensaje(1, 621));
 			} else {
-				perror("Error en el protocolo de mensajes entre procesos\n");
+				printf("Error en el protocolo de mensajes entre procesos\n");
+				exit(errno);
 			}
 		}
 	} else {
-		perror("Error de comunicacion con Memoria durante la reserva de memoria heap\n");
+		printf("Error de comunicacion con Memoria durante la reserva de nueva pagina heap\n");
+		exit(errno);
 	}
 }
 
@@ -1886,7 +1891,8 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	if(list_any_satisfy(lista_paginas_heap, coincideHeapPID)){
 
 	}else{
-		perror("Error eliminando memoria de heap\n");
+		printf("Error eliminando memoria de heap\n");
+		exit(errno);
 	}
 }
 
@@ -2443,7 +2449,8 @@ void finDePrograma(int * socketCliente) {
 
 		}
 	} else {
-		perror("Error de comunicacion de fin de programa con el CPU\n");
+		printf("Error de comunicacion de fin de programa con el CPU\n");
+		exit(errno);
 	}
 }
 
@@ -2695,7 +2702,8 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			puts("archivo cerrado correctamente");
 		}
 		else {
-			perror("Error no se pudo leer \n");
+			printf("Error no se pudo leer \n");
+			exit(errno);
 		}
 		free(mensajeFS);
 		//return mensajeAFS;
@@ -2871,7 +2879,8 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 		puts("archivo cerrado correctamente");
 	}
 	else {
-		perror("Error no se pudo leer \n");
+		printf("Error no se pudo leer \n");
+		exit(errno);
 	}
 	free(mensajeAFS);
 	return mensajeAFS;
