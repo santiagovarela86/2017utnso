@@ -408,16 +408,31 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
+
 	free(mensajeAMemoria);
 
-	if (direccion != VARIABLE_EN_CACHE)
-		printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
-	else
-		printf("Asigne el valor %d en la pagina %d offset %d de la Cache \n", valor, pagina_a_leer_cache, offset_a_leer_cache);
+	char* mensajeDesdeMemoria = string_new();
+
+	int result = recv(socketMemoria, mensajeDesdeMemoria, MAXBUF, 0);
+
+	if (result > 0) {
+
+		char**message = string_split(mensajeDesdeMemoria, ";");
+		int direccion = atoi(message[0]);
+		valor = atoi(message[1]);
+
+		if (direccion != VARIABLE_EN_CACHE)
+			printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
+		else
+			printf("Asigne el valor %d en la pagina %d offset %d de la Cache \n", valor, pagina_a_leer_cache, offset_a_leer_cache);
+
+		free(message);
+	}
+
+	free(mensajeDesdeMemoria);
 
 	return;
 }
-
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
@@ -430,6 +445,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	t_Stack* entrada_encontrada = list_find(pcb->indiceStack, (void*) encontrar_var);
 
 	char * buffer = malloc(MAXBUF);
+	buffer = string_new();
 
 	enviarMensaje(&socketMemoria, serializarMensaje(5, 601, pcb->pid, entrada_encontrada->direccion.pagina, entrada_encontrada->direccion.offset, entrada_encontrada->direccion.size));
 

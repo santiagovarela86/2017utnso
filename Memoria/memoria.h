@@ -111,7 +111,7 @@ void finalizar_programa(int pid);
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos);
 void obtenerPosicionVariable(int pid, int pagina, int offset, int sock);
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock);
-void asignarVariable(char** mensajeDesdeCPU);
+void asignarVariable(char** mensajeDesdeCPU, int sock);
 void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
 void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
 void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock);

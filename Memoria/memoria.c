@@ -405,7 +405,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
 
-			asignarVariable(mensajeDesdeCPU);
+			asignarVariable(mensajeDesdeCPU, sock);
 
 		} else if (codigo == 512) {
 
@@ -581,7 +581,7 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 	free(mensajeACpu);
 }
 
-void asignarVariable(char** mensajeDesdeCPU){
+void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	int valor = 0;
 	int direccion = atoi(mensajeDesdeCPU[1]);
@@ -601,6 +601,16 @@ void asignarVariable(char** mensajeDesdeCPU){
 	}
 
 	grabar_valor(direccion, valor);
+
+	char* mensajeACpu = string_new();
+	string_append(&mensajeACpu, string_itoa(direccion));
+	string_append(&mensajeACpu, ";");
+	string_append(&mensajeACpu, string_itoa(valor));
+	string_append(&mensajeACpu, ";");
+
+	enviarMensaje(&sock, mensajeACpu);
+
+	free(mensajeACpu);
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
@@ -638,7 +648,7 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 		//CACHE_MISS
 
 		//Ocurre el retardo para acceder a la memoria principal
-		//retardo_acceso_memoria();
+		retardo_acceso_memoria();
 
 		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
 		if (pagina_buscada != NULL){
