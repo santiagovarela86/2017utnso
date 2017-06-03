@@ -613,6 +613,9 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 	string_append(&mensajeACpu, string_itoa(valor));
 	string_append(&mensajeACpu, ";");
 
+	int sendLen = strlen(mensajeACpu);
+	send(sock, &sendLen, sizeof(sendLen), 0);
+	//send(sockfd, sendBuff, sendLen, 0);
 	enviarMensaje(&sock, mensajeACpu);
 
 	free(mensajeACpu);
