@@ -584,11 +584,12 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	int valor = 0;
+	bool valorEnCache = false;
 	int direccion = atoi(mensajeDesdeCPU[1]);
 
 	//Valor en Cache
 	if (direccion == VARIABLE_EN_CACHE){
-
+		valorEnCache = true;
 		int pid = atoi(mensajeDesdeCPU[2]);
 		int nro_pagina = atoi(mensajeDesdeCPU[3]);
 		int offset = atoi(mensajeDesdeCPU[4]);
@@ -603,7 +604,11 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 	grabar_valor(direccion, valor);
 
 	char* mensajeACpu = string_new();
-	string_append(&mensajeACpu, string_itoa(direccion));
+	if (valorEnCache){
+		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
+	} else {
+		string_append(&mensajeACpu, string_itoa(direccion));
+	}
 	string_append(&mensajeACpu, ";");
 	string_append(&mensajeACpu, string_itoa(valor));
 	string_append(&mensajeACpu, ";");

@@ -411,25 +411,28 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 
 	free(mensajeAMemoria);
 
-	char* mensajeDesdeMemoria = string_new();
+	char * buffer = malloc(MAXBUF);
+	buffer = string_new();
 
-	int result = recv(socketMemoria, mensajeDesdeMemoria, MAXBUF, 0);
+	int result = recv(socketMemoria, buffer, MAXBUF, 0);
+	buffer = string_substring(buffer, 0, strlen(buffer));
 
 	if (result > 0) {
 
-		char**message = string_split(mensajeDesdeMemoria, ";");
-		int direccion = atoi(message[0]);
-		valor = atoi(message[1]);
+		char**mensajeDesdeMemoria = string_split(buffer, ";");
+		int direccion = atoi(mensajeDesdeMemoria[0]);
+		valor = atoi(mensajeDesdeMemoria[1]);
 
 		if (direccion != VARIABLE_EN_CACHE)
 			printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
 		else
 			printf("Asigne el valor %d en la pagina %d offset %d de la Cache \n", valor, pagina_a_leer_cache, offset_a_leer_cache);
 
-		free(message);
+		free(mensajeDesdeMemoria);
 	}
 
-	free(mensajeDesdeMemoria);
+	free(buffer);
+	sleep(1);
 
 	return;
 }
