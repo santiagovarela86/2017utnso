@@ -207,8 +207,9 @@ char * solicitoInstruccion(t_pcb* pcb) {
 		//printf("Mensaje antes del Trim: %s\n", message);
 		//message = string_substring(message, 0, strlen(message));
 		//printf("Mensaje después del Trim: %s\n", message);
-		message = string_substring(message, 0, strlen(message));
-		return message;
+		char**mensajeDelKernel = string_split(message, ";");
+		//message = string_substring(message, 0, strlen(message));
+		return mensajeDelKernel[0];
 	} else {
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
