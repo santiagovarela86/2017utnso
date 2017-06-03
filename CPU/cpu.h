@@ -1,4 +1,5 @@
 /*
+ /*
  * cpu.h
  *
  *  Created on: 30/4/2017
@@ -44,10 +45,20 @@ typedef struct {
 	t_list* args;
 	int retPost;
 	int retVar;
-	t_Direccion direccion;
-	char nombre_variable;
-	char nombre_funcion;
+	t_list* variables;
+	int stack_pointer;
 } t_Stack;
+
+
+typedef struct {
+	int pid;
+	char nombre_variable;
+	int pagina;
+	int offset;
+	int size;
+	int nro_variable;
+	char nombre_funcion;
+} t_variables;
 
 typedef struct {
 	int pid;
@@ -63,7 +74,7 @@ void imprimoInfoPCB(t_pcb * pcb);
 t_pcb * reciboPCB(int * socketKernel);
 t_pcb * deserializar_pcb(char * message);
 char* serializar_pcb(t_pcb* pcb);
-t_Stack* deserializar_entrada_stack(char** mensajeRecibido);
+t_variables* deserializar_entrada_stack(char** mensajeRecibido);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 #define ASIGNACION_MEMORIA_OK 0

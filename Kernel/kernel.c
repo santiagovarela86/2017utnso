@@ -1006,27 +1006,70 @@ char* serializar_pcb(t_pcb* pcb){
 	for (i = 0; i < pcb->indiceStack->elements_count; i++){
 		t_Stack *sta = malloc(sizeof(t_Stack));
 		sta =  list_get(pcb->indiceStack, i);
-		string_append(&mensajeACPU, string_itoa(sta->direccion.offset));
+
+		string_append(&mensajeACPU, string_itoa(sta->retPost));
 		string_append(&mensajeACPU, ";");
-		string_append(&mensajeACPU, string_itoa(sta->direccion.pagina));
+		string_append(&mensajeACPU, string_itoa(sta->retVar));
 		string_append(&mensajeACPU, ";");
-		string_append(&mensajeACPU, string_itoa(sta->direccion.size));
+		string_append(&mensajeACPU, string_itoa(sta->stack_pointer));
 		string_append(&mensajeACPU, ";");
-		if (sta->nombre_funcion != NULL){
-			string_append(&mensajeACPU, string_itoa(sta->nombre_funcion));
+		int j;
+
+		string_append(&mensajeACPU, string_itoa(sta->variables->elements_count)); //lo necesito para deserializar
+		string_append(&mensajeACPU, ";");
+		for (j = 0; j < sta->variables->elements_count; j++){
+
+			t_variables* var = list_get(sta->variables, j);
+
+			string_append(&mensajeACPU, string_itoa(var->offset));
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(var->pagina));
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(var->size));
+			string_append(&mensajeACPU, ";");
+			if (var->nombre_funcion != NULL){
+				string_append(&mensajeACPU, string_itoa(var->nombre_funcion));
+			}
+			else {
+				string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+			}
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(var->nombre_variable));
+			string_append(&mensajeACPU, ";");
 		}
-		else {
-			string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+
+		string_append(&mensajeACPU, string_itoa(sta->args->elements_count)); //lo necesito para deserializar
+		string_append(&mensajeACPU, ";");
+		int k;
+
+		for (k = 0; k < sta->args->elements_count; k++){
+
+			t_variables* args = list_get(sta->args, k);
+
+			string_append(&mensajeACPU, string_itoa(args->offset));
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(args->pagina));
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(args->size));
+			string_append(&mensajeACPU, ";");
+			if (args->nombre_funcion != NULL){
+				string_append(&mensajeACPU, string_itoa(args->nombre_funcion));
+			}
+			else {
+				string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+			}
+			string_append(&mensajeACPU, ";");
+			string_append(&mensajeACPU, string_itoa(args->nombre_variable));
+			string_append(&mensajeACPU, ";");
+
 		}
-		string_append(&mensajeACPU, ";");
-		string_append(&mensajeACPU, string_itoa(sta->nombre_variable));
-		string_append(&mensajeACPU, ";");
 	}
 
 
 	return mensajeACPU;
 
 }
+
 
 void * hilo_conexiones_cpu(void *args) {
 
@@ -1315,6 +1358,10 @@ t_pcb *nuevo_pcb(int pid, int* socket_consola){
 	new->indiceCodigo = list_create();
 	//new->indiceEtiquetas = list_create();
 	new->indiceStack = list_create();
+	t_Stack* sta = malloc(sizeof(t_Stack));
+	sta->args = list_create();
+	sta->variables = list_create();
+	list_add(new->indiceStack, sta);
 	new->inicio_codigo = 0;
 	new->tabla_archivos = 0;
 	new->pos_stack = 0;
@@ -1543,6 +1590,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	pcb->etiquetas_size = atoi(message[8]);
 	pcb->cantidadEtiquetas = atoi(message[9]);
 	cantIndiceStack = atoi(message[10]);
+	printf("reciben tantos stack %d", cantIndiceStack);
 	pcb->quantum = atoi(message[11]);
 
 	int i = 12;
@@ -1579,31 +1627,81 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 			}
 	}
 
-	while(cantIndiceStack > 0) {
-		t_Stack *sta = malloc(sizeof(t_Stack));
 
-		sta->direccion.offset = atoi(message[i]);
+
+	while (cantIndiceStack > 0) {
+		t_Stack* sta = malloc(sizeof(t_Stack));
+		sta->variables = list_create();
+	    sta->args = list_create();
+
+		sta->retPost = atoi(message[i]);
 		i++;
-		sta->direccion.pagina = atoi(message[i]);
+
+		sta->retVar = atoi(message[i]);
 		i++;
-		sta->direccion.size = atoi(message[i]);
+
+		sta->stack_pointer = atoi(message[i]);
 		i++;
-		int nro_funcion = atoi(message[i]);
-		if (nro_funcion != CONST_SIN_NOMBRE_FUNCION){
-			char nombre_funcion = nro_funcion;
-			sta->nombre_funcion = nombre_funcion;
+
+		int cantVariables = atoi(message[i]);
+		i++;
+
+		while (cantVariables > 0) {
+			t_variables* var = malloc(sizeof(t_variables));
+			var->offset = atoi(message[i]);
 			i++;
-		} else {
+			var->pagina = atoi(message[i]);
 			i++;
+			var->size = atoi(message[i]);
+			i++;
+			int nro_funcion = atoi(message[i]);
+			if (nro_funcion != CONST_SIN_NOMBRE_FUNCION) {
+				char nombre_funcion = nro_funcion;
+				var->nombre_funcion = nombre_funcion;
+				i++;
+			}
+			else {
+				i++;
+			}
+			char nombre_variable = atoi(message[i]);
+			var->nombre_variable = nombre_variable;
+
+			list_add(sta->variables, var);
+			i++;
+			cantVariables--;
 		}
-		char nombre_variable = atoi(message[i]);
-		sta->nombre_variable = nombre_variable;
 
-		list_add(pcb->indiceStack, sta);
-		i++;
+		int cantArgumentos = atoi(message[i]);
+		while (cantArgumentos > 0) {
+			t_variables* argus = malloc(sizeof(t_variables));
+
+			argus->offset = atoi(message[i]);
+			i++;
+			argus->pagina = atoi(message[i]);
+			i++;
+			argus->size = atoi(message[i]);
+			i++;
+
+			int nro_funcion = atoi(message[i]);
+			if (nro_funcion != CONST_SIN_NOMBRE_FUNCION) {
+				char nombre_funcion = nro_funcion;
+				argus->nombre_funcion = nombre_funcion;
+				i++;
+			}
+			else {
+				i++;
+			}
+			char nombre_variable = atoi(message[i]);
+			argus->nombre_variable = nombre_variable;
+
+			list_add(sta->args, argus);
+			i++;
+			cantArgumentos--;
+		}
+
 		cantIndiceStack--;
-	}
-
+		list_add(pcb->indiceStack, sta);
+	 }
 	return pcb;
 }
 

@@ -1,5 +1,6 @@
 /*
  /*
+ /*
  * kernel.h
  *
  *  Created on: 1/4/2017
@@ -18,10 +19,23 @@ typedef struct {
 } t_Direccion;
 
 typedef struct {
-	t_Direccion direccion;
-	char nombre_variable;
-	char nombre_funcion;
+	t_list* args;
+	int retPost;
+	int retVar;
+	t_list* variables;
+	int stack_pointer;
 } t_Stack;
+
+
+typedef struct {
+	int pid;
+	char nombre_variable;
+	int pagina;
+	int offset;
+	int size;
+	int nro_variable;
+	char nombre_funcion;
+} t_variables;
 
 typedef struct {
 	int start;
@@ -70,6 +84,7 @@ typedef struct {
 	int pid;
 	int nro_pagina;
 	int tamanio_disponible;
+	int direccion;
 } heapElement;
 
 typedef struct {
@@ -193,8 +208,8 @@ t_pcb* existe_proceso(int pid);
 t_estadistica* encontrar_estadistica(int p);
 void finalizarProgramaEnMemoria(int pid);
 int obtener_pid_de_cpu(int* skt);
-void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
 #endif /* KERNEL_H_ */
+
