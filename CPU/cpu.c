@@ -414,8 +414,13 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	char * buffer = malloc(MAXBUF);
 	buffer = string_new();
 
-	int result = recv(socketMemoria, buffer, MAXBUF, 0);
-	buffer = string_substring(buffer, 0, strlen(buffer));
+	//int result = recv(socketMemoria, buffer, MAXBUF, 0);
+	//int result = recv(socketMemoria, buffer, string_length(mensajeAMemoria), 0);
+	//buffer = string_substring(buffer, 0, strlen(buffer));
+
+	int len = 0;
+	recv(socketMemoria, &len, sizeof(len), 0);
+	int result = recv(socketMemoria, buffer, len, 0);
 
 	if (result > 0) {
 
@@ -432,7 +437,6 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	}
 
 	free(buffer);
-	sleep(1);
 
 	return;
 }
