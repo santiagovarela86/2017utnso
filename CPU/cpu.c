@@ -39,9 +39,9 @@ int pagina_a_leer_cache = 0;
 int offset_a_leer_cache = 0;
 int tamanio_a_leer_cache = 0;
 
-int main(int argc , char **argv){
+int main(int argc, char **argv) {
 
-	if (argc != 2){
+	if (argc != 2) {
 		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
@@ -63,14 +63,15 @@ int main(int argc , char **argv){
 
 	free(configuracion);
 
-    return EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 
 void* manejo_kernel(void *args) {
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
 
-	creoSocket(&socketKernel, &direccionKernel,	inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
+	creoSocket(&socketKernel, &direccionKernel,
+			inet_addr(configuracion->ip_kernel), configuracion->puerto_kernel);
 	puts("Socket de conexion al Kernel creado correctamente\n");
 
 	conectarSocket(&socketKernel, &direccionKernel);
@@ -82,102 +83,101 @@ void* manejo_kernel(void *args) {
 	AnSISOP_funciones *funciones = NULL;
 	AnSISOP_kernel *kernel = NULL;
 
-    funciones = malloc(sizeof(AnSISOP_funciones));
-    kernel = malloc(sizeof(AnSISOP_kernel));
+	funciones = malloc(sizeof(AnSISOP_funciones));
+	kernel = malloc(sizeof(AnSISOP_kernel));
 
 	inicializar_funciones(funciones, kernel);
 
-    char* instruccion = string_new();
-    while(1){
-    	//RECIBO EL PCB
+	char* instruccion = string_new();
+	while (1) {
+		//RECIBO EL PCB
 
-    	pcb = reciboPCB(&socketKernel);
-    	bloqueo = 0 ;
-    	//MUESTRO LA INFO DEL PCB
-    	imprimoInfoPCB(pcb);
+		pcb = reciboPCB(&socketKernel);
+		bloqueo = 0;
+		//MUESTRO LA INFO DEL PCB
+		imprimoInfoPCB(pcb);
 
-    	instruccion = "";
+		instruccion = "";
 
-    	//Guardo el Quantum
-    	int q = pcb->quantum;
+		//Guardo el Quantum
+		int q = pcb->quantum;
 
-    	while(pcb->quantum > 0 && pcb->indiceCodigo->elements_count != pcb->program_counter && bloqueo == 0){
-    		instruccion = solicitoInstruccion(pcb);
-    	//	printf("el program es: %d\n", pcb->program_counter);
-       	//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
+		while (pcb->quantum > 0
+				&& pcb->indiceCodigo->elements_count != pcb->program_counter
+				&& bloqueo == 0) {
+			instruccion = solicitoInstruccion(pcb);
+			//	printf("el program es: %d\n", pcb->program_counter);
+			//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
-    		printf("Instruccion: %s\n", instruccion);
-    		analizadorLinea(instruccion, funciones, kernel);
+			printf("Instruccion: %s\n", instruccion);
+			analizadorLinea(instruccion, funciones, kernel);
 
-
-    		pcb->quantum--;
+			pcb->quantum--;
 			//	if (pcb->quantum == 0)
 			//	{
 			//		puts("corta por quatum");
 			//	}
 
-    		pcb->program_counter++;
+			pcb->program_counter++;
 
-    	}
+		}
 
-    	if(bloqueo == 1){
-    		char* mensajeAKernel = string_new();
+		if (bloqueo == 1) {
+			char* mensajeAKernel = string_new();
 
-        	string_append(&mensajeAKernel, "532");
-        	string_append(&mensajeAKernel, ";");
-        	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-        	string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, "532");
+			string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, string_itoa(pcb->pid));
+			string_append(&mensajeAKernel, ";");
 
-        	enviarMensaje(&socketKernel, mensajeAKernel);
+			enviarMensaje(&socketKernel, mensajeAKernel);
 
-        	free(mensajeAKernel);
-    	}else if(pcb->program_counter >= pcb->indiceCodigo->elements_count){ //Se ejecutaron todas las instrucciones
+			free(mensajeAKernel);
+		} else if (pcb->program_counter >= pcb->indiceCodigo->elements_count) { //Se ejecutaron todas las instrucciones
 
-    		char* mensajeAKernel = string_new();
+			char* mensajeAKernel = string_new();
 
+			string_append(&mensajeAKernel, "531");
+			string_append(&mensajeAKernel, ";");
+			enviarMensaje(&socketKernel, mensajeAKernel);
 
+			//ESPERO A QUE EL KERNEL ME CONFIRME QUE ESTA LISTO
+			int result = recv(socketKernel, mensajeAKernel, MAXBUF, 0);
 
-        	string_append(&mensajeAKernel, "531");
-        	string_append(&mensajeAKernel, ";");
-        	enviarMensaje(&socketKernel, mensajeAKernel);
-
-        	//ESPERO A QUE EL KERNEL ME CONFIRME QUE ESTA LISTO
-        	int result = recv(socketKernel, mensajeAKernel, MAXBUF, 0);
-
-        	if (result > 0){
+			if (result > 0) {
 				if (strcmp(mensajeAKernel, "531;") == 0) {
 					char* mensajeAKernel2 = serializar_pcb(pcb);
 					enviarMensaje(&socketKernel, mensajeAKernel2);
 					free(mensajeAKernel2);
-        		}else{
-        			printf("Error en protocolo de mensajes entre procesos\n");
-        			exit(errno);
-        		}
-        	}else{
-        		printf("Error de comunicacion de fin de programa con el Kernel\n");
-        		exit(errno);
-        	}
+				} else {
+					printf("Error en protocolo de mensajes entre procesos\n");
+					exit(errno);
+				}
+			} else {
+				printf(
+						"Error de comunicacion de fin de programa con el Kernel\n");
+				exit(errno);
+			}
 
-        	free(mensajeAKernel);
+			free(mensajeAKernel);
 
-    	}else{ //FIN DE QUANTUM
-    		char * buffer = malloc(MAXBUF);
+		} else { //FIN DE QUANTUM
+			char * buffer = malloc(MAXBUF);
 
-    		enviarMensaje(&socketKernel, serializarMensaje(1, 530));
+			enviarMensaje(&socketKernel, serializarMensaje(1, 530));
 
-        	pcb->quantum = q;
+			pcb->quantum = q;
 
-        	//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
-        	recv(socketKernel, buffer, MAXBUF, 0);
+			//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
+			recv(socketKernel, buffer, MAXBUF, 0);
 
-        	//ENVIO EL PCB AL KERNEL NUEVAMENTE
-        	enviarMensaje(&socketKernel, serializar_pcb(pcb));
+			//ENVIO EL PCB AL KERNEL NUEVAMENTE
+			enviarMensaje(&socketKernel, serializar_pcb(pcb));
 
-        	free(buffer);
-    	}
+			free(buffer);
+		}
 
-
-    }
+	}
 
 	pause();
 
@@ -188,31 +188,34 @@ void* manejo_kernel(void *args) {
 	return EXIT_SUCCESS;
 }
 
-char * solicitoInstruccion(t_pcb* pcb){
+char * solicitoInstruccion(t_pcb* pcb) {
 
 	int inst_pointer = pcb->program_counter;
 
-    elementoIndiceCodigo* coordenadas_instruccion = ((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
+	elementoIndiceCodigo* coordenadas_instruccion =
+			((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
 
 	char * message = malloc(MAXBUF);
 
-	enviarMensaje(&socketMemoria, serializarMensaje(4, 510, pcb->pid, coordenadas_instruccion->start, coordenadas_instruccion->offset));
+	enviarMensaje(&socketMemoria,
+			serializarMensaje(4, 510, pcb->pid, coordenadas_instruccion->start,
+					coordenadas_instruccion->offset));
 
 	int result = recv(socketMemoria, message, MAXBUF, 0);
 
-	if (result > 0){
+	if (result > 0) {
 		//printf("Mensaje antes del Trim: %s\n", message);
 		//message = string_substring(message, 0, strlen(message));
 		//printf("Mensaje después del Trim: %s\n", message);
 		message = string_substring(message, 0, strlen(message));
 		return message;
-	}else{
+	} else {
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
 	}
 }
 
-void imprimoInfoPCB(t_pcb * pcb){
+void imprimoInfoPCB(t_pcb * pcb) {
 	printf("PID: %d\n", pcb->pid);
 	printf("PC: %d\n", pcb->program_counter);
 	printf("Quantum: %d\n", pcb->quantum);
@@ -221,32 +224,32 @@ void imprimoInfoPCB(t_pcb * pcb){
 
 	int i = 0;
 
-	while (i < pcb->etiquetas_size){
+	while (i < pcb->etiquetas_size) {
 		printf("[%d]", pcb->etiquetas[i]);
 		i++;
 	}
 
 	printf("\n");
-/*
-	int i;
-	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
-		elementoIndiceCodigo * elem = malloc(sizeof(elem));
-		elem = list_get(pcb->indiceCodigo, i);
-		printf("Indice de Instruccion %d: Start %d, Offset %d\n", i, elem->start, elem->offset);
-	}
+	/*
+	 int i;
+	 for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
+	 elementoIndiceCodigo * elem = malloc(sizeof(elem));
+	 elem = list_get(pcb->indiceCodigo, i);
+	 printf("Indice de Instruccion %d: Start %d, Offset %d\n", i, elem->start, elem->offset);
+	 }
 
-	for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
-		int * elem = list_get(pcb->indiceEtiquetas, i);
-		printf("Etiqueta %d: %d\n", i, * elem);
-	}
+	 for (i = 0; i < pcb->indiceEtiquetas->elements_count; i++){
+	 int * elem = list_get(pcb->indiceEtiquetas, i);
+	 printf("Etiqueta %d: %d\n", i, * elem);
+	 }
 
-	for (i = 0; i < pcb->indiceStack->elements_count; i++){
-		int * elem = list_get(pcb->indiceStack, i);
-		printf("Elemento de Pila %d: %d\n", i, * elem);
-	}
+	 for (i = 0; i < pcb->indiceStack->elements_count; i++){
+	 int * elem = list_get(pcb->indiceStack, i);
+	 printf("Elemento de Pila %d: %d\n", i, * elem);
+	 }
 
-	puts("");
-	*/
+	 puts("");
+	 */
 }
 
 t_pcb * reciboPCB(int * socketKernel) {
@@ -269,7 +272,7 @@ t_pcb * reciboPCB(int * socketKernel) {
 	return pcb;
 }
 
-t_pcb * deserializar_pcb(char * mensajeRecibido){
+t_pcb * deserializar_pcb(char * mensajeRecibido) {
 
 	t_pcb * pcb = malloc(sizeof(t_pcb));
 	int cantIndiceCodigo, cantIndiceStack;
@@ -293,7 +296,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	int i = 12;
 
-	while (i < 12 + cantIndiceCodigo * 2){
+	while (i < 12 + cantIndiceCodigo * 2) {
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem->start = atoi(message[i]);
 		i++;
@@ -308,42 +311,42 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 	//printf("Etiquetas Deserializacion: \n");
 
-	if (pcb->etiquetas_size > 0){
+	if (pcb->etiquetas_size > 0) {
 		pcb->etiquetas = malloc(pcb->etiquetas_size);
-			while (i < j + pcb->etiquetas_size){
-				int ascii = atoi(message[i]);
+		while (i < j + pcb->etiquetas_size) {
+			int ascii = atoi(message[i]);
 
-				if (ascii >= 32 && ascii <= 126){
-					pcb->etiquetas[e] = (char) ascii;
-				} else {
-					pcb->etiquetas[e] = atoi(message[i]);
-				}
-
-				//printf("[%d]", pcb->etiquetas[z]);
-				i++;
-				e++;
+			if (ascii >= 32 && ascii <= 126) {
+				pcb->etiquetas[e] = (char) ascii;
+			} else {
+				pcb->etiquetas[e] = atoi(message[i]);
 			}
+
+			//printf("[%d]", pcb->etiquetas[z]);
+			i++;
+			e++;
+		}
 	}
 
 	/*
-	printf("\n");
+	 printf("\n");
 
-	printf("Etiquetas DE NUEVO EN LA DESERIALIZACION:\n");
+	 printf("Etiquetas DE NUEVO EN LA DESERIALIZACION:\n");
 
-	z = 0;
+	 z = 0;
 
-	while (z < pcb->etiquetas_size){
-		printf("[%d]", pcb->etiquetas[z]);
-		z++;
-	}
+	 while (z < pcb->etiquetas_size){
+	 printf("[%d]", pcb->etiquetas[z]);
+	 z++;
+	 }
 
-	printf("\n");
-	*/
+	 printf("\n");
+	 */
 
 	while (cantIndiceStack > 0) {
 		t_Stack* sta = malloc(sizeof(t_Stack));
 		sta->variables = list_create();
-	    sta->args = list_create();
+		sta->args = list_create();
 
 		sta->retPost = atoi(message[i]);
 		i++;
@@ -356,7 +359,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 		int cantVariables = atoi(message[i]);
 		i++;
-		printf("la cantidad de variables es %d \n", cantVariables);
+
 		while (cantVariables > 0) {
 			t_variables* var = malloc(sizeof(t_variables));
 			var->offset = atoi(message[i]);
@@ -371,8 +374,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 				char nombre_funcion = nro_funcion;
 				var->nombre_funcion = nombre_funcion;
 				i++;
-			}
-			else {
+			} else {
 				i++;
 			}
 			char nombre_variable = atoi(message[i]);
@@ -399,8 +401,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 				char nombre_funcion = nro_funcion;
 				argus->nombre_funcion = nombre_funcion;
 				i++;
-			}
-			else {
+			} else {
 				i++;
 			}
 			char nombre_variable = atoi(message[i]);
@@ -413,16 +414,17 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 		cantIndiceStack--;
 		list_add(pcb->indiceStack, sta);
-	 }
-
+	}
 
 	return pcb;
 }
 
-void* manejo_memoria(void * args){
+void* manejo_memoria(void * args) {
 	struct sockaddr_in direccionMemoria;
 
-	creoSocket(&socketMemoria, &direccionMemoria, inet_addr(configuracion->ip_memoria), configuracion->puerto_memoria);
+	creoSocket(&socketMemoria, &direccionMemoria,
+			inet_addr(configuracion->ip_memoria),
+			configuracion->puerto_memoria);
 	puts("Socket de conexion a la Memoria creado correctamente\n");
 
 	conectarSocket(&socketMemoria, &direccionMemoria);
@@ -438,7 +440,7 @@ void* manejo_memoria(void * args){
 	return EXIT_SUCCESS;
 }
 
-void asignar(t_puntero direccion, t_valor_variable valor){
+void asignar(t_puntero direccion, t_valor_variable valor) {
 	puts("Asignar");
 	puts("");
 
@@ -447,7 +449,7 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(direccion));
 	string_append(&mensajeAMemoria, ";");
-	if (direccion == VARIABLE_EN_CACHE){
+	if (direccion == VARIABLE_EN_CACHE) {
 		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 		string_append(&mensajeAMemoria, ";");
 		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
@@ -480,9 +482,12 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 		valor = atoi(mensajeDesdeMemoria[1]);
 
 		if (direccion != VARIABLE_EN_CACHE)
-			printf("Asigne el valor %d en la direccion %d \n", valor, direccion);
+			printf("Asigne el valor %d en la direccion %d \n", valor,
+					direccion);
 		else
-			printf("Asigne el valor %d en la pagina %d offset %d de la Cache \n", valor, pagina_a_leer_cache, offset_a_leer_cache);
+			printf(
+					"Asigne el valor %d en la pagina %d offset %d de la Cache \n",
+					valor, pagina_a_leer_cache, offset_a_leer_cache);
 
 		free(mensajeDesdeMemoria);
 	}
@@ -491,34 +496,54 @@ void asignar(t_puntero direccion, t_valor_variable valor){
 
 	return;
 }
-t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
+t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
 
-	int encontrar_var(t_variables* var){
+	t_variables* entrada_encontrada;
 
-		return (var->nombre_variable == (char) identificador_variable);
+	if ((int) identificador_variable >= 0
+			&& 9 >= (int) identificador_variable) {
+		puts("1");
+		int encontrar_var(t_variables* var) {
+
+			return (var->nombre_variable == (char) identificador_variable);
+		}
+
+		t_Stack* StackDeContexto = list_get(pcb->indiceStack,
+				(pcb->indiceStack->elements_count - 1));
+		entrada_encontrada = list_find(StackDeContexto->args,
+				(void*) encontrar_var);
 	}
 
-	t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count -1));
+	else {
+		puts("2");
+		int encontrar_var(t_variables* var) {
 
-	t_variables* entrada_encontrada = list_find(StackDeContexto->variables, (void*)encontrar_var);
+			return (var->nombre_variable == (char) identificador_variable);
+		}
 
-
+		t_Stack* StackDeContexto = list_get(pcb->indiceStack,
+				(pcb->indiceStack->elements_count - 1));
+		entrada_encontrada = list_find(StackDeContexto->variables,
+				(void*) encontrar_var);
+	}
 
 	char * buffer = malloc(MAXBUF);
 	buffer = string_new();
 
-	enviarMensaje(&socketMemoria, serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina, entrada_encontrada->offset, entrada_encontrada->size));
+	enviarMensaje(&socketMemoria,
+			serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,
+					entrada_encontrada->offset, entrada_encontrada->size));
 
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 	buffer = string_substring(buffer, 0, strlen(buffer));
 
-	if(result > 0){
+	if (result > 0) {
 		char**mensajeDesdeMemoria = string_split(buffer, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
 
-		if (valor == VARIABLE_EN_CACHE){
+		if (valor == VARIABLE_EN_CACHE) {
 			pagina_a_leer_cache = entrada_encontrada->pagina;
 			offset_a_leer_cache = entrada_encontrada->offset;
 			tamanio_a_leer_cache = entrada_encontrada->size;
@@ -528,23 +553,21 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 
 		return valor;
 
-	}
-	else {
+	} else {
 		return NULL;
 	}
 }
 
-t_valor_variable dereferenciar(t_puntero direccion_variable){
+t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	puts("Dereferenciar");
 	puts("");
-
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "513");
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(direccion_variable));
 	string_append(&mensajeAMemoria, ";");
-	if (direccion_variable == VARIABLE_EN_CACHE){
+	if (direccion_variable == VARIABLE_EN_CACHE) {
 		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 		string_append(&mensajeAMemoria, ";");
 		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
@@ -557,15 +580,20 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
-	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria), 0);
+	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria),
+			0);
 
-	if(result > 0){
+	if (result > 0) {
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 
-		if(direccion_variable != VARIABLE_EN_CACHE)
-			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
+		if (direccion_variable != VARIABLE_EN_CACHE)
+			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0],
+					direccion_variable);
 		else
-			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n", mensajeDesdeCPU[0], pagina_a_leer_cache, offset_a_leer_cache);
+			printf(
+					"Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n",
+					mensajeDesdeCPU[0], pagina_a_leer_cache,
+					offset_a_leer_cache);
 
 		int valor = atoi(mensajeDesdeCPU[0]);
 
@@ -577,7 +605,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable){
 	return 0;
 }
 
-t_puntero definirVariable(t_nombre_variable identificador_variable){
+t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	printf("Definir Variable %c \n", identificador_variable);
 	puts("");
 
@@ -593,23 +621,44 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
-	int result = recv(socketMemoria, mensajeAMemoria, string_length(mensajeAMemoria), 0);
+	int result = recv(socketMemoria, mensajeAMemoria,
+			string_length(mensajeAMemoria), 0);
 
-	if(result > 0){
+	if (result > 0) {
 
 		char** mensajeSplit = string_split(mensajeAMemoria, ";");
 
 		int codigo = atoi(mensajeSplit[0]);
 		int paginaNueva = atoi(mensajeSplit[1]);
 
-		if (codigo == ASIGNACION_MEMORIA_OK){
+		if (codigo == ASIGNACION_MEMORIA_OK) {
 
-			    t_variables* entrada_stack = deserializar_entrada_stack(mensajeSplit);
-				t_Stack* stackDeContexto = list_get(pcb->indiceStack, ((int)pcb->indiceStack->elements_count - 1));
+			t_variables* entrada_stack;
+			t_Stack* stackDeContexto;
+			//Los argumentos son valores reservados de numeros de 0 a 9
+			if ((int) identificador_variable >= 0
+					&& 9 >= (int) identificador_variable) {
+				puts("1");
+				stackDeContexto = list_get(pcb->indiceStack,
+						((int) pcb->indiceStack->elements_count - 1));
+				entrada_stack = deserializar_entrada_stack(mensajeSplit);
+				list_add(stackDeContexto->args, entrada_stack);
+				list_remove(pcb->indiceStack,
+						(pcb->indiceStack->elements_count - 1));
+				list_add(pcb->indiceStack, stackDeContexto);
+			}
+
+			else {
+				puts("2");
+				stackDeContexto = list_get(pcb->indiceStack,
+						((int) pcb->indiceStack->elements_count - 1));
+				entrada_stack = deserializar_entrada_stack(mensajeSplit);
 
 				list_add(stackDeContexto->variables, entrada_stack);
-				list_remove(pcb->indiceStack, (pcb->indiceStack->elements_count-1));
+				list_remove(pcb->indiceStack,
+						(pcb->indiceStack->elements_count - 1));
 				list_add(pcb->indiceStack, stackDeContexto);
+			}
 
 			if (paginaNueva == true) {
 				pcb->cantidadPaginas++;
@@ -621,24 +670,27 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 			}
 
-			printf("La variable %c se guardo en la pag %d con offset %d\n\n", entrada_stack->nombre_variable , entrada_stack->pagina ,entrada_stack->offset);
+			printf("La variable %c se guardo en la pag %d con offset %d\n\n",
+					entrada_stack->nombre_variable, entrada_stack->pagina,
+					entrada_stack->offset);
 
 			free(mensajeAMemoria);
 
 			return entrada_stack->offset;
 
-		    entrada_stack = deserializar_entrada_stack(mensajeSplit);
-				stackDeContexto = list_get(pcb->indiceStack, ((int)pcb->indiceStack->elements_count - 1));
+			entrada_stack = deserializar_entrada_stack(mensajeSplit);
+			stackDeContexto = list_get(pcb->indiceStack,
+					((int) pcb->indiceStack->elements_count - 1));
 
-				if((99 >(int)stackDeContexto->variables) || 1 < ((int)stackDeContexto->variables))
-				{
-					stackDeContexto->variables = list_create();
-				}
+			if ((99 > (int) stackDeContexto->variables)
+					|| 1 < ((int) stackDeContexto->variables)) {
+				stackDeContexto->variables = list_create();
+			}
 
-				list_add(stackDeContexto->variables, entrada_stack);
-				list_remove(pcb->indiceStack, (pcb->indiceStack->elements_count-1));
-		}
-		else {
+			list_add(stackDeContexto->variables, entrada_stack);
+			list_remove(pcb->indiceStack,
+					(pcb->indiceStack->elements_count - 1));
+		} else {
 
 			//Se asigna el exit code -9 (No se pueden asignar mas paginas al proceso)
 			char* mensajeAKernel = string_new();
@@ -657,7 +709,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable){
 
 }
 
-t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
+t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	puts("Obtener Valor Compartida");
 	puts("");
 
@@ -673,7 +725,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 
 	int result = recv(sktKernel, msj, sizeof(msj), 0);
 
-	if(result > 0){
+	if (result > 0) {
 
 		char**mensajeDesdeKernel = string_split(msj, ";");
 
@@ -686,7 +738,8 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	return valor;
 }
 
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
+		t_valor_variable valor) {
 	puts("Asignar Valor Compartida");
 	puts("");
 
@@ -706,63 +759,65 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	return valor;
 }
 
-void irAlLabel(t_nombre_etiqueta identificador_variable){
+void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	puts("Ir a Label");
 	puts("");
-	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(
+			identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
 
-	    pcb->program_counter = instruccion;
-		//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	pcb->program_counter = instruccion;
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
-void llamarSinRetorno(t_nombre_etiqueta etiqueta){
+void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	puts("Llamar Sin Retorno");
 	puts("");
 
-	   t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
-	    pcb->program_counter = instruccion;
-	    pcb->program_counter++;
-		//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	pcb->program_counter = instruccion;
+	 pcb->program_counter++;
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
-void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
+void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	puts("Llamar Con Retorno");
 	puts("");
-		t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
-	    t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
-	    stackFuncion->retPost = instruccion;
-	    stackFuncion->retVar = donde_retornar;
-	    stackFuncion->stack_pointer++;
-	    list_add(pcb->indiceStack, stackFuncion);
-	    free(stackFuncion);
-		//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta,
+			pcb->etiquetas, pcb->etiquetas_size);
+	stackFuncion->retPost = instruccion;
+	stackFuncion->retVar = donde_retornar;
+	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
+	list_add(pcb->indiceStack, stackFuncion);
+	free(stackFuncion);
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
-void finalizar(void){
+void finalizar(void) {
 	puts("FIN DEL PROGRAMA");
 	puts("");
 
 	return;
 }
 
-void retornar(t_valor_variable retorno){
-	  puts("Retornar");
+void retornar(t_valor_variable retorno) {
+	puts("Retornar");
 
-	  t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
-	  stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count);
-	  retorno = stackFuncion->retVar;
-	  t_puntero_instruccion instruccion = stackFuncion->retPost;
+	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
+	stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count);
+	retorno = stackFuncion->retVar;
+	t_puntero_instruccion instruccion = stackFuncion->retPost;
 
-	  list_remove(pcb->indiceStack, pcb->indiceStack->elements_count-1);
-	  pcb->program_counter = instruccion;
-	  pcb->program_counter++;
+	list_remove(pcb->indiceStack, pcb->indiceStack->elements_count - 1);
+	pcb->program_counter = instruccion;
+	pcb->program_counter++;
 	return;
 }
 
-void wait(t_nombre_semaforo identificador_semaforo){
+void wait(t_nombre_semaforo identificador_semaforo) {
 	puts("Wait");
 	puts("");
 
@@ -776,18 +831,18 @@ void wait(t_nombre_semaforo identificador_semaforo){
 
 	int valor_esperado = 0;
 
-	while(valor_esperado == 0){
+	while (valor_esperado == 0) {
 		int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		if(result > 0){
+		if (result > 0) {
 
 			char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
 
 			int valor = atoi(mensajeDesdeKernel[0]);
 
-			if(valor == 570){
+			if (valor == 570) {
 				valor_esperado = 1;
-			}else if (valor == 577){
+			} else if (valor == 577) {
 				valor_esperado = 1;
 				bloqueo = 1;
 			}
@@ -799,7 +854,7 @@ void wait(t_nombre_semaforo identificador_semaforo){
 	return;
 }
 
-void signal(t_nombre_semaforo identificador_semaforo){
+void signal(t_nombre_semaforo identificador_semaforo) {
 	puts("Signal");
 	puts("");
 
@@ -818,12 +873,13 @@ void signal(t_nombre_semaforo identificador_semaforo){
 	return;
 }
 
-t_puntero reservar(t_valor_variable espacio){
+t_puntero reservar(t_valor_variable espacio) {
 	puts("Reservar");
 	puts("");
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
-	printf("Envie a Kernel: %s\n", serializarMensaje(3, 600, pcb->pid, espacio));
+	printf("Envie a Kernel: %s\n",
+			serializarMensaje(3, 600, pcb->pid, espacio));
 
 	printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer = malloc(MAXBUF);
@@ -831,7 +887,7 @@ t_puntero reservar(t_valor_variable espacio){
 	buffer = string_substring(buffer, 0, strlen(buffer));
 	printf("Buffer que viene del Kernel: %s\n", buffer);
 
-	if (result > 0){
+	if (result > 0) {
 		char ** respuesta = string_split(buffer, ";");
 		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
 		return atoi(respuesta[0]);
@@ -842,122 +898,119 @@ t_puntero reservar(t_valor_variable espacio){
 	}
 }
 
-void liberar(t_puntero puntero){
+void liberar(t_puntero puntero) {
 	puts("Liberar");
 	puts("");
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 700, pcb->pid, puntero));
 
-	printf("Espero a que el Kernel me mande la confirmacion de eliminacion de memoria reservada\n");
-	char * buffer= string_new();
+	printf(
+			"Espero a que el Kernel me mande la confirmacion de eliminacion de memoria reservada\n");
+	char * buffer = string_new();
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
-	if (result > 0){
-		printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
+	if (result > 0) {
+		printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n",
+				puntero);
 	} else {
 		printf("Error liberando Memoria de Heap\n");
 		exit(errno);
 	}
 }
 
-t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags){
+t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	puts("Abrir");
 	puts("");
 
 	char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "803");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, ((char*)(direccion)));
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(flags.creacion));
-		string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, "803");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, ((char*) (direccion)));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(flags.creacion));
+	string_append(&mensajeAKernel, ";");
 
-		enviarMensaje(&sktKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 
-		char* mensajeDeKernel = string_new();
-		int result =recv(sktKernel, mensajeDeKernel, sizeof(mensajeDeKernel), 0);
+	char* mensajeDeKernel = string_new();
+	int result = recv(sktKernel, mensajeDeKernel, sizeof(mensajeDeKernel), 0);
 
+	if (result > 0) {
+		puts("archivo se abrió correctamente");
+		int fdNuevo = atoi(mensajeDeKernel);
+		printf("el file descriptor nuevo es %d \n", fdNuevo);
+		return ((t_descriptor_archivo) fdNuevo);
 
+	} else {
+		printf("Error al abrir el archivo \n");
+		return ((t_descriptor_archivo) 0);
+	}
 
-		if (result > 0){
-			puts("archivo se abrió correctamente");
-			int fdNuevo = atoi(mensajeDeKernel);
-			printf("el file descriptor nuevo es %d \n", fdNuevo);
-			return ((t_descriptor_archivo)fdNuevo);
-
-		} else {
-			printf("Error al abrir el archivo \n");
-			return ((t_descriptor_archivo)0);
-		}
-
-		free(mensajeDeKernel);
-		free(mensajeAKernel);
+	free(mensajeDeKernel);
+	free(mensajeAKernel);
 }
 
-void borrar(t_descriptor_archivo descriptor){
+void borrar(t_descriptor_archivo descriptor) {
 	puts("Borrar");
 	puts("");
 
 	char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "802");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(descriptor));
-		string_append(&mensajeAKernel, ";");
-		puts("por enviar");
-		enviarMensaje(&sktKernel, mensajeAKernel);
-		puts("envidado");
-		//recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	string_append(&mensajeAKernel, "802");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(descriptor));
+	string_append(&mensajeAKernel, ";");
+	puts("por enviar");
+	enviarMensaje(&sktKernel, mensajeAKernel);
+	puts("envidado");
+	//recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		//int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	//int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		free(mensajeAKernel);
+	free(mensajeAKernel);
 
-		/*if (result > 0){
-			puts("archivo borrado correctamente");
-		} else {
-			perror("Error al abrir el archivo \n");
-		}*/
-
-
+	/*if (result > 0){
+	 puts("archivo borrado correctamente");
+	 } else {
+	 perror("Error al abrir el archivo \n");
+	 }*/
 
 	return;
 }
-void cerrar(t_descriptor_archivo descriptor){
+void cerrar(t_descriptor_archivo descriptor) {
 	puts("Cerrar");
 	puts("");
 
 	char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "801");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(descriptor));
-		string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, "801");
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+	string_append(&mensajeAKernel, ";");
+	string_append(&mensajeAKernel, string_itoa(descriptor));
+	string_append(&mensajeAKernel, ";");
 
-		enviarMensaje(&sktKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeAKernel);
 
-		recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-		free(mensajeAKernel);
+	free(mensajeAKernel);
 
-		if (result > 0){
-			puts("archivo cerrado correctamente");
-		} else {
-			printf("Error el archivo no se pudo cerrar \n");
-		}
-
-
+	if (result > 0) {
+		puts("archivo cerrado correctamente");
+	} else {
+		printf("Error el archivo no se pudo cerrar \n");
+	}
 
 	return;
 }
 
-void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posicion){
+void moverCursor(t_descriptor_archivo descriptor_archivo,
+		t_valor_variable posicion) {
 	puts("Mover Cursor");
 	puts("");
 
@@ -978,7 +1031,8 @@ void moverCursor(t_descriptor_archivo descriptor_archivo, t_valor_variable posic
 
 	return;
 }
-void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio){
+void escribir(t_descriptor_archivo descriptor_archivo, void * informacion,
+		t_valor_variable tamanio) {
 	puts("Escribir");
 	puts("");
 
@@ -989,11 +1043,10 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, string_itoa(pcb->pid));
 	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, ((char*)informacion));
+	string_append(&mensajeAKernel, ((char*) informacion));
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, string_itoa(tamanio));
 	string_append(&mensajeAKernel, ";");
-
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
@@ -1002,17 +1055,17 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	free(mensajeAKernel);
 
 	/*if (result > 0) {
-		puts("archivo se escribió correctamente");
-	}
-	else {
-		perror("Error al abrir el archivo \n");
-	}*/
-
+	 puts("archivo se escribió correctamente");
+	 }
+	 else {
+	 perror("Error al abrir el archivo \n");
+	 }*/
 
 	return;
 }
 
-void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset, t_valor_variable tamanio){
+void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset,
+		t_valor_variable tamanio) {
 	puts("Leer");
 	puts("");
 
@@ -1028,7 +1081,6 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset, t_valor_var
 	string_append(&mensaje, string_itoa(tamanio));
 	string_append(&mensaje, ";");
 
-
 	enviarMensaje(&sktKernel, mensaje);
 
 	int result = recv(sktKernel, mensaje, sizeof(mensaje), 0);
@@ -1036,8 +1088,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset, t_valor_var
 	if (result > 0) {
 		puts("el archivo se leyo correctamente");
 		printf("el contenido es %s", mensaje);
-	}
-	else {
+	} else {
 		printf("Error no se pudo leer \n");
 	}
 	free(mensaje);
@@ -1045,8 +1096,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset, t_valor_var
 
 }
 
-
-char* serializar_pcb(t_pcb* pcb){
+char* serializar_pcb(t_pcb* pcb) {
 
 	char* mensajeACPU = string_new();
 	string_append(&mensajeACPU, string_itoa(pcb->pid));
@@ -1087,7 +1137,7 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, ";");
 
 	int i;
-	for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
+	for (i = 0; i < pcb->indiceCodigo->elements_count; i++) {
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem = list_get(pcb->indiceCodigo, i);
 
@@ -1100,7 +1150,7 @@ char* serializar_pcb(t_pcb* pcb){
 
 	//printf("Etiquetas Serializacion: \n");
 
-	for (i = 0; i < pcb->etiquetas_size; i++){
+	for (i = 0; i < pcb->etiquetas_size; i++) {
 		string_append(&mensajeACPU, string_itoa(pcb->etiquetas[i]));
 		string_append(&mensajeACPU, ";");
 		//printf("[%d]", pcb->etiquetas[i]);
@@ -1108,9 +1158,9 @@ char* serializar_pcb(t_pcb* pcb){
 
 	//printf("\n");
 
-	for (i = 0; i < pcb->indiceStack->elements_count; i++){
+	for (i = 0; i < pcb->indiceStack->elements_count; i++) {
 		t_Stack *sta = malloc(sizeof(t_Stack));
-		sta =  list_get(pcb->indiceStack, i);
+		sta = list_get(pcb->indiceStack, i);
 
 		string_append(&mensajeACPU, string_itoa(sta->retPost));
 		string_append(&mensajeACPU, ";");
@@ -1120,9 +1170,10 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 		int j;
 
-		string_append(&mensajeACPU, string_itoa(sta->variables->elements_count)); //lo necesito para deserializar
+		string_append(&mensajeACPU,
+				string_itoa(sta->variables->elements_count)); //lo necesito para deserializar
 		string_append(&mensajeACPU, ";");
-		for (j = 0; j < sta->variables->elements_count; j++){
+		for (j = 0; j < sta->variables->elements_count; j++) {
 
 			t_variables* var = list_get(sta->variables, j);
 
@@ -1132,11 +1183,11 @@ char* serializar_pcb(t_pcb* pcb){
 			string_append(&mensajeACPU, ";");
 			string_append(&mensajeACPU, string_itoa(var->size));
 			string_append(&mensajeACPU, ";");
-			if (var->nombre_funcion != NULL){
+			if (var->nombre_funcion != NULL) {
 				string_append(&mensajeACPU, string_itoa(var->nombre_funcion));
-			}
-			else {
-				string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+			} else {
+				string_append(&mensajeACPU,
+						string_itoa(CONST_SIN_NOMBRE_FUNCION));
 			}
 			string_append(&mensajeACPU, ";");
 			string_append(&mensajeACPU, string_itoa(var->nombre_variable));
@@ -1147,7 +1198,7 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, ";");
 		int k;
 
-		for (k = 0; k < sta->args->elements_count; k++){
+		for (k = 0; k < sta->args->elements_count; k++) {
 
 			t_variables* args = list_get(sta->args, k);
 
@@ -1157,11 +1208,11 @@ char* serializar_pcb(t_pcb* pcb){
 			string_append(&mensajeACPU, ";");
 			string_append(&mensajeACPU, string_itoa(args->size));
 			string_append(&mensajeACPU, ";");
-			if (args->nombre_funcion != NULL){
+			if (args->nombre_funcion != NULL) {
 				string_append(&mensajeACPU, string_itoa(args->nombre_funcion));
-			}
-			else {
-				string_append(&mensajeACPU, string_itoa(CONST_SIN_NOMBRE_FUNCION));
+			} else {
+				string_append(&mensajeACPU,
+						string_itoa(CONST_SIN_NOMBRE_FUNCION));
 			}
 			string_append(&mensajeACPU, ";");
 			string_append(&mensajeACPU, string_itoa(args->nombre_variable));
@@ -1174,8 +1225,7 @@ char* serializar_pcb(t_pcb* pcb){
 
 }
 
-
-t_variables* deserializar_entrada_stack(char** mensajeRecibido){
+t_variables* deserializar_entrada_stack(char** mensajeRecibido) {
 	t_variables* entrada_stack = malloc(sizeof(t_variables));
 
 	entrada_stack->nombre_variable = mensajeRecibido[2][0];
