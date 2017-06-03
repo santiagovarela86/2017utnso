@@ -377,7 +377,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 			}
 			char nombre_variable = atoi(message[i]);
 			var->nombre_variable = nombre_variable;
-			printf("el valor de la variable es %c \n", var->nombre_variable);
+
 			list_add(sta->variables, var);
 			i++;
 			cantVariables--;
@@ -415,7 +415,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 		list_add(pcb->indiceStack, sta);
 	 }
 
-printf("el valor del pcb-stack es %d\n",pcb->indiceStack->elements_count);
+
 	return pcb;
 }
 
@@ -505,7 +505,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable){
 	t_variables* entrada_encontrada = list_find(StackDeContexto->variables, (void*)encontrar_var);
 
 
-	puts("1");
+
 	char * buffer = malloc(MAXBUF);
 	buffer = string_new();
 
@@ -734,6 +734,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	    t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	    stackFuncion->retPost = instruccion;
 	    stackFuncion->retVar = donde_retornar;
+	    stackFuncion->stack_pointer++;
 	    list_add(pcb->indiceStack, stackFuncion);
 	    free(stackFuncion);
 		//printf("ahora el program counter es: %d\n", pcb->program_counter);
@@ -754,6 +755,8 @@ void retornar(t_valor_variable retorno){
 	  stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count);
 	  retorno = stackFuncion->retVar;
 	  t_puntero_instruccion instruccion = stackFuncion->retPost;
+
+	  list_remove(pcb->indiceStack, pcb->indiceStack->elements_count-1);
 	  pcb->program_counter = instruccion;
 	  pcb->program_counter++;
 	return;
@@ -1116,7 +1119,7 @@ char* serializar_pcb(t_pcb* pcb){
 		string_append(&mensajeACPU, string_itoa(sta->stack_pointer));
 		string_append(&mensajeACPU, ";");
 		int j;
-		puts("1");
+
 		string_append(&mensajeACPU, string_itoa(sta->variables->elements_count)); //lo necesito para deserializar
 		string_append(&mensajeACPU, ";");
 		for (j = 0; j < sta->variables->elements_count; j++){
