@@ -209,8 +209,10 @@ void * escuchar_Kernel(void * args){
 			char** respuesta_kernel = string_split(buffer, ";");
 
 			printf("CODIGO: %s\n", respuesta_kernel[0]);
+			printf("C1: %s\n", respuesta_kernel[1]);
 
 			if(atoi(respuesta_kernel[0]) == 103){
+				/*103 es creacion*/
 				programa* program = malloc(sizeof(program));
 
 				  time(&rawtime);
@@ -232,7 +234,32 @@ void * escuchar_Kernel(void * args){
 				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
 
 			}else if (atoi(respuesta_kernel[0]) == 666){
-				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]));
+				/*666 es muerte*/
+				programa* p = malloc(sizeof(programa));
+			//TODO
+				int pid = atoi(respuesta_kernel[1]);
+				int encontrado = 0;
+				int fin = queue_size(cola_programas);
+
+
+							while(fin > 0 && encontrado == 0){
+								//pthread_mutex_lock(&mtx_bloqueados);
+								p = queue_pop(cola_programas);
+								//pthread_mutex_unlock(&mtx_bloqueados);
+
+								if(p->pid == pid){
+									encontrado = 1;
+									p->fin =gmtime(&rawtime );
+								}
+
+								//pthread_mutex_lock(&mtx_bloqueados);
+								queue_push(cola_programas, p);
+								//pthread_mutex_unlock(&mtx_bloqueados);
+
+								fin--;
+							}
+				printf("llego a la rama else if 666 ACA\n");
+				printf("Mensaje de programa : %d\n",  atoi(respuesta_kernel[1]));
 
 			}
 

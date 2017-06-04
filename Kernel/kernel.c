@@ -685,18 +685,25 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
+				//TODO
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
 
-				int* sock = (int*) &temporalP->socket_consola;
-				printf("Murio en Ejec");
-				printf("SOCKET DE CONSOLA: %d\n", temporalP->socket_consola);
+				int * sock =  &temporalP->socket_consola;
+				printf("Murio en Ejec\n");
+
+				printf("pid: %d\n", tempPid);
+				printf("SOCKET DE CONSOLA: %d\n", * sock);
 
 				char* msjAConsolaXEstadistica = string_new();
+				printf("aca 1\n");
 				string_append(&msjAConsolaXEstadistica, "666;");
+				printf("aca 2\n");
 				int pidDelMatado = temporalP->pid;
+				printf("aca 3\n");
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
-				enviarMensaje((temporalP->socket_consola), msjAConsolaXEstadistica);
+				printf("aca 4\n");
+				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
 				free(msjAConsolaXEstadistica);
 
 				pthread_mutex_unlock(&mtx_terminados);
