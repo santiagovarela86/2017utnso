@@ -783,7 +783,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 	list_add(pcb->indiceStack, stackFuncion);
 	pcb->program_counter = instruccion;
-	pcb->program_counter++;
+	//pcb->program_counter++;
 
 	//free(stackFuncion);
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
