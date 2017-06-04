@@ -792,7 +792,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 void finalizar(void) {
 
-	pcb->program_counter = pcb->indiceCodigo->elements_count;
+	//pcb->program_counter = pcb->indiceCodigo->elements_count;
 
 	puts("FIN DEL PROGRAMA");
 	puts("");
