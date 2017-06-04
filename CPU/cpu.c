@@ -503,9 +503,8 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 	t_variables* entrada_encontrada;
 
-	if ((int) identificador_variable >= 0
-			&& 9 >= (int) identificador_variable) {
-		puts("1");
+	if (esArgumentoDeFuncion(identificador_variable)) {
+
 		int encontrar_var(t_variables* var) {
 
 			return (var->nombre_variable == (char) identificador_variable);
@@ -518,7 +517,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	}
 
 	else {
-		puts("2");
+
 		int encontrar_var(t_variables* var) {
 
 			return (var->nombre_variable == (char) identificador_variable);
@@ -636,29 +635,26 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 			t_variables* entrada_stack;
 			t_Stack* stackDeContexto;
-			//Los argumentos son valores reservados de numeros de 0 a 9
-			if ((int) identificador_variable >= 0
-					&& 9 >= (int) identificador_variable) {
-				puts("1");
-				stackDeContexto = list_get(pcb->indiceStack,
-						((int) pcb->indiceStack->elements_count - 1));
+
+
+			if (esArgumentoDeFuncion(identificador_variable)) {
+
+				stackDeContexto = list_get(pcb->indiceStack, ((int) pcb->indiceStack->elements_count - 1));
 				entrada_stack = deserializar_entrada_stack(mensajeSplit);
 				list_add(stackDeContexto->args, entrada_stack);
-				list_remove(pcb->indiceStack,
-						(pcb->indiceStack->elements_count - 1));
+				list_remove(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
 				list_add(pcb->indiceStack, stackDeContexto);
 			}
 
 			else {
-				puts("2");
-				stackDeContexto = list_get(pcb->indiceStack,
-						((int) pcb->indiceStack->elements_count - 1));
+
+				stackDeContexto = list_get(pcb->indiceStack,((int) pcb->indiceStack->elements_count - 1));
 				entrada_stack = deserializar_entrada_stack(mensajeSplit);
 
 				list_add(stackDeContexto->variables, entrada_stack);
-				list_remove(pcb->indiceStack,
-						(pcb->indiceStack->elements_count - 1));
+				list_remove(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
 				list_add(pcb->indiceStack, stackDeContexto);
+
 			}
 
 			if (paginaNueva == true) {
@@ -679,18 +675,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 			return entrada_stack->offset;
 
-			entrada_stack = deserializar_entrada_stack(mensajeSplit);
-			stackDeContexto = list_get(pcb->indiceStack,
-					((int) pcb->indiceStack->elements_count - 1));
-
-			if ((99 > (int) stackDeContexto->variables)
-					|| 1 < ((int) stackDeContexto->variables)) {
-				stackDeContexto->variables = list_create();
-			}
-
-			list_add(stackDeContexto->variables, entrada_stack);
-			list_remove(pcb->indiceStack,
-					(pcb->indiceStack->elements_count - 1));
 		} else {
 
 			//Se asigna el exit code -9 (No se pueden asignar mas paginas al proceso)
@@ -767,6 +751,7 @@ void irAlLabel(t_nombre_etiqueta identificador_variable) {
 			identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
 
 	pcb->program_counter = instruccion;
+	pcb->program_counter++;
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -777,7 +762,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion;
-	// pcb->program_counter++;
+	pcb->program_counter++;
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -785,14 +770,22 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	puts("Llamar Con Retorno");
 	puts("");
+
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta,
-			pcb->etiquetas, pcb->etiquetas_size);
-	stackFuncion->retPost = instruccion;
+
+	stackFuncion->retPost = pcb->program_counter;
 	stackFuncion->retVar = donde_retornar;
 	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
+	stackFuncion->args = list_create();
+	stackFuncion->variables = list_create();
+
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+
 	list_add(pcb->indiceStack, stackFuncion);
-	free(stackFuncion);
+	pcb->program_counter = instruccion;
+	pcb->program_counter++;
+
+	//free(stackFuncion);
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -817,7 +810,7 @@ void retornar(t_valor_variable retorno) {
 
 	list_remove(pcb->indiceStack, pcb->indiceStack->elements_count - 1);
 	pcb->program_counter = instruccion;
-	pcb->program_counter++;
+	//pcb->program_counter++;
 	return;
 }
 
@@ -1227,6 +1220,53 @@ char* serializar_pcb(t_pcb* pcb) {
 
 	return mensajeACPU;
 
+}
+int esArgumentoDeFuncion(t_nombre_variable identificador_variable)
+{
+	switch((char)identificador_variable){
+		case '0':
+			;
+			return 1;
+			break;
+		case '1':
+			;
+			return 1;
+			break;
+		case '2':
+			;
+			return 1;
+			break;
+		case '3':
+			;
+			return 1;
+			break;
+		case '4':
+			;
+			return 1;
+			break;
+		case '5':
+			return 1;
+			break;
+		case '6':
+			;
+			return 1;
+			break;
+		case '7':
+			;
+			return 1;
+			break;
+		case '8':
+			;
+			return 1;
+			break;
+		case '9':
+			;
+			return 1;
+			break;
+		default:
+			return 0;
+
+		}
 }
 
 t_variables* deserializar_entrada_stack(char** mensajeRecibido) {

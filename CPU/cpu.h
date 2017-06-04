@@ -75,6 +75,7 @@ t_pcb * reciboPCB(int * socketKernel);
 t_pcb * deserializar_pcb(char * message);
 char* serializar_pcb(t_pcb* pcb);
 t_variables* deserializar_entrada_stack(char** mensajeRecibido);
+int esArgumentoDeFuncion(t_nombre_variable identificador_variable);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 #define ASIGNACION_MEMORIA_OK 0
