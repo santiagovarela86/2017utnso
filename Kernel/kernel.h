@@ -57,7 +57,7 @@ typedef struct {
 	int* socket_cpu;
 	int exit_code;
 	int quantum;
-	int* socket_consola;
+	int socket_consola;
 } t_pcb;
 
 typedef struct{

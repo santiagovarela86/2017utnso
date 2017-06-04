@@ -972,6 +972,9 @@ char* serializar_pcb(t_pcb* pcb){
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
 	string_append(&mensajeACPU, ";");
 
+	string_append(&mensajeACPU, string_itoa(pcb->socket_consola));
+	string_append(&mensajeACPU, ";");
+
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
 	string_append(&mensajeACPU, ";");
 
@@ -1374,7 +1377,7 @@ t_pcb *nuevo_pcb(int pid, int* socket_consola){
 	new->inicio_codigo = 0;
 	new->tabla_archivos = 0;
 	new->pos_stack = 0;
-	new->socket_consola = socket_consola;
+	new->socket_consola = *socket_consola;
 	new->exit_code = 0;
 	new->quantum = configuracion->quantum;
 
@@ -1594,17 +1597,18 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	pcb->inicio_codigo = atoi(message[3]);
 	pcb->tabla_archivos = atoi(message[4]);
 	pcb->pos_stack = atoi(message[5]);
-	pcb->exit_code = atoi(message[6]);
-	cantIndiceCodigo = atoi(message[7]);
-	pcb->etiquetas_size = atoi(message[8]);
-	pcb->cantidadEtiquetas = atoi(message[9]);
-	cantIndiceStack = atoi(message[10]);
+	pcb->socket_consola = atoi(message[6]);
+	pcb->exit_code = atoi(message[7]);
+	cantIndiceCodigo = atoi(message[8]);
+	pcb->etiquetas_size = atoi(message[9]);
+	pcb->cantidadEtiquetas = atoi(message[10]);
+	cantIndiceStack = atoi(message[11]);
 	printf("reciben tantos stack %d", cantIndiceStack);
-	pcb->quantum = atoi(message[11]);
+	pcb->quantum = atoi(message[12]);
 
-	int i = 12;
+	int i = 13;
 
-	while (i < 12 + cantIndiceCodigo * 2){
+	while (i < 13 + cantIndiceCodigo * 2){
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem->start = atoi(message[i]);
 		i++;
@@ -2210,11 +2214,11 @@ void cerrarConsola(int socketCliente) {
 	while (largoColaListos != 0) {
 		pthread_mutex_lock(&mtx_listos);
 		temporalN = (t_pcb*) queue_pop(cola_listos);
-		printf("El skt es %d \n", *(temporalN->socket_consola));
+		printf("El skt es %d \n", temporalN->socket_consola);
 		printf("El skt buscado es %d \n", socketCliente);
 		pthread_mutex_unlock(&mtx_listos);
 		largoColaListos--;
-		if (*(temporalN->socket_consola) == socketCliente) {
+		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
 			pthread_mutex_unlock(&mtx_terminados);
@@ -2234,7 +2238,7 @@ void cerrarConsola(int socketCliente) {
 		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
 		pthread_mutex_unlock(&mtx_bloqueados);
 		largoColaBloq--;
-		if (*(temporalN->socket_consola) == socketCliente) {
+		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
 			pthread_mutex_unlock(&mtx_terminados);
@@ -2254,7 +2258,7 @@ void cerrarConsola(int socketCliente) {
 		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 		pthread_mutex_unlock(&mtx_ejecucion);
 		largoColaEjec--;
-		if (*(temporalN->socket_consola) == socketCliente) {
+		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
 			pthread_mutex_unlock(&mtx_terminados);

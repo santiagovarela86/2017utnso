@@ -288,16 +288,17 @@ t_pcb * deserializar_pcb(char * mensajeRecibido) {
 	pcb->inicio_codigo = atoi(message[3]);
 	pcb->tabla_archivos = atoi(message[4]);
 	pcb->pos_stack = atoi(message[5]);
-	pcb->exit_code = atoi(message[6]);
-	cantIndiceCodigo = atoi(message[7]);
-	pcb->etiquetas_size = atoi(message[8]);
-	pcb->cantidadEtiquetas = atoi(message[9]);
-	cantIndiceStack = atoi(message[10]);
-	pcb->quantum = atoi(message[11]);
+	pcb->socket_consola = atoi(message[6]);
+	pcb->exit_code = atoi(message[7]);
+	cantIndiceCodigo = atoi(message[8]);
+	pcb->etiquetas_size = atoi(message[9]);
+	pcb->cantidadEtiquetas = atoi(message[10]);
+	cantIndiceStack = atoi(message[11]);
+	pcb->quantum = atoi(message[12]);
 
-	int i = 12;
+	int i = 13;
 
-	while (i < 12 + cantIndiceCodigo * 2) {
+	while (i < 13 + cantIndiceCodigo * 2) {
 		elementoIndiceCodigo * elem = malloc(sizeof(elem));
 		elem->start = atoi(message[i]);
 		i++;
@@ -1112,6 +1113,9 @@ char* serializar_pcb(t_pcb* pcb) {
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->pos_stack));
+	string_append(&mensajeACPU, ";");
+
+	string_append(&mensajeACPU, string_itoa(pcb->socket_consola));
 	string_append(&mensajeACPU, ";");
 
 	string_append(&mensajeACPU, string_itoa(pcb->exit_code));
