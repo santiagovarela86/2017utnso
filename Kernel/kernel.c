@@ -73,6 +73,10 @@ t_list * offsetArch;
 t_list * lista_paginas_heap;;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
+sem_t sem_prog;
+sem_t sem_news;
+sem_t sem_mult;
+sem_t sem_cpus;
 
 int main(int argc, char **argv) {
 
@@ -178,6 +182,11 @@ void inicializarEstructuras(char * pathConfig){
 		list_add(lista_variables_globales, global_aux);
 		w++;
 	}
+
+	sem_init(&sem_cpus, 0, 0);
+	sem_init(&sem_news, 0, 0);
+	sem_init(&sem_prog, 0, 0);
+	sem_init(&sem_mult, 0, grado_multiprogramacion);
 
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
