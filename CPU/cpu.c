@@ -777,7 +777,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion;
-	 pcb->program_counter++;
+	// pcb->program_counter++;
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -798,6 +798,9 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 }
 
 void finalizar(void) {
+
+	pcb->program_counter = pcb->indiceCodigo->elements_count;
+
 	puts("FIN DEL PROGRAMA");
 	puts("");
 

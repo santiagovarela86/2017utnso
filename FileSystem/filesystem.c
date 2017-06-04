@@ -145,16 +145,19 @@ void * hilo_conexiones_kernel(void * args){
 					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 				break;
 			  }
-
+			puts("4");
 			result = recv(socketKernel, message, sizeof(message), 0);
+			puts("5");
 		    }
 
 		if (result <= 0) {
 			printf("Se desconecto el Kernel\n");
 		}
-		} else {
+		 else {
 			perror("Fallo en el manejo del hilo Kernel");
-			return EXIT_FAILURE;
+
+		 }
+
    	}
 
 	shutdown(socketKernel, 0);
@@ -187,7 +190,7 @@ int validar_archivo(char* directorio){
 		return 1;
 	}
 	free(pathAbsoluto);
-		return 1;
+
 }
 t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
 {
