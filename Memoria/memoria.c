@@ -631,13 +631,14 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	grabar_valor(direccion, valor);
 
-	printf("Se asigno el valor %d en el marco %d pagina %d del PID %d \n", valor, pagina->nro_marco, pagina->nro_pagina, pagina->pid);
-	puts("");
-
 	char* mensajeACpu = string_new();
 	if (valorEnCache){
+		printf("Se asigno el valor %d en Cache \n", valor);
+		puts("");
 		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
 	} else {
+		printf("Se asigno el valor %d en Memoria \n", valor);
+		puts("");
 		string_append(&mensajeACpu, string_itoa(direccion));
 	}
 	string_append(&mensajeACpu, ";");
@@ -729,7 +730,7 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 		free(mensajeACpu);
 
 		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_cache = list_size(tabla_cache);
 		int indice_antiguo = entrada_cache->indice;
 		entrada_cache->indice = indice_cache;
 
@@ -980,7 +981,7 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
 
 		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_cache = list_size(tabla_cache);
 		int indice_antiguo = entrada_cache->indice;
 		entrada_cache->indice = indice_cache;
 
@@ -1631,7 +1632,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Y si no se supera el tamanio de la cache
 		//Agrego la entrada
 
-		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_cache = list_size(tabla_cache);
 
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		t_entrada_cache* entrada_cache = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
@@ -1646,7 +1647,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		puts("");
 		guardadoOK = false;
 	}
-	else {
+	else if (list_size(tabla_cache) == configuracion->entradas_cache) {
 		puts("Ejecucion del algoritmo de reemplazo");
 		puts("");
 
@@ -1656,7 +1657,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		puts("");
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache) + 1;
+		int indice_cache = list_size(tabla_cache);
 		int indice_antiguo = entrada_cache_reemplazo->indice;
 		entrada_cache_reemplazo->indice = indice_cache;
 		entrada_cache_reemplazo->pid = pid;
@@ -1684,7 +1685,7 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 
 	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_encontrar_entrada_cache);
 
-	int indice_stack = list_size(tabla_cache) + 1;
+	int indice_stack = list_size(tabla_cache);
 
 	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_stack, pid, pagina, contenido);
 
@@ -1737,6 +1738,7 @@ t_entrada_cache* obtener_entrada_reemplazo_cache(){
 
 	if (string_equals_ignore_case(configuracion->reemplazo_cache, "LRU") == true){
 
+		puts("El algoritmo es LRU");
 		//Obtengo a la victima del reemplazo
 		//Que seria la pagina mas antigua de la cache, es decir, la primera
 		entrada_cache = list_get(tabla_cache, 0);
