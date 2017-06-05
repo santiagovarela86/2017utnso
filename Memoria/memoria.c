@@ -217,20 +217,26 @@ void * hilo_conexiones_kernel(){
 }
 
 void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
+
+	printf("INICIAR PROGRAMA %d\n", pid);
+	puts("");
+
 	if (string_length(bloque_memoria) == 0 || string_length(codigo_programa) <= string_length(bloque_memoria)) {
 
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
-
-		if (cache_habilitada)
-			almacenar_pagina_en_cache_para_pid(pid, pagina);
-
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
 		char* respuestaAKernel = string_new();
 
 		if (pagina != NULL) {
 
-			printf("MARCO ASIGNADO AL PID %d: %d\n", pagina->pid, pagina->nro_marco);
+			printf("Se asigno el marco %d al PID %d para almacenar codigo del programa\n", pagina->nro_marco, pagina->pid);
+			puts("");
+
+			pthread_mutex_lock(&mutex_estructuras_administrativas);
+			if (cache_habilitada)
+				almacenar_pagina_en_cache_para_pid(pid, pagina);
+			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 			string_append(&respuestaAKernel, "203;");
 			string_append(&respuestaAKernel, string_itoa(obtener_inicio_pagina(pagina)));
@@ -398,9 +404,15 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		if (codigo == 510) {
 
+			puts("SOLICITUD DE INSTRUCCION");
+			puts("");
+
 			enviarInstACPU(&sock, mensajeDesdeCPU);
 
 		} else if (codigo == 511) {
+
+			puts("ASIGNACION DE VARIABLE");
+			puts("");
 
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
@@ -408,6 +420,9 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			asignarVariable(mensajeDesdeCPU, sock);
 
 		} else if (codigo == 512) {
+
+			puts("DEFINICION DE VARIABLE");
+			puts("");
 
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
@@ -421,9 +436,15 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 513) {
 
+			puts("DEREFERENCIAR VARIABLE");
+			puts("");
+
 			obtenerValorDeVariable(mensajeDesdeCPU, sock);
 
 		} else if (codigo == 601) {
+
+			puts("OBTENER POSICION DE VARIABLE");
+			puts("");
 
 			int pid = atoi(mensajeDesdeCPU[1]);
 			int pagina = atoi(mensajeDesdeCPU[2]);
@@ -503,6 +524,9 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 	pag_a_cargar->nro_pagina = paginaParaVariables;
 	pag_a_cargar->pid = pid;
 
+	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_a_cargar->nro_marco, pag_a_cargar->nro_pagina, pag_a_cargar->pid);
+	puts("");
+
 	list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 	t_pagina_proceso* manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
@@ -557,6 +581,9 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 
+	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_encontrada->nro_marco, pag_encontrada->nro_pagina, pag_encontrada->pid);
+	puts("");
+
 	t_pagina_proceso* pag_stack = malloc(sizeof(t_pagina_proceso));
 
 	pag_stack->pagina = pag_encontrada->nro_pagina;
@@ -586,6 +613,7 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 	int valor = 0;
 	bool valorEnCache = false;
 	int direccion = atoi(mensajeDesdeCPU[1]);
+	t_pagina_invertida* pagina;
 
 	//Valor en Cache
 	if (direccion == VARIABLE_EN_CACHE){
@@ -594,7 +622,7 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 		int nro_pagina = atoi(mensajeDesdeCPU[3]);
 		int offset = atoi(mensajeDesdeCPU[4]);
 		valor = atoi(mensajeDesdeCPU[5]);
-		t_pagina_invertida* pagina = buscar_pagina_para_consulta(pid, nro_pagina);
+		pagina = buscar_pagina_para_consulta(pid, nro_pagina);
 		int inicio = obtener_inicio_pagina(pagina);
 		direccion = inicio + offset;
 	} else {
@@ -602,6 +630,9 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 	}
 
 	grabar_valor(direccion, valor);
+
+	printf("Se asigno el valor %d en el marco %d pagina %d del PID %d \n", valor, pagina->nro_marco, pagina->nro_pagina, pagina->pid);
+	puts("");
 
 	char* mensajeACpu = string_new();
 	if (valorEnCache){
@@ -615,7 +646,6 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	int sendLen = strlen(mensajeACpu);
 	send(sock, &sendLen, sizeof(sendLen), 0);
-	//send(sockfd, sendBuff, sendLen, 0);
 	enviarMensaje(&sock, mensajeACpu);
 
 	free(mensajeACpu);
@@ -633,15 +663,18 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 		int offset = atoi(mensajeDesdeCPU[4]);
 		int tamanio = atoi(mensajeDesdeCPU[5]);
 		valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+		printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", atoi(valor_variable), pid, pagina);
+		puts("");
 	}
 	else {
 		valor_variable = leer_memoria(posicion_de_la_variable, OFFSET_VAR);
+		printf("Se leyo el valor %d en memoria \n", atoi(valor_variable));
+		puts("");
 	}
 
 	int valor = atoi(valor_variable);
 
 	char* mensajeACpu = string_new();
-	printf("VALOR: %d\n", valor);
 	string_append(&mensajeACpu, string_itoa(valor));
 	string_append(&mensajeACpu, ";");
 
@@ -664,6 +697,9 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 			int inicio = obtener_inicio_pagina(pagina_buscada);
 			int direccion_memoria = inicio + offset;
 
+			printf("Se obtuvo posicion %d a partir de PID %d, Pagina %d y Offset %d en Memoria", direccion_memoria, pid, pagina, offset);
+			puts("");
+
 			char* mensajeACpu = string_new();
 			string_append(&mensajeACpu, string_itoa(direccion_memoria));
 			string_append(&mensajeACpu, ";");
@@ -682,6 +718,9 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 
 		//Le aviso a la CPU que la variable se encuentra en cache
 		//Y que debe leerla utilizando pid, pagina, offset y tamanio
+		puts("El valor buscado se encuentra disponible en cache");
+		puts("");
+
 		char* mensajeACpu = string_new();
 		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
 		string_append(&mensajeACpu, ";");
@@ -708,11 +747,16 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int paginaALeer = 0;
 
 	char* respuestaACPU = string_new();
+	char* instruccion = string_new();
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
-	string_append(&respuestaACPU, solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset));
+	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset);
+	string_append(&respuestaACPU, instruccion);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
+	printf("Se envia la instruccion %s\n", instruccion);
+
 	enviarMensaje(socketCliente, respuestaACPU);
 	free(respuestaACPU);
+	free(instruccion);
 }
 
 void finalizar_programa(int pid){
@@ -1592,20 +1636,24 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		t_entrada_cache* entrada_cache = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
 
-		printf("PID: %d\n", pagina->pid);
-		printf("PAGINA: %d\n", pagina->nro_pagina);
-
 		list_add(tabla_cache, entrada_cache);
+		printf("Se almaceno el marco %d pagina %d del PID %d en el indice %d de la cache \n", pagina->nro_marco, pagina->nro_pagina, pagina->pid, indice_cache);
+		puts("");
+
 	}
 	else if (nro_paginas_en_cache == configuracion->cache_x_proc) {
-		//No se puede guardar por superar el maximo de cache habilitado para el proceso
+		printf("No se puede guardar el marco %d pagina %d por superar el maximo de cache habilitado para el proceso %d\n", pagina->nro_marco, pagina->nro_pagina, pid);
+		puts("");
 		guardadoOK = false;
 	}
 	else {
-		//Ejecuto el algoritmo para reemplazo
-		//Y le asigno el contenido de la pagina
+		puts("Ejecucion del algoritmo de reemplazo");
+		puts("");
 
 		t_entrada_cache* entrada_cache_reemplazo = obtener_entrada_reemplazo_cache();
+
+		printf("La victima del reemplazo en Cache es PID: %d Pagina %d Indice %d", entrada_cache_reemplazo->pid, entrada_cache_reemplazo->nro_pagina, entrada_cache_reemplazo->indice);
+		puts("");
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		//Hago el reemplazo de paginas y ordeno
 		int indice_cache = list_size(tabla_cache) + 1;
@@ -1619,6 +1667,9 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 		//Reorganizo las entradas de cache en base al reemplazo
 		reorganizar_indice_cache_y_ordenar();
+
+		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
+		puts("");
 	}
 
 	return guardadoOK;
@@ -1640,6 +1691,9 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 	if (entrada_a_actualizar != NULL){
 		entrada_a_actualizar->contenido_pagina = contenido;
 		list_replace(tabla_cache, entrada_a_actualizar->indice, nueva_entrada_cache);
+
+		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", entrada_a_actualizar->indice, entrada_a_actualizar->nro_pagina, entrada_a_actualizar->pid);
+		puts("");
 	}
 
 	reorganizar_indice_cache_y_ordenar();
