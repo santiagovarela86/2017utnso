@@ -2124,6 +2124,16 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
+
 			pthread_mutex_unlock(&mtx_terminados);
 			encontre = 1;
 			printf("Se termino el proceso: %d\n", temporalN->pid);
@@ -2154,6 +2164,15 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreBloq = 1;
 			printf("Se termino el proceso: %d\n", temporalN->pid);
@@ -2181,6 +2200,15 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreEjec = 1;
 			printf("Se termino el proceso: %d\n", temporalN->pid);
