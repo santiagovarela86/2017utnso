@@ -4,6 +4,7 @@
 //398 CON A KER - ENVIO DE PID DEL PROGRAMA A FINALIZAR
 //101 KER A CON - RESPUESTA HANDSHAKE
 //103 KER A CON - PID DE PROGRAMA
+//666 KER A CON - PID DE PROGRAMA MUERTO
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -258,8 +259,19 @@ void * escuchar_Kernel(void * args){
 
 								fin--;
 							}
-				printf("llego a la rama else if 666 ACA\n");
-				printf("Mensaje de programa : %d\n",  atoi(respuesta_kernel[1]));
+
+					        char output[128];
+					        strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
+
+
+				printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+				printf("Su hora de inicio fue:\n");
+				printf("%s\n",output);
+
+				char outputF[128];
+				strftime(outputF,128,"%d/%m/%y %H:%M:%S",p->fin);
+				printf("Su hora finalizacion fue: \n");
+				printf("%s\n",outputF);
 
 			}
 
