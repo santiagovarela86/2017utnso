@@ -2246,6 +2246,15 @@ void cerrarConsola(int socketCliente) {
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
 			pthread_mutex_unlock(&mtx_terminados);
 		} else {
 			pthread_mutex_lock(&mtx_listos);
@@ -2266,6 +2275,15 @@ void cerrarConsola(int socketCliente) {
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
 			pthread_mutex_unlock(&mtx_terminados);
 		} else {
 			pthread_mutex_lock(&mtx_bloqueados);
@@ -2286,6 +2304,15 @@ void cerrarConsola(int socketCliente) {
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
+
+			int * sock =  &temporalN->socket_consola;
+			char* msjAConsolaXEstadistica = string_new();
+			string_append(&msjAConsolaXEstadistica, "666;");
+			int pidDelMatado = temporalN->pid;
+			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+			free(msjAConsolaXEstadistica);
+
 			pthread_mutex_unlock(&mtx_terminados);
 		} else {
 			pthread_mutex_lock(&mtx_ejecucion);
@@ -2551,6 +2578,15 @@ void finDePrograma(int * socketCliente) {
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, pcb_a_cambiar);
 				finalizarProgramaEnMemoria(pcb_deserializado->pid);
+
+				int * sock =  &pcb_a_cambiar->socket_consola;
+				char* msjAConsolaXEstadistica = string_new();
+				string_append(&msjAConsolaXEstadistica, "666;");
+				int pidDelMatado = pcb_a_cambiar->pid;
+				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+				enviarMensaje(&(pcb_a_cambiar->socket_consola), msjAConsolaXEstadistica);
+				free(msjAConsolaXEstadistica);
+
 				pthread_mutex_unlock(&mtx_terminados);
 
 			} else {
