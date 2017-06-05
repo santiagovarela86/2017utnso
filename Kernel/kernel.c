@@ -614,20 +614,19 @@ void matarProceso(int pidAMatar){
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
-
-				int* sock = (int*) &temporalP->socket_consola;
-				printf("Murio en Listos");
-				printf("SOCKET DE CONSOLA: %d\n", temporalP->socket_consola);
-
+				int * sock = &temporalP->socket_consola;
+				printf("Murio en Listos\n");
+				printf("SOCKET DE CONSOLA: %d\n", * sock);
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
 				int pidDelMatado = temporalP->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
-				enviarMensaje(temporalP->pid, msjAConsolaXEstadistica);
+				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
 				free(msjAConsolaXEstadistica);
-
-
 				pthread_mutex_unlock(&mtx_terminados);
+
+
+
 			}
 
 			largoColaListada--;
@@ -651,19 +650,18 @@ void matarProceso(int pidAMatar){
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
-
-				int* sock = (int*) &temporalP->socket_consola;
-				printf("Murio en Bloqueados");
-				printf("SOCKET DE CONSOLA: %d\n", temporalP->socket_consola);
-
+				int * sock =  &temporalP->socket_consola;
+				printf("Murio en Bloqueados\n");
+				printf("SOCKET DE CONSOLA: %d\n",* sock);
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
 				int pidDelMatado = temporalP->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
-				enviarMensaje(temporalP->pid, msjAConsolaXEstadistica);
+				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
 				free(msjAConsolaXEstadistica);
-
 				pthread_mutex_unlock(&mtx_terminados);
+
+
 			}
 
 			largoColaListada--;
@@ -688,24 +686,16 @@ void matarProceso(int pidAMatar){
 				//TODO
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
-
 				int * sock =  &temporalP->socket_consola;
 				printf("Murio en Ejec\n");
-
 				printf("pid: %d\n", tempPid);
 				printf("SOCKET DE CONSOLA: %d\n", * sock);
-
 				char* msjAConsolaXEstadistica = string_new();
-				printf("aca 1\n");
 				string_append(&msjAConsolaXEstadistica, "666;");
-				printf("aca 2\n");
 				int pidDelMatado = temporalP->pid;
-				printf("aca 3\n");
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
-				printf("aca 4\n");
 				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
 				free(msjAConsolaXEstadistica);
-
 				pthread_mutex_unlock(&mtx_terminados);
 			}
 
