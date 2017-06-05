@@ -282,7 +282,7 @@ void crear_archivo(char* flag, char* directorio){
    		  archBuscado->referenciaArchivo = pFileReabrir;
    		  list_add(lista_archivos, archBuscado);
    	  }
-
+   	  puts("sale al parecer sin problemas");
 	  free(pathAbsoluto);
 }
 

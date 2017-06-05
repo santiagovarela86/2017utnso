@@ -29,6 +29,7 @@
 #include "helperParser.h"
 #include "cpu.h"
 
+
 CPU_Config* configuracion;
 int socketMemoria;
 int sktKernel;
@@ -38,6 +39,9 @@ int bloqueo;
 int pagina_a_leer_cache = 0;
 int offset_a_leer_cache = 0;
 int tamanio_a_leer_cache = 0;
+pthread_mutex_t mutex_DefinirVariables;
+pthread_mutex_t mutex_ObtenerVariables;
+pthread_mutex_t mutex_Instrucciones;
 
 int main(int argc, char **argv) {
 
@@ -60,6 +64,10 @@ int main(int argc, char **argv) {
 
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
+
+	pthread_mutex_init(&mutex_DefinirVariables, NULL);
+	pthread_mutex_init(&mutex_ObtenerVariables, NULL);
+	pthread_mutex_init(&mutex_Instrucciones, NULL);
 
 	free(configuracion);
 
@@ -105,20 +113,26 @@ void* manejo_kernel(void *args) {
 		while (pcb->quantum > 0
 				&& pcb->indiceCodigo->elements_count != pcb->program_counter
 				&& bloqueo == 0) {
+			//puts("va a leer instruccion");
+			pthread_mutex_lock(&mutex_Instrucciones);
 			instruccion = solicitoInstruccion(pcb);
+			pthread_mutex_unlock(&mutex_Instrucciones);
 			//	printf("el program es: %d\n", pcb->program_counter);
 			//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
 			printf("Instruccion: %s\n", instruccion);
+			pthread_mutex_lock(&mutex_Instrucciones);
 			analizadorLinea(instruccion, funciones, kernel);
+			pthread_mutex_unlock(&mutex_Instrucciones);
 
 			pcb->quantum--;
 			//	if (pcb->quantum == 0)
 			//	{
 			//		puts("corta por quatum");
 			//	}
-
+		//	puts("tiene que sumar 1 al program counter");
 			pcb->program_counter++;
+			//printf("ahora el program counter es: %d\n", pcb->program_counter);
 
 		}
 
@@ -194,7 +208,8 @@ char * solicitoInstruccion(t_pcb* pcb) {
 
 	elementoIndiceCodigo* coordenadas_instruccion =
 			((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
-
+	//printf("el indice de codigo devolvio las coodernadas %d \n", coordenadas_instruccion->start);
+//	printf("el indice de codigo devolvio las coodernadas %d \n", coordenadas_instruccion->offset);
 	char * message = malloc(MAXBUF);
 
 	enviarMensaje(&socketMemoria,
@@ -204,11 +219,12 @@ char * solicitoInstruccion(t_pcb* pcb) {
 	int result = recv(socketMemoria, message, MAXBUF, 0);
 
 	if (result > 0) {
-		//printf("Mensaje antes del Trim: %s\n", message);
+		printf("Mensaje antes del Trim: %s\n", message);
 		//message = string_substring(message, 0, strlen(message));
 		//printf("Mensaje después del Trim: %s\n", message);
 		char**mensajeDelKernel = string_split(message, ";");
 		//message = string_substring(message, 0, strlen(message));
+		printf("el valor de la instruccion es %s", mensajeDelKernel[0]);
 		return mensajeDelKernel[0];
 	} else {
 		printf("Error al solicitar Instruccion a la Memoria\n");
@@ -445,7 +461,7 @@ void* manejo_memoria(void * args) {
 void asignar(t_puntero direccion, t_valor_variable valor) {
 	puts("Asignar");
 	puts("");
-
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -501,7 +517,7 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	printf("Obtener Posicion Variable %c \n", identificador_variable);
 	puts("");
-
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	t_variables* entrada_encontrada;
 
 	if (esArgumentoDeFuncion(identificador_variable)) {
@@ -515,6 +531,12 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 				(pcb->indiceStack->elements_count - 1));
 		entrada_encontrada = list_find(StackDeContexto->args,
 				(void*) encontrar_var);
+		//printf(" offset del argumento:  %d \n",entrada_encontrada->offset);
+		//printf(" pagina del agumento %d \n",entrada_encontrada->pagina);
+	//	printf(" tamaño del argumento %d \n",entrada_encontrada->size);
+//		printf(" nombre del argumento: %c \n",entrada_encontrada->nombre_variable);
+
+
 	}
 
 	else {
@@ -524,22 +546,20 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 			return (var->nombre_variable == (char) identificador_variable);
 		}
 
-		t_Stack* StackDeContexto = list_get(pcb->indiceStack,
-				(pcb->indiceStack->elements_count - 1));
+		t_Stack* StackDeContexto = list_get(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
 		entrada_encontrada = list_find(StackDeContexto->variables,
 				(void*) encontrar_var);
 	}
 
 	char * buffer = malloc(MAXBUF);
 	buffer = string_new();
-
-	enviarMensaje(&socketMemoria,
-			serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,
-					entrada_encontrada->offset, entrada_encontrada->size));
-
+	pthread_mutex_lock(&mutex_ObtenerVariables);
+	enviarMensaje(&socketMemoria,serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,entrada_encontrada->offset, entrada_encontrada->size));
+	pthread_mutex_unlock(&mutex_ObtenerVariables);
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 	buffer = string_substring(buffer, 0, strlen(buffer));
-
+	puts("por acá todo bien");
+	printf("el valor del return es %d", result);
 	if (result > 0) {
 		char**mensajeDesdeMemoria = string_split(buffer, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
@@ -551,8 +571,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		}
 
 		//printf("Se obtuvo el valor %d \n", valor);
-
+		//printf("el valor de retorno del obtener es %d \n", valor);
 		return valor;
+
 
 	} else {
 		return NULL;
@@ -562,7 +583,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	puts("Dereferenciar");
 	puts("");
-
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "513");
 	string_append(&mensajeAMemoria, ";");
@@ -609,6 +630,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	printf("Definir Variable %c \n", identificador_variable);
 	puts("");
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "512");
@@ -661,7 +683,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			if (paginaNueva == true) {
 				pcb->cantidadPaginas++;
 				char * buffer = malloc(MAXBUF);
+				pthread_mutex_lock(&mutex_DefinirVariables);
 				enviarMensaje(&sktKernel, serializarMensaje(2, 777, pcb->pid));
+				pthread_mutex_unlock(&mutex_DefinirVariables);
 				paginaNueva = false;
 
 				recv(sktKernel, buffer, MAXBUF, 0);
@@ -771,8 +795,8 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	puts("Llamar Con Retorno");
 	puts("");
-
-	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
 	stackFuncion->retPost = pcb->program_counter;
 	stackFuncion->retVar = donde_retornar;
@@ -783,7 +807,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 
 	list_add(pcb->indiceStack, stackFuncion);
-	pcb->program_counter = instruccion;
+	pcb->program_counter = instruccion - 1;
 	//pcb->program_counter++;
 
 	//free(stackFuncion);
@@ -793,7 +817,11 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 void finalizar(void) {
 
-	//pcb->program_counter = pcb->indiceCodigo->elements_count;
+	if(pcb->indiceStack->elements_count > 1)
+    {
+		pcb->program_counter = pcb->indiceCodigo->elements_count;
+
+    }
 
 	puts("FIN DEL PROGRAMA");
 	puts("");
@@ -805,7 +833,7 @@ void retornar(t_valor_variable retorno) {
 	puts("Retornar");
 
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
-	stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count);
+	stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count - 1);
 	retorno = stackFuncion->retVar;
 	t_puntero_instruccion instruccion = stackFuncion->retPost;
 
