@@ -39,9 +39,7 @@ int bloqueo;
 int pagina_a_leer_cache = 0;
 int offset_a_leer_cache = 0;
 int tamanio_a_leer_cache = 0;
-pthread_mutex_t mutex_DefinirVariables;
-pthread_mutex_t mutex_ObtenerVariables;
-pthread_mutex_t mutex_Instrucciones;
+
 
 int main(int argc, char **argv) {
 
@@ -65,9 +63,6 @@ int main(int argc, char **argv) {
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
 
-	pthread_mutex_init(&mutex_DefinirVariables, NULL);
-	pthread_mutex_init(&mutex_ObtenerVariables, NULL);
-	pthread_mutex_init(&mutex_Instrucciones, NULL);
 
 	free(configuracion);
 
@@ -114,16 +109,16 @@ void* manejo_kernel(void *args) {
 				&& pcb->indiceCodigo->elements_count != pcb->program_counter
 				&& bloqueo == 0) {
 			//puts("va a leer instruccion");
-			pthread_mutex_lock(&mutex_Instrucciones);
+
 			instruccion = solicitoInstruccion(pcb);
-			pthread_mutex_unlock(&mutex_Instrucciones);
+
 			//	printf("el program es: %d\n", pcb->program_counter);
 			//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
 			printf("Instruccion: %s\n", instruccion);
-			pthread_mutex_lock(&mutex_Instrucciones);
+
 			analizadorLinea(instruccion, funciones, kernel);
-			pthread_mutex_unlock(&mutex_Instrucciones);
+
 
 			pcb->quantum--;
 			//	if (pcb->quantum == 0)
@@ -553,9 +548,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 	char * buffer = malloc(MAXBUF);
 	buffer = string_new();
-	pthread_mutex_lock(&mutex_ObtenerVariables);
+
 	enviarMensaje(&socketMemoria,serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,entrada_encontrada->offset, entrada_encontrada->size));
-	pthread_mutex_unlock(&mutex_ObtenerVariables);
+
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 	buffer = string_substring(buffer, 0, strlen(buffer));
 	puts("por acá todo bien");
@@ -631,7 +626,6 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	printf("Definir Variable %c \n", identificador_variable);
 	puts("");
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
-
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "512");
 	string_append(&mensajeAMemoria, ";");
@@ -683,9 +677,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			if (paginaNueva == true) {
 				pcb->cantidadPaginas++;
 				char * buffer = malloc(MAXBUF);
-				pthread_mutex_lock(&mutex_DefinirVariables);
+
 				enviarMensaje(&sktKernel, serializarMensaje(2, 777, pcb->pid));
-				pthread_mutex_unlock(&mutex_DefinirVariables);
+
 				paginaNueva = false;
 
 				recv(sktKernel, buffer, MAXBUF, 0);
@@ -746,6 +740,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	free(msj);
 	printf("El valor de la compartida es: %d \n", valor);
 	return valor;
+
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
@@ -795,6 +790,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	puts("Llamar Con Retorno");
 	puts("");
+
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
@@ -803,11 +799,13 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
 	stackFuncion->args = list_create();
 	stackFuncion->variables = list_create();
+	list_add(pcb->indiceStack, stackFuncion);
+
+
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
-
-	list_add(pcb->indiceStack, stackFuncion);
 	pcb->program_counter = instruccion - 1;
+
 	//pcb->program_counter++;
 
 	//free(stackFuncion);
@@ -967,11 +965,11 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		puts("archivo se abrió correctamente");
 		int fdNuevo = atoi(mensajeDeKernel);
 		printf("el file descriptor nuevo es %d \n", fdNuevo);
-		return ((t_descriptor_archivo) fdNuevo);
+		//return ((t_descriptor_archivo) fdNuevo);
 
 	} else {
 		printf("Error al abrir el archivo \n");
-		return ((t_descriptor_archivo) 0);
+		//return ((t_descriptor_archivo) 0);
 	}
 
 	free(mensajeDeKernel);
