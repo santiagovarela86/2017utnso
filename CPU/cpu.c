@@ -217,7 +217,7 @@ char * solicitoInstruccion(t_pcb* pcb) {
 	int result = recv(socketMemoria, message, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("Mensaje antes del Trim: %s\n", message);
+		//printf("Mensaje antes del Trim: %s\n", message);
 		//message = string_substring(message, 0, strlen(message));
 		//printf("Mensaje después del Trim: %s\n", message);
 		char**mensajeDelKernel = string_split(message, ";");
