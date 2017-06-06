@@ -1759,8 +1759,6 @@ void * multiprogramar() {
 
 			if (queue_size(cola_nuevos) > 0) {
 
-				puts("entre a multiprogramas");
-
 				t_nuevo* nue = queue_pop(cola_nuevos);
 				t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
 				envioProgramaAMemoria(new_pcb, nue);
