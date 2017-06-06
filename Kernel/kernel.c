@@ -75,7 +75,6 @@ sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_news;
-sem_t sem_mult;
 sem_t sem_cpus;
 
 int main(int argc, char **argv) {
@@ -132,6 +131,9 @@ void inicializarEstructuras(char * pathConfig){
 
 	sem_init(&semaforoMemoria, 0, 0);
 	sem_init(&semaforoFileSystem, 0, 0);
+	sem_init(&sem_cpus, 0, 0);
+	sem_init(&sem_news, 0, 0);
+	sem_init(&sem_prog, 0, 0);
 
 	lista_paginas_heap = list_create();
 
@@ -183,11 +185,6 @@ void inicializarEstructuras(char * pathConfig){
 		w++;
 	}
 
-	sem_init(&sem_cpus, 0, 0);
-	sem_init(&sem_news, 0, 0);
-	sem_init(&sem_prog, 0, 0);
-	sem_init(&sem_mult, 0, grado_multiprogramacion);
-
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
@@ -222,6 +219,9 @@ void liberarEstructuras(){
 
 	sem_destroy(&semaforoMemoria);
 	sem_destroy(&semaforoFileSystem);
+	sem_destroy(&sem_cpus);
+	sem_destroy(&sem_news);
+	sem_destroy(&sem_prog);
 }
 
 void * inicializar_consola(void* args){
@@ -611,6 +611,8 @@ void matarProceso(int pidAMatar){
 				pthread_mutex_unlock(&mtx_listos);
 
 			}else{
+
+				sem_wait(&sem_prog);
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
@@ -1124,6 +1126,8 @@ void * handler_conexion_cpu(void * sock) {
 	queue_push(cola_cpu, &cpus);
 	pthread_mutex_unlock(&mtx_cpu);
 
+	sem_post(&sem_cpus);
+
 	int * socketCliente = (int *) &sock;
 
 	int result = recv(* socketCliente, message, MAXBUF, 0);
@@ -1315,6 +1319,7 @@ void * handler_conexion_cpu(void * sock) {
 			pthread_mutex_unlock(&mtx_cpu);
 
 			if(temporalCpu->socket == *socketCliente){
+				sem_wait(&sem_cpus);
 				encontrado = 1;
 			}else{
 
@@ -1453,6 +1458,9 @@ void * planificar() {
 	int corte, i, encontrado;
 
 	while (1) {
+		sem_wait(&sem_cpus);
+
+		sem_wait(&sem_prog);
 
 		if (plan == 0) {
 			usleep(configuracion->quantum_sleep);
@@ -1600,7 +1608,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	pcb->etiquetas_size = atoi(message[9]);
 	pcb->cantidadEtiquetas = atoi(message[10]);
 	cantIndiceStack = atoi(message[11]);
-	printf("reciben tantos stack %d", cantIndiceStack);
+
 	pcb->quantum = atoi(message[12]);
 
 	int i = 13;
@@ -1718,6 +1726,9 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 void * multiprogramar() {
 	//validacion de nivel de multiprogramacion
 	while (1) {
+
+		sem_wait(&sem_news);
+
 		if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
 			//Se crea programa nuevo
 
@@ -1809,6 +1820,8 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 	queue_push(cola_listos, new_pcb);
 	list_add(lista_procesos, new_pcb);
 	pthread_mutex_unlock(&mtx_listos);
+
+	sem_post(&sem_prog);
 }
 
 void informoAConsola(int socketConsola, int pid){
@@ -2019,6 +2032,9 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 		pthread_mutex_lock(&mtx_nuevos);
 		queue_push(cola_nuevos, nue);
 		pthread_mutex_unlock(&mtx_nuevos);
+
+		sem_post(&sem_news);
+
 	} else {
 		//Se crea programa nuevo
 		printf("SOCKET DE CONSOLA: %d\n",socketCliente);
@@ -2083,6 +2099,8 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 			list_add(lista_procesos, new_pcb);
 			pthread_mutex_unlock(&mtx_listos);
 
+			sem_post(&sem_prog);
+
 			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
 			char* info_pid = string_new();
 			char* respuestaAConsola = string_new();
@@ -2136,6 +2154,9 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_unlock(&mtx_terminados);
 			encontre = 1;
+
+			sem_wait(&sem_prog);
+
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
 		} else {
@@ -2256,6 +2277,9 @@ void cerrarConsola(int socketCliente) {
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
+
+			sem_wait(&sem_prog);
+
 		} else {
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, temporalN);
@@ -2351,6 +2375,8 @@ void finDeQuantum(int * socketCliente){
 			queue_push(cola_listos, pcb_a_cambiar);
 			pthread_mutex_unlock(&mtx_listos);
 
+			sem_post(&sem_prog);
+
 			encontrado = 1;
 
 		} else {
@@ -2378,6 +2404,7 @@ void finDeQuantum(int * socketCliente){
 			encontrado = 1;
 		}
 
+		sem_post(&sem_cpus);
 		temporalCpu->pid_asignado = -1;
 
 		pthread_mutex_lock(&mtx_cpu);
@@ -2534,6 +2561,7 @@ void bloqueoDePrograma(int pid_a_buscar){
 			encontrado = 1;
 		}
 
+		sem_post(&sem_cpus);
 		temporalCpu->pid_asignado = -1;
 
 		pthread_mutex_lock(&mtx_cpu);
@@ -2610,6 +2638,7 @@ void finDePrograma(int * socketCliente) {
 					encontrado = 1;
 				}
 
+				sem_post(&sem_cpus);
 				temporalCpu->pid_asignado = -1;
 
 				pthread_mutex_lock(&mtx_cpu);
@@ -2724,6 +2753,8 @@ void signalSemaforo(int * socketCliente, char * semaforo_buscado){
 		pthread_mutex_unlock(&mtx_bloqueados);
 
 		if(p->pid == bloq->pid){
+
+			sem_post(&sem_prog);
 
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, p);
