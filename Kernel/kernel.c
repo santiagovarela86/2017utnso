@@ -1310,7 +1310,7 @@ void * handler_conexion_cpu(void * sock) {
 		i = 0;
 		encontrado = 0;
 
-		estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+		estruct_cpu* temporalCpu;
 
 		while (i <= corte && encontrado == 0){
 
@@ -1319,8 +1319,12 @@ void * handler_conexion_cpu(void * sock) {
 			pthread_mutex_unlock(&mtx_cpu);
 
 			if(temporalCpu->socket == *socketCliente){
-				sem_wait(&sem_cpus);
 				encontrado = 1;
+
+				if(temporalCpu->pid_asignado == -1){
+					sem_wait(&sem_cpus);
+				}
+
 			}else{
 
 				pthread_mutex_lock(&mtx_cpu);
@@ -1473,16 +1477,13 @@ void * planificar() {
 			encontrado = 0;
 
 			if (!(queue_is_empty(cola_cpu))) {
-				estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+				estruct_cpu* temporalCpu;
 
 				while (i <= corte && encontrado == 0) {
 
 					pthread_mutex_lock(&mtx_cpu);
 					temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
 					pthread_mutex_unlock(&mtx_cpu);
-
-					//printf("El PID asignado del CPU que reviso es: %d\n",
-						//	temporalCpu->pid_asignado);
 
 					if (temporalCpu->pid_asignado == -1) {
 						encontrado = 1;
@@ -1498,7 +1499,7 @@ void * planificar() {
 				if (encontrado == 1) {
 					if (!(queue_is_empty(cola_listos))) {
 
-						t_pcb* pcbtemporalListos = malloc(sizeof(t_pcb));
+						t_pcb* pcbtemporalListos;
 
 						pthread_mutex_lock(&mtx_listos);
 						pcbtemporalListos = (t_pcb*) queue_pop(cola_listos);
@@ -1733,6 +1734,9 @@ void * multiprogramar() {
 			//Se crea programa nuevo
 
 			if (queue_size(cola_nuevos) > 0) {
+
+				puts("entre a multiprogramas");
+
 				t_nuevo* nue = queue_pop(cola_nuevos);
 				t_pcb * new_pcb = nuevo_pcb(numerador_pcb, &(nue->skt));
 				envioProgramaAMemoria(new_pcb, nue);
@@ -2402,10 +2406,11 @@ void finDeQuantum(int * socketCliente){
 
 		if (temporalCpu->pid_asignado == pid_a_buscar) {
 			encontrado = 1;
+			temporalCpu->pid_asignado = -1;
 		}
 
 		sem_post(&sem_cpus);
-		temporalCpu->pid_asignado = -1;
+
 
 		pthread_mutex_lock(&mtx_cpu);
 		queue_push(cola_cpu, temporalCpu);
@@ -2559,10 +2564,11 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 		if (temporalCpu->pid_asignado == pid_a_buscar) {
 			encontrado = 1;
+			temporalCpu->pid_asignado = -1;
 		}
 
 		sem_post(&sem_cpus);
-		temporalCpu->pid_asignado = -1;
+
 
 		pthread_mutex_lock(&mtx_cpu);
 		queue_push(cola_cpu, temporalCpu);
@@ -2636,10 +2642,11 @@ void finDePrograma(int * socketCliente) {
 
 				if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
 					encontrado = 1;
+					temporalCpu->pid_asignado = -1;
 				}
 
 				sem_post(&sem_cpus);
-				temporalCpu->pid_asignado = -1;
+
 
 				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
