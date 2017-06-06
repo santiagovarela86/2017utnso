@@ -76,6 +76,7 @@ sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_news;
 sem_t sem_cpus;
+sem_t sem_mult;
 
 int main(int argc, char **argv) {
 
@@ -184,6 +185,8 @@ void inicializarEstructuras(char * pathConfig){
 		list_add(lista_variables_globales, global_aux);
 		w++;
 	}
+
+	sem_init(&sem_mult, 0, grado_multiprogramacion);
 
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
@@ -306,9 +309,21 @@ void * inicializar_consola(void* args){
 				accion_correcta = 1;
 				printf("Ingrese nuevo grado de multiprogramacion: ");
 				scanf("%d", &nuevo_grado_multiprog);
+
+				int dif_gr_mult = nuevo_grado_multiprog - grado_multiprogramacion;
+
+				if(dif_gr_mult > 0){
+					int i = 0;
+					for(;i < dif_gr_mult;){
+						sem_post(&sem_mult);
+						i++;
+					}
+				}
+
 				pthread_mutex_lock(&mutex_grado_multiprog);
 				grado_multiprogramacion = nuevo_grado_multiprog;
 				pthread_mutex_unlock(&mutex_grado_multiprog);
+
 				string_append(&mensaje, "Ahora el grado de multiprogramacion es ");
 				string_append(&mensaje, string_itoa(nuevo_grado_multiprog));
 				log_console_in_disk(mensaje);
@@ -612,13 +627,16 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
+				sem_post(&sem_mult);
 				sem_wait(&sem_prog);
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
 				int * sock = &temporalP->socket_consola;
+
 				printf("Murio en Listos\n");
 				printf("SOCKET DE CONSOLA: %d\n", * sock);
+
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
 				int pidDelMatado = temporalP->pid;
@@ -626,8 +644,6 @@ void matarProceso(int pidAMatar){
 				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
 				free(msjAConsolaXEstadistica);
 				pthread_mutex_unlock(&mtx_terminados);
-
-
 
 			}
 
@@ -650,11 +666,15 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
+				sem_post(&sem_mult);
+
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
 				int * sock =  &temporalP->socket_consola;
+
 				printf("Murio en Bloqueados\n");
 				printf("SOCKET DE CONSOLA: %d\n",* sock);
+
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
 				int pidDelMatado = temporalP->pid;
@@ -685,13 +705,16 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
-				//TODO
+				sem_post(&sem_mult);
+
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
 				int * sock =  &temporalP->socket_consola;
+
 				printf("Murio en Ejec\n");
 				printf("pid: %d\n", tempPid);
 				printf("SOCKET DE CONSOLA: %d\n", * sock);
+
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
 				int pidDelMatado = temporalP->pid;
@@ -1729,6 +1752,7 @@ void * multiprogramar() {
 	while (1) {
 
 		sem_wait(&sem_news);
+		sem_wait(&sem_mult);
 
 		if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
 			//Se crea programa nuevo
@@ -1826,6 +1850,7 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 	pthread_mutex_unlock(&mtx_listos);
 
 	sem_post(&sem_prog);
+	sem_wait(&sem_mult);
 }
 
 void informoAConsola(int socketConsola, int pid){
@@ -2104,6 +2129,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 			pthread_mutex_unlock(&mtx_listos);
 
 			sem_post(&sem_prog);
+			sem_wait(&sem_mult);
 
 			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
 			char* info_pid = string_new();
@@ -2160,6 +2186,7 @@ void finalizarPrograma(int pidACerrar) {
 			encontre = 1;
 
 			sem_wait(&sem_prog);
+			sem_post(&sem_mult);
 
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
@@ -2200,6 +2227,9 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreBloq = 1;
+
+			sem_post(&sem_mult);
+
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
 		} else {
@@ -2236,6 +2266,9 @@ void finalizarPrograma(int pidACerrar) {
 
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreEjec = 1;
+
+			sem_post(&sem_mult);
+
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
 		} else {
@@ -2264,10 +2297,13 @@ void cerrarConsola(int socketCliente) {
 	while (largoColaListos != 0) {
 		pthread_mutex_lock(&mtx_listos);
 		temporalN = (t_pcb*) queue_pop(cola_listos);
+
 		printf("El skt es %d \n", temporalN->socket_consola);
 		printf("El skt buscado es %d \n", socketCliente);
 		pthread_mutex_unlock(&mtx_listos);
+
 		largoColaListos--;
+
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
@@ -2283,6 +2319,7 @@ void cerrarConsola(int socketCliente) {
 			pthread_mutex_unlock(&mtx_terminados);
 
 			sem_wait(&sem_prog);
+			sem_post(&sem_mult);
 
 		} else {
 			pthread_mutex_lock(&mtx_listos);
@@ -2299,7 +2336,9 @@ void cerrarConsola(int socketCliente) {
 		pthread_mutex_lock(&mtx_bloqueados);
 		temporalN = (t_pcb*) queue_pop(cola_bloqueados);
 		pthread_mutex_unlock(&mtx_bloqueados);
+
 		largoColaBloq--;
+
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
@@ -2307,12 +2346,15 @@ void cerrarConsola(int socketCliente) {
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
 			string_append(&msjAConsolaXEstadistica, "666;");
+
 			int pidDelMatado = temporalN->pid;
 			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
 			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
+
+			sem_post(&sem_mult);
 		} else {
 			pthread_mutex_lock(&mtx_bloqueados);
 			queue_push(cola_bloqueados, temporalN);
@@ -2329,6 +2371,7 @@ void cerrarConsola(int socketCliente) {
 		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 		pthread_mutex_unlock(&mtx_ejecucion);
 		largoColaEjec--;
+
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
 			queue_push(cola_terminados, temporalN);
@@ -2336,12 +2379,16 @@ void cerrarConsola(int socketCliente) {
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
 			string_append(&msjAConsolaXEstadistica, "666;");
+
 			int pidDelMatado = temporalN->pid;
 			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
 			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
+
+			sem_post(&sem_mult);
+
 		} else {
 			pthread_mutex_lock(&mtx_ejecucion);
 			queue_push(cola_ejecucion, temporalN);
@@ -2609,6 +2656,8 @@ void finDePrograma(int * socketCliente) {
 				pcb_a_cambiar->program_counter =
 				pcb_deserializado->program_counter;
 
+				sem_post(&sem_mult);
+
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, pcb_a_cambiar);
 				finalizarProgramaEnMemoria(pcb_deserializado->pid);
@@ -2616,9 +2665,11 @@ void finDePrograma(int * socketCliente) {
 				int * sock =  &pcb_a_cambiar->socket_consola;
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
+
 				int pidDelMatado = pcb_a_cambiar->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
 				enviarMensaje(&(pcb_a_cambiar->socket_consola), msjAConsolaXEstadistica);
+
 				free(msjAConsolaXEstadistica);
 
 				pthread_mutex_unlock(&mtx_terminados);
