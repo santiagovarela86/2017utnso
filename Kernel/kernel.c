@@ -750,7 +750,7 @@ t_estadistica* encontrar_estadistica(int pid){
 
 void listarCola(t_queue * cola){
 
-	t_pcb * temporalP = malloc(sizeof(t_pcb));
+	t_pcb * temporalP;
 	int tempPid;
 	int largoColaListada = queue_size(cola);
 	while(largoColaListada != 0){
@@ -2443,7 +2443,7 @@ void finDeQuantum(int * socketCliente){
 
 	encontrado = 0;
 
-	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+	estruct_cpu* temporalCpu;
 
 	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
 
@@ -2601,7 +2601,7 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 	encontrado = 0;
 
-	estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+	estruct_cpu* temporalCpu;
 
 	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
 
@@ -2685,7 +2685,7 @@ void finDePrograma(int * socketCliente) {
 			int c = 0;
 
 			while (c < queue_size(cola_cpu)) {
-				estruct_cpu* temporalCpu = malloc(sizeof(estruct_cpu));
+				estruct_cpu* temporalCpu;
 
 				pthread_mutex_lock(&mtx_cpu);
 				temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
