@@ -39,6 +39,7 @@ int bloqueo;
 int pagina_a_leer_cache = 0;
 int offset_a_leer_cache = 0;
 int tamanio_a_leer_cache = 0;
+pthread_mutex_t mutex_instrucciones;
 
 
 int main(int argc, char **argv) {
@@ -62,6 +63,8 @@ int main(int argc, char **argv) {
 
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
+
+	pthread_mutex_init(&mutex_instrucciones, NULL);
 
 
 	free(configuracion);
@@ -109,13 +112,13 @@ void* manejo_kernel(void *args) {
 				&& pcb->indiceCodigo->elements_count != pcb->program_counter
 				&& bloqueo == 0) {
 			//puts("va a leer instruccion");
-
+			pthread_mutex_lock(&mutex_instrucciones);
 			instruccion = solicitoInstruccion(pcb);
-
+			pthread_mutex_unlock(&mutex_instrucciones);
 			//	printf("el program es: %d\n", pcb->program_counter);
 			//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
 
-			printf("Instruccion: %s\n", instruccion);
+			//printf("Instruccion: %s\n", instruccion);
 
 			analizadorLinea(instruccion, funciones, kernel);
 
@@ -506,7 +509,7 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 	}
 
 	free(buffer);
-
+	pthread_mutex_unlock(&mutex_instrucciones);
 	return;
 }
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
@@ -553,8 +556,8 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 	buffer = string_substring(buffer, 0, strlen(buffer));
-	puts("por acá todo bien");
-	printf("el valor del return es %d", result);
+	//puts("por acá todo bien");
+	//printf("el valor del return es %d", result);
 	if (result > 0) {
 		char**mensajeDesdeMemoria = string_split(buffer, ";");
 		int valor = atoi(mensajeDesdeMemoria[0]);
@@ -578,7 +581,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	puts("Dereferenciar");
 	puts("");
-	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "513");
 	string_append(&mensajeAMemoria, ";");
@@ -804,6 +807,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	pthread_mutex_unlock(&mutex_instrucciones);
 	pcb->program_counter = instruccion - 1;
 
 	//pcb->program_counter++;
@@ -965,11 +969,11 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		puts("archivo se abrió correctamente");
 		int fdNuevo = atoi(mensajeDeKernel);
 		printf("el file descriptor nuevo es %d \n", fdNuevo);
-		//return ((t_descriptor_archivo) fdNuevo);
+		return ((t_descriptor_archivo) fdNuevo);
 
 	} else {
 		printf("Error al abrir el archivo \n");
-		//return ((t_descriptor_archivo) 0);
+		return ((t_descriptor_archivo) 0);
 	}
 
 	free(mensajeDeKernel);
@@ -987,9 +991,9 @@ void borrar(t_descriptor_archivo descriptor) {
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, string_itoa(descriptor));
 	string_append(&mensajeAKernel, ";");
-	puts("por enviar");
+	//puts("por enviar");
 	enviarMensaje(&sktKernel, mensajeAKernel);
-	puts("envidado");
+	//puts("envidado");
 	//recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 	//int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
