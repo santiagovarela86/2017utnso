@@ -29,7 +29,6 @@
 #include "helperParser.h"
 #include "cpu.h"
 
-
 CPU_Config* configuracion;
 int socketMemoria;
 int sktKernel;
@@ -65,7 +64,6 @@ int main(int argc, char **argv) {
 	pthread_join(thread_id_memoria, NULL);
 
 	pthread_mutex_init(&mutex_instrucciones, NULL);
-
 
 	free(configuracion);
 
@@ -208,22 +206,17 @@ char * solicitoInstruccion(t_pcb* pcb) {
 			((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
 	//printf("el indice de codigo devolvio las coodernadas %d \n", coordenadas_instruccion->start);
 //	printf("el indice de codigo devolvio las coodernadas %d \n", coordenadas_instruccion->offset);
-	char * message = malloc(MAXBUF);
+	char * buffer = malloc(MAXBUF);
 
-	enviarMensaje(&socketMemoria,
-			serializarMensaje(4, 510, pcb->pid, coordenadas_instruccion->start,
-					coordenadas_instruccion->offset));
+	enviarMensaje(&socketMemoria, serializarMensaje(4, 510, pcb->pid, coordenadas_instruccion->start, coordenadas_instruccion->offset));
 
-	int result = recv(socketMemoria, message, MAXBUF, 0);
+	int result = recv(socketMemoria, buffer, MAXBUF, 0);
+
+	printf("Buffer: %s\n", trim(buffer));
 
 	if (result > 0) {
-		//printf("Mensaje antes del Trim: %s\n", message);
-		//message = string_substring(message, 0, strlen(message));
-		//printf("Mensaje después del Trim: %s\n", message);
-		char**mensajeDelKernel = string_split(message, ";");
-		//message = string_substring(message, 0, strlen(message));
-		printf("el valor de la instruccion es %s", mensajeDelKernel[0]);
-		return mensajeDelKernel[0];
+		printf("El valor de la instruccion es: %s\n", trim(buffer));
+		return trim(buffer);
 	} else {
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
@@ -269,14 +262,14 @@ void imprimoInfoPCB(t_pcb * pcb) {
 
 t_pcb * reciboPCB(int * socketKernel) {
 	t_pcb * pcb;
-	char message[MAXBUF];
+	char * buffer = malloc(MAXBUF);
 
-	int result = recv(*socketKernel, message, sizeof(message), 0);
+	int result = recv(*socketKernel, buffer, MAXBUF, 0);
 
 	//Se agrega manejo de error al recibir el PCB
 	if (result > 0) {
 		//INICIO CODIGO DE DESERIALIZACION DEL PCB
-		pcb = deserializar_pcb(message);
+		pcb = deserializar_pcb(buffer);
 		//FIN CODIGO DE DESERIALIZACION DEL PCB
 
 	} else {
@@ -458,8 +451,7 @@ void* manejo_memoria(void * args) {
 
 void asignar(t_puntero direccion, t_valor_variable valor) {
 	puts("Asignar");
-	puts("");
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+
 	char* mensajeAMemoria = string_new();
 	string_append(&mensajeAMemoria, "511");
 	string_append(&mensajeAMemoria, ";");
@@ -481,15 +473,8 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 	free(mensajeAMemoria);
 
 	char * buffer = malloc(MAXBUF);
-	buffer = string_new();
 
-	//int result = recv(socketMemoria, buffer, MAXBUF, 0);
-	//int result = recv(socketMemoria, buffer, string_length(mensajeAMemoria), 0);
-	//buffer = string_substring(buffer, 0, strlen(buffer));
-
-	int len = 0;
-	recv(socketMemoria, &len, sizeof(len), 0);
-	int result = recv(socketMemoria, buffer, len, 0);
+	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
 	if (result > 0) {
 
@@ -512,8 +497,9 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 	pthread_mutex_unlock(&mutex_instrucciones);
 	return;
 }
+
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
-	printf("Obtener Posicion Variable %c \n", identificador_variable);
+	printf("Obtener Posicion Variable %c\n", identificador_variable);
 	puts("");
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	t_variables* entrada_encontrada;
@@ -550,12 +536,11 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 	}
 
 	char * buffer = malloc(MAXBUF);
-	buffer = string_new();
+	//buffer = string_new();
 
 	enviarMensaje(&socketMemoria,serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,entrada_encontrada->offset, entrada_encontrada->size));
 
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
-	buffer = string_substring(buffer, 0, strlen(buffer));
 	//puts("por acá todo bien");
 	//printf("el valor del return es %d", result);
 	if (result > 0) {
@@ -600,8 +585,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
-	int result = recv(socketMemoria, mensajeAMemoria, sizeof(mensajeAMemoria),
-			0);
+	int result = recv(socketMemoria, mensajeAMemoria, MAXBUF, 0);
 
 	if (result > 0) {
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
@@ -641,8 +625,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
 
-	int result = recv(socketMemoria, mensajeAMemoria,
-			string_length(mensajeAMemoria), 0);
+	int result = recv(socketMemoria, mensajeAMemoria, MAXBUF, 0);
 
 	if (result > 0) {
 
@@ -730,7 +713,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 
 	enviarMensaje(&sktKernel, msj);
 
-	int result = recv(sktKernel, msj, sizeof(msj), 0);
+	int result = recv(sktKernel, msj, MAXBUF, 0);
 
 	if (result > 0) {
 
@@ -860,7 +843,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	int valor_esperado = 0;
 
 	while (valor_esperado == 0) {
-		int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+		int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
 		if (result > 0) {
 
@@ -894,7 +877,7 @@ void signal(t_nombre_semaforo identificador_semaforo) {
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
 	free(mensajeAKernel);
 
@@ -963,7 +946,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
 	char* mensajeDeKernel = string_new();
-	int result = recv(sktKernel, mensajeDeKernel, sizeof(mensajeDeKernel), 0);
+	int result = recv(sktKernel, mensajeDeKernel, MAXBUF, 0);
 
 	if (result > 0) {
 		puts("archivo se abrió correctamente");
@@ -1022,9 +1005,9 @@ void cerrar(t_descriptor_archivo descriptor) {
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
-	int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
+	int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
 	free(mensajeAKernel);
 
@@ -1111,7 +1094,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset,
 
 	enviarMensaje(&sktKernel, mensaje);
 
-	int result = recv(sktKernel, mensaje, sizeof(mensaje), 0);
+	int result = recv(sktKernel, mensaje, MAXBUF, 0);
 
 	if (result > 0) {
 		puts("el archivo se leyo correctamente");
