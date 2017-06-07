@@ -6,7 +6,7 @@
 //298 MER A KER - ESPACIO INSUFICIENTE PARA ALMACENAR PROGRAMA
 //299 MEM A OTR	- RESPUESTA DE CONEXION INCORRECTA
 //100 KER A MEM - HANDSHAKE DE KERNEL
-//510 CPU A MEM - SOLICITUD SCRIPT
+//510 CPU A MEM - SOLICITUD INSTRUCCION
 //511 CPU A MEM - ASIGNAR VARIABLE
 //512 CPU A MEM - DEFINIR VARIABLE
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
@@ -317,7 +317,7 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 			printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n",pagina->pid, pagina->nro_pagina, direccion,	ultimoMetadata->size);
 
 			enviarMensaje(&socketKernel, serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina,	direccion, ultimoMetadata->size));
-			printf("%s", serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina,	direccion, ultimoMetadata->size));
+			printf("Envio a Kernel: %s\n", serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina,	direccion, ultimoMetadata->size));
 		}
 	}
 
@@ -394,8 +394,8 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 	handShakeListen(&sock, "500", "202", "299", "CPU");
 
-	char message[MAXBUF];
-	int result = recv(sock, message, sizeof(message), 0);
+	char * message = malloc(MAXBUF);
+	int result = recv(sock, message, MAXBUF, 0);
 
 	while (result > 0){
 
@@ -455,7 +455,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		free(mensajeDesdeCPU);
 
-		result = recv(sock, message, sizeof(message), 0);
+		result = recv(sock, message, MAXBUF, 0);
 	}
 
 	printf("Se desconecto un CPU\n");
@@ -631,25 +631,13 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	grabar_valor(direccion, valor);
 
-	char* mensajeACpu = string_new();
 	if (valorEnCache){
 		printf("Se asigno el valor %d en Cache \n", valor);
-		puts("");
-		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
+		enviarMensaje(&sock, serializarMensaje(2, VARIABLE_EN_CACHE, valor));
 	} else {
 		printf("Se asigno el valor %d en Memoria \n", valor);
-		puts("");
-		string_append(&mensajeACpu, string_itoa(direccion));
+		enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
 	}
-	string_append(&mensajeACpu, ";");
-	string_append(&mensajeACpu, string_itoa(valor));
-	string_append(&mensajeACpu, ";");
-
-	int sendLen = strlen(mensajeACpu);
-	send(sock, &sendLen, sizeof(sendLen), 0);
-	enviarMensaje(&sock, mensajeACpu);
-
-	free(mensajeACpu);
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
@@ -747,16 +735,14 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	//SUPONEMOS QUE EL CODIGO SOLO ESTA EN LA PAGINA 0
 	int paginaALeer = 0;
 
-	char* respuestaACPU = string_new();
-	char* instruccion = string_new();
+	char* instruccion = malloc(MAXBUF);
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset);
-	string_append(&respuestaACPU, instruccion);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	printf("Se envia la instruccion %s\n", instruccion);
 
-	enviarMensaje(socketCliente, respuestaACPU);
-	free(respuestaACPU);
+	enviarMensaje(socketCliente, instruccion);
+
 	free(instruccion);
 }
 
@@ -994,13 +980,13 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 }
 
 char* leer_codigo_programa(int pid, int inicio, int offset){
-	char* codigo_programa = string_new();
+	char* codigo_programa = malloc(MAXBUF);
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
 	return codigo_programa;
 }
 
 char* leer_memoria(int inicio, int offset){
-	char* codigo_programa = string_new();
+	char* codigo_programa = malloc(MAXBUF);
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
 	return codigo_programa;
 }
