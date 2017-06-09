@@ -80,6 +80,7 @@ sem_t sem_prog;
 sem_t sem_news;
 sem_t sem_cpus;
 sem_t sem_mult;
+int valor2;
 
 int main(int argc, char **argv) {
 
@@ -1562,7 +1563,7 @@ bool esNewLine(char* linea){
 char * limpioCodigo(char * codigo){
 		char * curLine = codigo;
 		char * codigoLimpio = string_new();
-
+		int i = 0;
 		   while(curLine)
 		   {
 		      char * nextLine = strchr(curLine, '\n');
@@ -1571,8 +1572,26 @@ char * limpioCodigo(char * codigo){
 		      }
 
 		      if (!esComentario(curLine) && !esNewLine(curLine)){
+		 	 	 if(string_starts_with(curLine, "begin"))
+		 		 	  {
+		 	 		 	 //printf("el valor de la liena es %s", curLine);
+		 		 		  valor2 =i;
+		 		 		  //puts("si entro");
+		 		 		  //printf("con el valor %d \n", valor2);
+		 		 	  }
+		 		 	  else if (string_starts_with(curLine,"function") || string_starts_with(curLine,"end"))
+		 		 	  {
+
+		 		 		  i--;
+		 		 	  }
+		 		 	  else
+		 		 	  {
+		 		 		  i++;
+
+		 		 	  }
 		    	  	 string_append(&codigoLimpio, curLine);
 		    	  	 string_append(&codigoLimpio, "\n");
+
 		      }
 
 		      if (nextLine){
@@ -1580,10 +1599,12 @@ char * limpioCodigo(char * codigo){
 		      }
 
 		      curLine = nextLine ? (nextLine+1) : NULL;
+
 		   }
 
 		   return codigoLimpio;
 	}
+
 
 void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 	t_metadata_program * metadataProgram;
@@ -2076,6 +2097,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 
 		char * mensajeInicioPrograma = string_new();
 		char * codigoLimpio = limpioCodigo(codigo);
+		new_pcb->program_counter = valor2;
 		string_append(&mensajeInicioPrograma, "250");
 		string_append(&mensajeInicioPrograma, ";");
 		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));

@@ -116,6 +116,8 @@ void* manejo_kernel(void *args) {
 
 			pthread_mutex_lock(&mutex_instrucciones);
 			instruccion = solicitoInstruccion(pcb);
+
+
 			analizadorLinea(instruccion, funciones, kernel);
 
 			pcb->quantum--;
@@ -209,7 +211,8 @@ char * solicitoInstruccion(t_pcb* pcb) {
 
 	if (result > 0) {
 		printf("Se procesa la instruccion: %s\n", buffer);
-		return buffer;
+		return trim(buffer);
+
 	} else {
 		printf("Error de comunicacion al recibir Instruccion a la Memoria\n");
 		exit(errno);
@@ -757,16 +760,17 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
-
+	puts("1");
 	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
 	stackFuncion->args = list_create();
 	stackFuncion->variables = list_create();
 	list_add(pcb->indiceStack, stackFuncion);
-
+	puts("1");
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion-1;
+	puts("1");
 	//pcb->program_counter++;
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
 
@@ -801,7 +805,7 @@ void finalizar(void) {
 
 	if(pcb->indiceStack->elements_count > 1)
     {
-		pcb->program_counter = pcb->indiceCodigo->elements_count;
+		pcbHabilitado = 0;
 
     }
 
@@ -891,6 +895,7 @@ t_puntero reservar(t_valor_variable espacio) {
 
 	//printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer = malloc(MAXBUF);
+
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 	//printf("Buffer que viene del Kernel: %s\n", buffer);
 
@@ -1247,7 +1252,50 @@ char* serializar_pcb(t_pcb* pcb) {
 }
 int esArgumentoDeFuncion(t_nombre_variable identificador_variable)
 {
-	return isdigit(identificador_variable);
+	switch((char)identificador_variable){
+	 		case '0':
+	 			;
+	  		return 1;
+	 			break;
+	 		case '1':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '2':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '3':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '4':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '5':
+	 			return 1;
+	 			break;
+	 		case '6':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '7':
+	    		;
+	 			return 1;
+	 			break;
+	 		case '8':
+	 			;
+	 			return 1;
+	 			break;
+	 		case '9':
+	 			;
+	 			return 1;
+	 			break;
+	 		default:
+	 			return 0;
+
+	 		}
 }
 
 t_variables* deserializar_entrada_stack(char** mensajeRecibido) {
