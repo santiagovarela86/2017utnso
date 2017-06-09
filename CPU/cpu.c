@@ -755,6 +755,14 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	puts("Llamar Sin Retorno");
 	puts("");
 
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
+
+	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
+	stackFuncion->args = list_create();
+	stackFuncion->variables = list_create();
+	list_add(pcb->indiceStack, stackFuncion);
+
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion-1;
 	//pcb->program_counter++;
