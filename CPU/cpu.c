@@ -786,10 +786,11 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 void finalizar(void) {
 
 	if(pcb->indiceStack->elements_count > 1)
-    {
-		pcbHabilitado = 0;
-
-    }
+	{
+		pcb->indiceCodigo->elements_count = pcb->program_counter;
+		pcbHabilitado = false;
+		list_remove(pcb->indiceStack, pcb->indiceStack->elements_count - 1);
+	}
 
 	puts("FIN DEL PROGRAMA");
 	puts("");

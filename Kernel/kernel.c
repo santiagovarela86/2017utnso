@@ -1584,11 +1584,7 @@ char * limpioCodigo(char * codigo){
 
 		 		 		  i--;
 		 		 	  }
-		 		 	  else
-		 		 	  {
-		 		 		  i++;
 
-		 		 	  }
 		    	  	 string_append(&codigoLimpio, curLine);
 		    	  	 string_append(&codigoLimpio, "\n");
 
@@ -1599,7 +1595,7 @@ char * limpioCodigo(char * codigo){
 		      }
 
 		      curLine = nextLine ? (nextLine+1) : NULL;
-
+		      i++;
 		   }
 
 		   return codigoLimpio;
