@@ -1581,7 +1581,6 @@ char * limpioCodigo(char * codigo){
 		 		 	  }
 		 		 	  else if (string_starts_with(curLine,"function") || string_starts_with(curLine,"end"))
 		 		 	  {
-
 		 		 		  i--;
 		 		 	  }
 
