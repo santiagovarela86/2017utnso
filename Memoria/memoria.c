@@ -356,7 +356,7 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
 		printf("Error al crear Pagina de Heap\n");
 		enviarMensaje(&socketKernel, serializarMensaje(2, 617, pid));
-		printf("Se notifica al Kernel la finalizacion del proceso %d\n", pid);
+		//printf("Se notifica al Kernel la finalizacion del proceso %d\n", pid);
 		//finalizar_programa(pid);
 		//printf("Se finaliza el programa %d en memoria\n", pid);
 	}

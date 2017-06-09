@@ -41,6 +41,7 @@ int pagina_a_leer_cache = 0;
 int offset_a_leer_cache = 0;
 int tamanio_a_leer_cache = 0;
 pthread_mutex_t mutex_instrucciones;
+_Bool pcbHabilitado = true;
 
 
 int main(int argc, char **argv) {
@@ -110,28 +111,17 @@ void* manejo_kernel(void *args) {
 
 		while (pcb->quantum > 0
 				&& pcb->indiceCodigo->elements_count != pcb->program_counter
-				&& bloqueo == 0) {
-			//puts("va a leer instruccion");
+					&& bloqueo == 0
+						&& pcbHabilitado == true) {
+
 			pthread_mutex_lock(&mutex_instrucciones);
 			instruccion = solicitoInstruccion(pcb);
-			pthread_mutex_unlock(&mutex_instrucciones);
-			//	printf("el program es: %d\n", pcb->program_counter);
-			//	printf("la cantidad de elem es: %d\n",pcb->indiceCodigo->elements_count );
-
-			//printf("Instruccion: %s\n", instruccion);
-
 			analizadorLinea(instruccion, funciones, kernel);
 
-
 			pcb->quantum--;
-			//	if (pcb->quantum == 0)
-			//	{
-			//		puts("corta por quatum");
-			//	}
-		//	puts("tiene que sumar 1 al program counter");
 			pcb->program_counter++;
-			//printf("ahora el program counter es: %d\n", pcb->program_counter);
 
+			pthread_mutex_unlock(&mutex_instrucciones);
 		}
 
 		if (bloqueo == 1) {
@@ -166,8 +156,7 @@ void* manejo_kernel(void *args) {
 					exit(errno);
 				}
 			} else {
-				printf(
-						"Error de comunicacion de fin de programa con el Kernel\n");
+				printf("Error de comunicacion de fin de programa con el Kernel\n");
 				exit(errno);
 			}
 
@@ -189,6 +178,10 @@ void* manejo_kernel(void *args) {
 			free(buffer);
 		}
 
+		//CUANDO CORTA POR ERROR DE HEAP, SE DESHABILITA EL PCB, EL WHILE QUE RECIBE INSTRUCCIONES SE CORTA
+		//Y NO CAE A NINGUNA DE LAS OPCIONES ANTERIORES, SIMPLEMENTE SE DEJA DE EJECUTAR EL PROGRAMA
+		//Y SE QUEDA A LA ESPERA DEL PROXIMO PCB
+		pcbHabilitado = true;
 	}
 
 	pause();
@@ -218,7 +211,7 @@ char * solicitoInstruccion(t_pcb* pcb) {
 		printf("Se procesa la instruccion: %s\n", buffer);
 		return buffer;
 	} else {
-		printf("Error al solicitar Instruccion a la Memoria\n");
+		printf("Error de comunicacion al recibir Instruccion a la Memoria\n");
 		exit(errno);
 	}
 }
@@ -273,7 +266,7 @@ t_pcb * reciboPCB(int * socketKernel) {
 		//FIN CODIGO DE DESERIALIZACION DEL PCB
 
 	} else {
-		printf("Error al recibir PCB\n");
+		printf("Error de comunicacion al recibir PCB\n");
 		exit(errno);
 	}
 
@@ -451,115 +444,108 @@ void* manejo_memoria(void * args) {
 }
 
 void asignar(t_puntero direccion, t_valor_variable valor) {
-	puts("Asignar");
+	if (pcbHabilitado == true){
+		puts("Asignar");
 
-	char* mensajeAMemoria = string_new();
-	string_append(&mensajeAMemoria, "511");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(direccion));
-	string_append(&mensajeAMemoria, ";");
-	if (direccion == VARIABLE_EN_CACHE) {
-		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
+		char* mensajeAMemoria = string_new();
+		string_append(&mensajeAMemoria, "511");
 		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
+		string_append(&mensajeAMemoria, string_itoa(direccion));
 		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
+		if (direccion == VARIABLE_EN_CACHE) {
+			string_append(&mensajeAMemoria, string_itoa(pcb->pid));
+			string_append(&mensajeAMemoria, ";");
+			string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
+			string_append(&mensajeAMemoria, ";");
+			string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
+			string_append(&mensajeAMemoria, ";");
+		}
+		string_append(&mensajeAMemoria, string_itoa(valor));
 		string_append(&mensajeAMemoria, ";");
+
+		enviarMensaje(&socketMemoria, mensajeAMemoria);
+
+		free(mensajeAMemoria);
+
+		char * buffer = malloc(MAXBUF);
+
+		int result = recv(socketMemoria, buffer, MAXBUF, 0);
+
+		if (result > 0) {
+
+			char**mensajeDesdeMemoria = string_split(buffer, ";");
+			int direccion = atoi(mensajeDesdeMemoria[0]);
+			valor = atoi(mensajeDesdeMemoria[1]);
+
+			if (direccion != VARIABLE_EN_CACHE)
+				printf("Asigne el valor %d en la direccion %d \n", valor,
+						direccion);
+			else
+				printf(
+						"Asigne el valor %d en la pagina %d offset %d de la Cache \n",
+						valor, pagina_a_leer_cache, offset_a_leer_cache);
+
+			free(mensajeDesdeMemoria);
+		}
+
+		free(buffer);
+	}else{
+		printf("Instruccion Asignar cancelada debido a finalizacion del programa\n");
 	}
-	string_append(&mensajeAMemoria, string_itoa(valor));
-	string_append(&mensajeAMemoria, ";");
-
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
-
-	free(mensajeAMemoria);
-
-	char * buffer = malloc(MAXBUF);
-
-	int result = recv(socketMemoria, buffer, MAXBUF, 0);
-
-	if (result > 0) {
-
-		char**mensajeDesdeMemoria = string_split(buffer, ";");
-		int direccion = atoi(mensajeDesdeMemoria[0]);
-		valor = atoi(mensajeDesdeMemoria[1]);
-
-		if (direccion != VARIABLE_EN_CACHE)
-			printf("Asigne el valor %d en la direccion %d \n", valor,
-					direccion);
-		else
-			printf(
-					"Asigne el valor %d en la pagina %d offset %d de la Cache \n",
-					valor, pagina_a_leer_cache, offset_a_leer_cache);
-
-		free(mensajeDesdeMemoria);
-	}
-
-	free(buffer);
-	pthread_mutex_unlock(&mutex_instrucciones);
-	return;
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
-	printf("Obtener Posicion Variable %c\n", identificador_variable);
-	puts("");
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
-	t_variables* entrada_encontrada;
+	if (pcbHabilitado == true){
+		printf("Obtener Posicion Variable %c\n", identificador_variable);
+		puts("");
 
-	if (esArgumentoDeFuncion(identificador_variable)) {
+		t_variables* entrada_encontrada;
 
-		int encontrar_var(t_variables* var) {
+		if (esArgumentoDeFuncion(identificador_variable)) {
 
-			return (var->nombre_variable == (char) identificador_variable);
+			int encontrar_var(t_variables* var) {
+
+				return (var->nombre_variable == (char) identificador_variable);
+			}
+
+			t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
+			entrada_encontrada = list_find(StackDeContexto->args,(void*) encontrar_var);
 		}
 
-		t_Stack* StackDeContexto = list_get(pcb->indiceStack,
-				(pcb->indiceStack->elements_count - 1));
-		entrada_encontrada = list_find(StackDeContexto->args,
-				(void*) encontrar_var);
-		//printf(" offset del argumento:  %d \n",entrada_encontrada->offset);
-		//printf(" pagina del agumento %d \n",entrada_encontrada->pagina);
-	//	printf(" tamaño del argumento %d \n",entrada_encontrada->size);
-//		printf(" nombre del argumento: %c \n",entrada_encontrada->nombre_variable);
+		else {
+			int encontrar_var(t_variables* var) {
+				return (var->nombre_variable == (char) identificador_variable);
+			}
 
-
-	}
-
-	else {
-
-		int encontrar_var(t_variables* var) {
-
-			return (var->nombre_variable == (char) identificador_variable);
+			t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
+			entrada_encontrada = list_find(StackDeContexto->variables, (void*) encontrar_var);
 		}
 
-		t_Stack* StackDeContexto = list_get(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
-		entrada_encontrada = list_find(StackDeContexto->variables,
-				(void*) encontrar_var);
-	}
+		char * buffer = malloc(MAXBUF);
 
-	char * buffer = malloc(MAXBUF);
-	//buffer = string_new();
+		enviarMensaje(&socketMemoria,
+				serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,	entrada_encontrada->offset, entrada_encontrada->size));
 
-	enviarMensaje(&socketMemoria,serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,entrada_encontrada->offset, entrada_encontrada->size));
+		int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
-	int result = recv(socketMemoria, buffer, MAXBUF, 0);
-	//puts("por acá todo bien");
-	//printf("el valor del return es %d", result);
-	if (result > 0) {
-		char**mensajeDesdeMemoria = string_split(buffer, ";");
-		int valor = atoi(mensajeDesdeMemoria[0]);
+		if (result > 0) {
+			char**mensajeDesdeMemoria = string_split(buffer, ";");
+			int valor = atoi(mensajeDesdeMemoria[0]);
 
-		if (valor == VARIABLE_EN_CACHE) {
-			pagina_a_leer_cache = entrada_encontrada->pagina;
-			offset_a_leer_cache = entrada_encontrada->offset;
-			tamanio_a_leer_cache = entrada_encontrada->size;
+			if (valor == VARIABLE_EN_CACHE) {
+				pagina_a_leer_cache = entrada_encontrada->pagina;
+				offset_a_leer_cache = entrada_encontrada->offset;
+				tamanio_a_leer_cache = entrada_encontrada->size;
+			}
+
+			return valor;
+
+		} else {
+			printf("Error de comunicacion entre Memoria y CPU al Obtener Posicion Variable\n");
+			exit(errno);
 		}
-
-		//printf("Se obtuvo el valor %d \n", valor);
-		//printf("el valor de retorno del obtener es %d \n", valor);
-		return valor;
-
-
-	} else {
+	}else{
+		printf("Instruccion Obtener Posicion Variable cancelada debido a finalizacion del programa\n");
 		return NULL;
 	}
 }
@@ -591,14 +577,13 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	if (result > 0) {
 		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
 
-		if (direccion_variable != VARIABLE_EN_CACHE)
-			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0],
-					direccion_variable);
-		else
-			printf(
-					"Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n",
+		if (direccion_variable != VARIABLE_EN_CACHE){
+			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
+			printf("\n");
+		}else
+			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n",
 					mensajeDesdeCPU[0], pagina_a_leer_cache,
-					offset_a_leer_cache);
+						offset_a_leer_cache);
 
 		int valor = atoi(mensajeDesdeCPU[0]);
 
@@ -730,8 +715,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 
 }
 
-t_valor_variable asignarValorCompartida(t_nombre_compartida variable,
-		t_valor_variable valor) {
+t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {
 	puts("Asignar Valor Compartida");
 	puts("");
 
@@ -900,11 +884,17 @@ t_puntero reservar(t_valor_variable espacio) {
 
 	if (result > 0) {
 		char ** respuesta = string_split(buffer, ";");
-		printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
-		return atoi(respuesta[0]);
+		if (strcmp(respuesta[0], "606") == 0){
+			printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
+					return atoi(respuesta[0]);
+		}else{
+			printf("Error reservando Memoria de Heap, espacio insuficiente\n");
+			printf("El programa fue finalizado en Kernel\n");
+			//FORMA CABEZA DE TERMINARLO
+			pcbHabilitado = false;
+		}
 	} else {
-		printf("Error reservando Memoria de Heap\n");
-		//HAY QUE BUSCAR LA FORMA DE QUE SIGA EJECUTANDO OTRO PROCESO LUEGO DE TERMINAR DE ESTA MANERA
+		printf("Error de comunicacion reservando Memoria de Heap\n");
 		exit(errno);
 	}
 }
@@ -923,8 +913,10 @@ void liberar(t_puntero puntero) {
 		if (strcmp(respuestaDeKernel[0], "710") == 0){
 			printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
 		}else{
-			printf("Error de protocolos liberando Memoria de Heap\n");
-			exit(errno);
+			printf("Error liberando Memoria de Heap, memoria inexistente\n");
+			printf("El programa fue finalizado en Kernel\n");
+			//FORMA CABEZA DE TERMINARLO
+			pcbHabilitado = false;
 		}
 	} else {
 		printf("Error liberando Memoria de Heap\n");
