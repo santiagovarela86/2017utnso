@@ -501,6 +501,10 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 		t_variables* entrada_encontrada;
 
+		//ESTO PINCHA SI LA VARIABLE NO FUE DECLARADA, HAY QUE VER LA FORMA DE
+		//TERMINAR EL PROCESO, EL CPU NO DEBE MORIR, EL PROGRAMA SI
+		//Y DEBE TERMINARSE EL FLUJO DE EJECUCION SIN EJECUTAR NINGUNA INSTRUCCION DE MAS
+
 		if (esArgumentoDeFuncion(identificador_variable)) {
 
 			int encontrar_var(t_variables* var) {

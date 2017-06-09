@@ -2041,7 +2041,8 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
 	//Verifico que exista una pagina en esa direccion y para ese proceso
 	if(list_any_satisfy(lista_paginas_heap, coincideHeapPIDyDireccion)){
-
+		//FALSO OK
+		enviarMensaje(socketCliente, serializarMensaje(1, 710));
 	}else{
 		printf("Se intento eliminar memoria en heap no reservada previamente\n");
 		finalizarPrograma(pcb->pid);
