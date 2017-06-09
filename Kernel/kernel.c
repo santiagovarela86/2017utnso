@@ -1901,7 +1901,7 @@ void finalizarProgramaEnMemoria(int pid){
 }
 
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
-	printf("PID: %d, Bytes; %d\n", pcb->pid, bytes);
+	//printf("PID: %d, Bytes; %d\n", pcb->pid, bytes);
 
 	_Bool coincideHeapPID(heapElement * elem){
 		//printf("Test:Pid: %d, Pid %d\n", elem->pid, pcb->pid);

@@ -885,8 +885,8 @@ t_puntero reservar(t_valor_variable espacio) {
 	if (result > 0) {
 		char ** respuesta = string_split(buffer, ";");
 		if (strcmp(respuesta[0], "606") == 0){
-			printf("Direccion Puntero: %d\n", atoi(respuesta[0]));
-					return atoi(respuesta[0]);
+			printf("Direccion Puntero: %d\n", atoi(respuesta[1]));
+					return atoi(respuesta[1]);
 		}else{
 			printf("Error reservando Memoria de Heap, espacio insuficiente\n");
 			printf("El programa fue finalizado en Kernel\n");
