@@ -343,15 +343,13 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
-		char * respuestaAKernel = serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree);
-		enviarMensaje(&socketKernel, respuestaAKernel);
+		enviarMensaje(&socketKernel, serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree));
 		//printf("Envie mensaje: %s\n", respuestaAKernel);
 
 		contadorCabeza++;
 		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
 				contadorCabeza, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
-
-		free(respuestaAKernel);
+		printf("\n");
 	} else {
 		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
 		printf("Error al crear Pagina de Heap\n");
@@ -633,9 +631,11 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 	if (valorEnCache){
 		printf("Se asigno el valor %d en Cache \n", valor);
+		printf("\n");
 		enviarMensaje(&sock, serializarMensaje(2, VARIABLE_EN_CACHE, valor));
 	} else {
 		printf("Se asigno el valor %d en Memoria \n", valor);
+		printf("\n");
 		enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
 	}
 }
@@ -1276,6 +1276,9 @@ void subconsola_contenido_memoria(){
 void grabar_valor(int direccion, int valor){
 
 	char* valor_string = string_new();
+
+	//ACA SI EL VALOR TIENE 5 DIGITOS (COMO ALGUNAS DIRECCIONES DE HEAP)
+	//NO SE GUARDAN...
 
 	if(valor > 999){
 		int milesima = valor / 1000;

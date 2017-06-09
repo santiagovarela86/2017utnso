@@ -448,27 +448,14 @@ void* manejo_memoria(void * args) {
 
 void asignar(t_puntero direccion, t_valor_variable valor) {
 	if (pcbHabilitado == true){
-		puts("Asignar");
+		printf("Asignar Valor %d en la Direccion %d\n", valor, direccion);
+		printf("\n");
 
-		char* mensajeAMemoria = string_new();
-		string_append(&mensajeAMemoria, "511");
-		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(direccion));
-		string_append(&mensajeAMemoria, ";");
 		if (direccion == VARIABLE_EN_CACHE) {
-			string_append(&mensajeAMemoria, string_itoa(pcb->pid));
-			string_append(&mensajeAMemoria, ";");
-			string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
-			string_append(&mensajeAMemoria, ";");
-			string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
-			string_append(&mensajeAMemoria, ";");
+			enviarMensaje(&socketMemoria, serializarMensaje(6, 511, direccion, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, valor));
+		} else {
+			enviarMensaje(&socketMemoria, serializarMensaje(3, 511, direccion, valor));
 		}
-		string_append(&mensajeAMemoria, string_itoa(valor));
-		string_append(&mensajeAMemoria, ";");
-
-		enviarMensaje(&socketMemoria, mensajeAMemoria);
-
-		free(mensajeAMemoria);
 
 		char * buffer = malloc(MAXBUF);
 
@@ -480,15 +467,18 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 			int direccion = atoi(mensajeDesdeMemoria[0]);
 			valor = atoi(mensajeDesdeMemoria[1]);
 
-			if (direccion != VARIABLE_EN_CACHE)
-				printf("Asigne el valor %d en la direccion %d \n", valor,
-						direccion);
-			else
-				printf(
-						"Asigne el valor %d en la pagina %d offset %d de la Cache \n",
-						valor, pagina_a_leer_cache, offset_a_leer_cache);
+			if (direccion != VARIABLE_EN_CACHE){
+				printf("Asigne el valor %d en la direccion %d\n", valor, direccion);
+				printf("\n");
+			}else{
+				printf("Asigne el valor %d en la pagina %d offset %d de la Cache\n", valor, pagina_a_leer_cache, offset_a_leer_cache);
+				printf("\n");
+			}
 
 			free(mensajeDesdeMemoria);
+		}else{
+			printf("Error de comunicacion con Memoria al Asignar Valor\n");
+			exit(errno);
 		}
 
 		free(buffer);
@@ -558,45 +548,37 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
-	puts("Dereferenciar");
-	puts("");
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
-	char* mensajeAMemoria = string_new();
-	string_append(&mensajeAMemoria, "513");
-	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(direccion_variable));
-	string_append(&mensajeAMemoria, ";");
+	printf("Dereferenciar Direccion %d\n", direccion_variable);
+	printf("\n");
+
 	if (direccion_variable == VARIABLE_EN_CACHE) {
-		string_append(&mensajeAMemoria, string_itoa(pcb->pid));
-		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(pagina_a_leer_cache));
-		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(offset_a_leer_cache));
-		string_append(&mensajeAMemoria, ";");
-		string_append(&mensajeAMemoria, string_itoa(tamanio_a_leer_cache));
-		string_append(&mensajeAMemoria, ";");
+		enviarMensaje(&socketMemoria, serializarMensaje(6, 513, direccion_variable, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, tamanio_a_leer_cache));
+	}else{
+		enviarMensaje(&socketMemoria, serializarMensaje(2, 513, direccion_variable));
 	}
 
-	enviarMensaje(&socketMemoria, mensajeAMemoria);
+	char * buffer = malloc(MAXBUF);
 
-	int result = recv(socketMemoria, mensajeAMemoria, MAXBUF, 0);
+	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
 	if (result > 0) {
-		char**mensajeDesdeCPU = string_split(mensajeAMemoria, ";");
+		char ** respuestaDeMemoria = string_split(buffer, ";");
 
 		if (direccion_variable != VARIABLE_EN_CACHE){
-			printf("Lei el valor %s en la posicion %d\n", mensajeDesdeCPU[0], direccion_variable);
+			printf("Lei el valor %s en la posicion %d\n", respuestaDeMemoria[0], direccion_variable);
 			printf("\n");
-		}else
-			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache \n",
-					mensajeDesdeCPU[0], pagina_a_leer_cache,
-						offset_a_leer_cache);
+		}else{
+			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache\n", respuestaDeMemoria[0], pagina_a_leer_cache, offset_a_leer_cache);
+			printf("\n");
+		}
+		int valor = atoi(respuestaDeMemoria[0]);
 
-		int valor = atoi(mensajeDesdeCPU[0]);
-
-		free(mensajeAMemoria);
+		free(buffer);
 
 		return valor;
+	}else{
+		printf("Error de comunicación con Memoria al Dereferenciar\n");
+		exit(errno);
 	}
 
 	return 0;
@@ -903,7 +885,8 @@ t_puntero reservar(t_valor_variable espacio) {
 		char ** respuesta = string_split(buffer, ";");
 		if (strcmp(respuesta[0], "606") == 0){
 			printf("Direccion Puntero: %d\n", atoi(respuesta[1]));
-					return atoi(respuesta[1]);
+			printf("\n");
+			return atoi(respuesta[1]);
 		}else{
 			printf("Error reservando Memoria de Heap, espacio insuficiente\n");
 			printf("El programa fue finalizado en Kernel\n");
@@ -917,26 +900,28 @@ t_puntero reservar(t_valor_variable espacio) {
 }
 
 void liberar(t_puntero puntero) {
-	puts("Liberar");
-	puts("");
+	printf("Liberar Direccion %d\n", puntero);
+	printf("\n");
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 700, pcb->pid, puntero));
 
-	char * buffer = string_new();
+	char * buffer = malloc(MAXBUF);
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
 	if (result > 0) {
 		char ** respuestaDeKernel = string_split(buffer, ";");
 		if (strcmp(respuestaDeKernel[0], "710") == 0){
 			printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
+			printf("\n");
 		}else{
 			printf("Error liberando Memoria de Heap, memoria inexistente\n");
 			printf("El programa fue finalizado en Kernel\n");
+			printf("\n");
 			//FORMA CABEZA DE TERMINARLO
 			pcbHabilitado = false;
 		}
 	} else {
-		printf("Error liberando Memoria de Heap\n");
+		printf("Error de comunicacion con el Kernel liberando Memoria de Heap\n");
 		exit(errno);
 	}
 }

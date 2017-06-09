@@ -2013,33 +2013,27 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 
 	enviarMensaje(&skt_memoria, serializarMensaje(4, 605, pcb->pid, paginaActual, bytes));
 
-	//printf("pasa el envio de mensaje a memoria\n");
-
 	char * buffer = malloc(MAXBUF);
 	int result = recv(skt_memoria, buffer, MAXBUF, 0);
-	//buffer = string_substring(buffer, 0, strlen(buffer));
 
 	if (result > 0) {
-		char ** respuesta = string_split(buffer, ";");
+		char ** respuestaDeMemoria = string_split(buffer, ";");
 
-		//printf("pasa y recibe de memoria\n");
-
-		if (strcmp(respuesta[0], "605") == 0) {
+		if (strcmp(respuestaDeMemoria[0], "605") == 0) {
 			heapElement * heapElem = malloc(sizeof(heapElement));
-			heapElem->pid = atoi(respuesta[1]);
-			heapElem->nro_pagina = atoi(respuesta[2]);
-			heapElem->tamanio_disponible = atoi(respuesta[3]);
-			int direccion = atoi(respuesta[4]);
+			heapElem->pid = atoi(respuestaDeMemoria[1]);
+			heapElem->nro_pagina = atoi(respuestaDeMemoria[2]);
+			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[3]);
+			heapElem->direccion = atoi(respuestaDeMemoria[4]);
 
 			list_add(lista_paginas_heap, heapElem);
 
 			pcb->cantidadPaginas++;
 
-			enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
-			//printf("pasa mandar el mensaje al cpu\n");
+			enviarMensaje(socketCPU, serializarMensaje(2, 606, heapElem->direccion));
 		} else {
 			//SI HAY UN ERROR DE RESERVA DE HEAP EL PROCESO DEBE FINALIZAR
-			if (strcmp(respuesta[0], "617") == 0){
+			if (strcmp(respuestaDeMemoria[0], "617") == 0){
 				printf("No hay espacio suficiente para su reserva de heap\n");
 				finalizarPrograma(pcb->pid);
 				//SE NOTIFICA AL CPU
@@ -2056,7 +2050,15 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 }
 
 void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
+
+	printf("Intento eliminar Pagina Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
+	printf("\n");
+
 	_Bool coincideHeapPIDyDireccion(heapElement * elem){
+		printf("PID PAGINA: %d, PID BUSCADO: %d, DIRECCION PAGINA: %d, DIRECCION PAGINA BUSCADA: %d\n",
+				elem->pid, pcb->pid, elem->direccion, direccion);
+		printf("\n");
+
 		return elem->pid == pcb->pid && direccion == elem->direccion;
 	}
 
