@@ -12,6 +12,7 @@
 //803 CPU A KER - ABRIR ARCHIVO
 //600 CPU A KER - RESERVAR MEMORIA HEAP
 //700 CPU A KER - ELIMINAR MEMORIA HEAP
+//710 KER A CPU - SE ELIMINA MEMORIA OK
 //615 CPU A KER - NO SE PUEDEN ASIGNAR MAS PAGINAS A UN PROCESO
 //777 CPU A KER - SUMAR UNA PAGINA AL PCB
 
@@ -918,8 +919,13 @@ void liberar(t_puntero puntero) {
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n",
-				puntero);
+		char ** respuestaDeKernel = string_split(buffer, ";");
+		if (strcmp(respuestaDeKernel[0], "710") == 0){
+			printf("Se eliminó la reserva de memoria ubicada en %d correctamente\n", puntero);
+		}else{
+			printf("Error de protocolos liberando Memoria de Heap\n");
+			exit(errno);
+		}
 	} else {
 		printf("Error liberando Memoria de Heap\n");
 		exit(errno);
