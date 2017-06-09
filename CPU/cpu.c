@@ -24,6 +24,7 @@
 #include <commons/config.h>
 #include <commons/string.h>
 #include <pthread.h>
+#include <ctype.h>
 #include "configuracion.h"
 #include "helperFunctions.h"
 #include "helperParser.h"
@@ -212,11 +213,9 @@ char * solicitoInstruccion(t_pcb* pcb) {
 
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
-	printf("Buffer: %s\n", trim(buffer));
-
 	if (result > 0) {
-		printf("El valor de la instruccion es: %s\n", trim(buffer));
-		return trim(buffer);
+		printf("Se procesa la instruccion: %s\n", buffer);
+		return buffer;
 	} else {
 		printf("Error al solicitar Instruccion a la Memoria\n");
 		exit(errno);
@@ -890,14 +889,13 @@ t_puntero reservar(t_valor_variable espacio) {
 	puts("");
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 600, pcb->pid, espacio));
-	printf("Envie a Kernel: %s\n",
-			serializarMensaje(3, 600, pcb->pid, espacio));
+	//printf("Envie a Kernel: %s\n",
+		//	serializarMensaje(3, 600, pcb->pid, espacio));
 
-	printf("Espero a que el Kernel me mande la direccion\n");
+	//printf("Espero a que el Kernel me mande la direccion\n");
 	char * buffer = malloc(MAXBUF);
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
-	buffer = string_substring(buffer, 0, strlen(buffer));
-	printf("Buffer que viene del Kernel: %s\n", buffer);
+	//printf("Buffer que viene del Kernel: %s\n", buffer);
 
 	if (result > 0) {
 		char ** respuesta = string_split(buffer, ";");
@@ -916,8 +914,6 @@ void liberar(t_puntero puntero) {
 
 	enviarMensaje(&sktKernel, serializarMensaje(3, 700, pcb->pid, puntero));
 
-	printf(
-			"Espero a que el Kernel me mande la confirmacion de eliminacion de memoria reservada\n");
 	char * buffer = string_new();
 	int result = recv(sktKernel, buffer, MAXBUF, 0);
 
@@ -1241,50 +1237,7 @@ char* serializar_pcb(t_pcb* pcb) {
 }
 int esArgumentoDeFuncion(t_nombre_variable identificador_variable)
 {
-	switch((char)identificador_variable){
-		case '0':
-			;
-			return 1;
-			break;
-		case '1':
-			;
-			return 1;
-			break;
-		case '2':
-			;
-			return 1;
-			break;
-		case '3':
-			;
-			return 1;
-			break;
-		case '4':
-			;
-			return 1;
-			break;
-		case '5':
-			return 1;
-			break;
-		case '6':
-			;
-			return 1;
-			break;
-		case '7':
-			;
-			return 1;
-			break;
-		case '8':
-			;
-			return 1;
-			break;
-		case '9':
-			;
-			return 1;
-			break;
-		default:
-			return 0;
-
-		}
+	return isdigit(identificador_variable);
 }
 
 t_variables* deserializar_entrada_stack(char** mensajeRecibido) {
