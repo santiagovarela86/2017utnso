@@ -80,7 +80,7 @@ sem_t sem_prog;
 sem_t sem_news;
 sem_t sem_cpus;
 sem_t sem_mult;
-int valor2;
+int programCounter;
 
 int main(int argc, char **argv) {
 
@@ -1575,9 +1575,9 @@ char * limpioCodigo(char * codigo){
 		 	 	 if(string_starts_with(curLine, "begin"))
 		 		 	  {
 		 	 		 	 //printf("el valor de la liena es %s", curLine);
-		 		 		  valor2 =i;
+		 		 		  programCounter =i;
 		 		 		  //puts("si entro");
-		 		 		  //printf("con el valor %d \n", valor2);
+		 		 		  //printf("con el valor %d \n", programCounter);
 		 		 	  }
 		    	  	 string_append(&codigoLimpio, curLine);
 		    	  	 string_append(&codigoLimpio, "\n");
@@ -2090,7 +2090,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 
 		char * mensajeInicioPrograma = string_new();
 		char * codigoLimpio = limpioCodigo(codigo);
-		new_pcb->program_counter = valor2;
+		new_pcb->program_counter = programCounter;
 		string_append(&mensajeInicioPrograma, "250");
 		string_append(&mensajeInicioPrograma, ";");
 		string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));
