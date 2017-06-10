@@ -1579,13 +1579,9 @@ char * limpioCodigo(char * codigo){
 		 		 		  //puts("si entro");
 		 		 		  //printf("con el valor %d \n", valor2);
 		 		 	  }
-		 		 	  else if (string_starts_with(curLine,"function") || string_starts_with(curLine,"end"))
-		 		 	  {
-		 		 		  i--;
-		 		 	  }
-
 		    	  	 string_append(&codigoLimpio, curLine);
 		    	  	 string_append(&codigoLimpio, "\n");
+		    	  	 i++;
 
 		      }
 
@@ -1594,7 +1590,7 @@ char * limpioCodigo(char * codigo){
 		      }
 
 		      curLine = nextLine ? (nextLine+1) : NULL;
-		      i++;
+
 		   }
 
 		   return codigoLimpio;
