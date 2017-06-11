@@ -30,7 +30,7 @@
 #include <signal.h>
 #define BST (-3)
 
-   time_t rawtime;
+
    struct tm *info;
 
 
@@ -199,6 +199,8 @@ void limpiar_mensajes(){
 
 void * escuchar_Kernel(void * args){
 	char buffer[MAXBUF];
+	char bufferHoraFin[26];
+	char bufferHoraCom[26];
 
 	int * socketKernel = (int *) args;
 
@@ -212,17 +214,25 @@ void * escuchar_Kernel(void * args){
 			if(atoi(respuesta_kernel[0]) == 103){
 				/*103 es creacion*/
 				programa* program = malloc(sizeof(program));
+				  time_t comienzo = malloc(sizeof(time_t));
 
-				  time(&rawtime);
+				  time(&comienzo);
 				   /* Get GMT time */
-				   info = gmtime(&rawtime );
+
 
 				program->pid = atoi(respuesta_kernel[1]);
-				program->inicio =gmtime(&rawtime );
+				program->inicio = time(&comienzo);
 				program->fin = 0;
 				program->duracion = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
+
+				struct tm* tm_info;
+				tm_info = localtime(&comienzo);
+
+				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+				printf( "Comienzo: %s\n", bufferHoraCom );
+
 
 				queue_push(cola_programas, program);
 
@@ -244,10 +254,16 @@ void * escuchar_Kernel(void * args){
 								//pthread_mutex_lock(&mtx_bloqueados);
 								p = queue_pop(cola_programas);
 								//pthread_mutex_unlock(&mtx_bloqueados);
-
+								time_t final = malloc(sizeof(time_t));
 								if(p->pid == pid){
 									encontrado = 1;
-									p->fin =gmtime(&rawtime );
+									p->fin =time(&final );
+
+									struct tm* tm_infoF;
+									tm_infoF = localtime(&final);
+
+									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", tm_infoF);
+									printf( "Final: %s\n", bufferHoraFin );
 								}
 
 								//pthread_mutex_lock(&mtx_bloqueados);
@@ -257,18 +273,20 @@ void * escuchar_Kernel(void * args){
 								fin--;
 							}
 
-					        char output[128];
-					        strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
+					       // char output[128];
+					        //strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
 
 
 				printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
 				printf("Su hora de inicio fue:\n");
-				printf("%s\n",output);
+				printf(" %s\n", bufferHoraCom);
 
-				char outputF[128];
-				strftime(outputF,128,"%d/%m/%y %H:%M:%S",p->fin);
+				//char outputF[128];
+				//strftime(outputF,128,"%d/%m/%y %H:%M:%S",p->fin);
 				printf("Su hora finalizacion fue: \n");
-				printf("%s\n",outputF);
+				printf( " %s\n", bufferHoraFin );
+			  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
+
 
 			}
 
