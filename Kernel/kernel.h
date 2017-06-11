@@ -89,6 +89,10 @@ typedef struct {
 
 typedef struct {
 	int pid;
+	t_list* tablaProceso;
+} t_lista_fileProcesos;
+
+typedef struct {
 	int fileDescriptor;
 	char* flags;
 	int global_fd;
@@ -187,6 +191,12 @@ void borrarArchivo(int pid_mensaje, int fd);
 void cerrarArchivo(int pid_mensaje, int fd);
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 t_fileGlobal* traducirFDaPath(int fd);
+t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal);
+t_lista_fileProcesos* existeEnListaProcesosArchivos(int pid_mensaje);
+t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion);
+void grabarEnTablaGlobal(int cantidadAperturas, int FdGlobal, char* direccion);
+void grabarEnTablaProcesos(int pid_mensaje, int fd, int globalFD, char* flag);
+void grabarEnTablaProcesosUnProcesoTabla(t_list* listaProcesoDeLaTablaProesos, int fd, int globalFD, char* flag);
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
 void rechazoFaltaMemoria(int socketConsola);
