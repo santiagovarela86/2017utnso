@@ -656,8 +656,14 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 		int pagina = atoi(mensajeDesdeCPU[3]);
 		int offset = atoi(mensajeDesdeCPU[4]);
 		int tamanio = atoi(mensajeDesdeCPU[5]);
-		////valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
-		////printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", atoi(valor_variable), pid, pagina);
+		char * bloquePagina = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+
+		valor_variable = ((unsigned char)bloquePagina[0] << 24) +
+									((unsigned char)bloquePagina[1] << 16) +
+										((unsigned char)bloquePagina[2] << 8) +
+											((unsigned char)bloquePagina[3] << 0);
+
+		printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", valor_variable, pid, pagina);
 		puts("");
 	}
 	else {
@@ -949,7 +955,7 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
 }
 
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
-	char* datos_pagina = string_new();
+	char * datos_pagina = malloc(configuracion->marco_size);
 
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
@@ -966,13 +972,13 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		}
 
 		//Se carga la nueva pagina en cache
-		if (cache_habilitada)
-			almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
+		if (cache_habilitada) almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
 	} else {
 		//Si encontro la entrada en cache
 
 		//Leo el contenido de la misma utilizando offset y tamanio
-		datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
+		//datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
+		memcpy(datos_pagina, &entrada_cache->contenido_pagina[offset], tamanio);
 
 		//Hago el reemplazo de paginas y ordeno
 		int indice_cache = list_size(tabla_cache);
@@ -993,10 +999,10 @@ char* leer_codigo_programa(int pid, int inicio, int offset){
 	return codigo_programa;
 }
 
-char* leer_memoria(int inicio, int offset){
-	char* codigo_programa = malloc(MAXBUF);
-	codigo_programa = string_substring(bloque_memoria, inicio, offset);
-	return codigo_programa;
+char* leer_memoria(int inicio, int bytes){
+	char * buffer = malloc(MAXBUF);
+	memcpy(buffer, &bloque_memoria[inicio], bytes);
+	return buffer;
 }
 
 t_pagina_proceso* crear_nuevo_manejo_programa(int pid, int pagina){
@@ -1283,24 +1289,28 @@ void subconsola_contenido_memoria(){
 
 void grabar_valor(int direccion, int valor){
 
-	char str[MAXBUF];
-	sprintf(str, "%d", valor);
+	//char str[MAXBUF];
+	//sprintf(str, "%d", valor);
+	//printf("Valor String (Para la cache): [%s]\n",str);
+	//printf("\n");
+
+	char * buffer = malloc(OFFSET_VAR);
 
 	pthread_mutex_lock(&mutex_bloque_memoria);
 
-	//ESTO GUARDA EL NUMERO EN BIG ENDIAN
+	//ESTO GUARDA EL NUMERO EN BIG ENDIAN EN 4 BYTES
 	bloque_memoria[direccion+0] = (valor >> 24) & 0xFF;
 	bloque_memoria[direccion+1] = (valor >> 16) & 0xFF;
 	bloque_memoria[direccion+2] = (valor >> 8) & 0xFF;
 	bloque_memoria[direccion+3] = valor & 0xFF;
 
-	printf("Valor String (Para la cache): [%s]\n",str);
-	printf("\n");
+	memcpy(buffer, &bloque_memoria[direccion], OFFSET_VAR);
 
-	if (cache_habilitada)
-				grabar_valor_en_cache(direccion, str);
+	if (cache_habilitada) grabar_valor_en_cache(direccion, buffer);
 
 	pthread_mutex_unlock(&mutex_bloque_memoria);
+
+	free(buffer);
 
 }
 
@@ -1558,6 +1568,16 @@ bool pagina_llena(t_pagina_invertida* pagina){
 	*/
 }
 
+t_entrada_cache * crear_entrada_cache(int indice, int pid, int nro_pagina, char * contenido_pagina){
+	t_entrada_cache* new = malloc(sizeof(t_entrada_cache));
+	new->indice = indice;
+	new->contenido_pagina = malloc(configuracion->marco_size);
+	memcpy(new->contenido_pagina, contenido_pagina, configuracion->marco_size);
+	new->nro_pagina = nro_pagina;
+	new->pid = pid;
+	return new;
+}
+
 bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 	bool guardadoOK = true;
@@ -1576,8 +1596,9 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 		int indice_cache = list_size(tabla_cache);
 
-		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
-		t_entrada_cache* entrada_cache = crear_entrada_cache(indice_cache, pagina->pid, pagina->nro_pagina, contenido_pagina);
+		t_entrada_cache * entrada_cache = crear_entrada_cache(indice_cache,
+				pagina->pid, pagina->nro_pagina,
+					leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size));
 
 		list_add(tabla_cache, entrada_cache);
 		printf("Se almaceno el marco %d pagina %d del PID %d en el indice %d de la cache \n", pagina->nro_marco, pagina->nro_pagina, pagina->pid, indice_cache);
@@ -1618,7 +1639,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 	return guardadoOK;
 }
 
-bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
+bool actualizar_pagina_en_cache(int pid, int pagina, char * nuevoContenido){
 	bool updateOK = true;
 
 	int _encontrar_entrada_cache(t_entrada_cache* entrada){
@@ -1629,10 +1650,10 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido){
 
 	int indice_stack = list_size(tabla_cache);
 
-	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_stack, pid, pagina, contenido);
+	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_stack, pid, pagina, nuevoContenido);
 
 	if (entrada_a_actualizar != NULL){
-		entrada_a_actualizar->contenido_pagina = contenido;
+		//entrada_a_actualizar->contenido_pagina = nuevoContenido;
 		list_replace(tabla_cache, entrada_a_actualizar->indice, nueva_entrada_cache);
 
 		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", entrada_a_actualizar->indice, entrada_a_actualizar->nro_pagina, entrada_a_actualizar->pid);
@@ -1655,22 +1676,25 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 	return entrada;
 }
 
-void grabar_valor_en_cache(int direccion, char* valor){
+void grabar_valor_en_cache(int direccion, char * buffer){
 
-	int indice_tabla_paginas = direccion / configuracion->marco_size;
+	t_pagina_invertida * pagina = list_get(tabla_paginas, direccion / configuracion->marco_size);
 
-	t_pagina_invertida* pagina = list_get(tabla_paginas, indice_tabla_paginas);
-
+	/*
 	char* contenido = string_substring(bloque_memoria, obtener_inicio_pagina(pagina), configuracion->marco_size);
 
 	string_append(&contenido, valor);
 
+	*/
+
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pagina->pid, pagina->nro_pagina);
 
 	if (entrada_cache == NULL){
-		almacenar_pagina_en_cache_para_pid(pagina->pid, pagina);
+		almacenar_pagina_en_cache_para_pid(pagina->pid, pagina); ////REVISAR
 	} else {
-		actualizar_pagina_en_cache(pagina->pid, pagina->nro_pagina, contenido);
+		actualizar_pagina_en_cache(pagina->pid,
+				pagina->nro_pagina,
+					leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size)); ////REVISAR
 	}
 }
 
