@@ -563,7 +563,7 @@ void abrir_subconsola_dos(t_pcb* p){
 				t_list* lista_aux = list_create();
 				lista_aux = list_filter(lista_File_proceso, (void*) encontrar_pid);
 
-				if(lista_aux == NULL){
+				if(lista_aux->elements_count == 0){
 					printf("EL proceso no tiene tabla de archivos");
 				}else{
 					int size = lista_aux->elements_count;
