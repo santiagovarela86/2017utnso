@@ -419,13 +419,13 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 		} else if (codigo == 512) {
 
-			puts("DEFINICION DE VARIABLE");
-			puts("");
-
 			//Ocurre el retardo para acceder a la memoria principal
 			retardo_acceso_memoria();
 
 			char nombreVariable = *mensajeDesdeCPU[1];
+
+			printf("DEFINICION DE VARIABLE %c\n", nombreVariable);
+			printf("\n");
 
 			int pid = atoi(mensajeDesdeCPU[2]);
 			int paginaParaVariables = atoi(mensajeDesdeCPU[3]);
@@ -521,6 +521,7 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 
 	pag_a_cargar->nro_pagina = paginaParaVariables;
 	pag_a_cargar->pid = pid;
+	pag_a_cargar->offset = 0; ////SE INICIALIZA EL OFFSET
 
 	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_a_cargar->nro_marco, pag_a_cargar->nro_pagina, pag_a_cargar->pid);
 	puts("");
@@ -535,6 +536,8 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
 
 	grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
+
+	pag_a_cargar->offset = pag_a_cargar->offset + OFFSET_VAR; ////ACTUALIZO EL VALOR DEL OFFSET
 
 	char* mensajeACpu = string_new();
 	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
@@ -559,6 +562,8 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
 
 	grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+
+	pag_encontrada->offset = pag_encontrada->offset + OFFSET_VAR; ////ACTUALIZO EL VALOR DEL OFFSET
 
 	char* mensajeACpu = string_new();
 	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
@@ -642,7 +647,7 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 
-	char* valor_variable  = string_new();
+	int valor_variable;
 	int posicion_de_la_variable = atoi(mensajeDesdeCPU[1]);
 
 	if (posicion_de_la_variable == VARIABLE_EN_CACHE){
@@ -651,20 +656,23 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 		int pagina = atoi(mensajeDesdeCPU[3]);
 		int offset = atoi(mensajeDesdeCPU[4]);
 		int tamanio = atoi(mensajeDesdeCPU[5]);
-		valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
-		printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", atoi(valor_variable), pid, pagina);
+		////valor_variable = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+		////printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", atoi(valor_variable), pid, pagina);
 		puts("");
 	}
 	else {
-		valor_variable = leer_memoria(posicion_de_la_variable, OFFSET_VAR);
-		printf("Se leyo el valor %d en memoria \n", atoi(valor_variable));
+		//CONVIERTO DE BIG ENDIAN A INTEGER
+		valor_variable = ((unsigned char)bloque_memoria[posicion_de_la_variable+0] << 24) +
+							((unsigned char)bloque_memoria[posicion_de_la_variable+1] << 16) +
+								((unsigned char)bloque_memoria[posicion_de_la_variable+2] << 8) +
+									((unsigned char)bloque_memoria[posicion_de_la_variable+3] << 0);
+
+		printf("Se leyo el valor %d en memoria\n", valor_variable);
 		puts("");
 	}
 
-	int valor = atoi(valor_variable);
-
 	char* mensajeACpu = string_new();
-	string_append(&mensajeACpu, string_itoa(valor));
+	string_append(&mensajeACpu, string_itoa(valor_variable)); //HAY QUE VER QUE PASA CON CPU
 	string_append(&mensajeACpu, ";");
 
 	enviarMensaje(&sock, mensajeACpu);
@@ -686,8 +694,8 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 			int inicio = obtener_inicio_pagina(pagina_buscada);
 			int direccion_memoria = inicio + offset;
 
-			printf("Se obtuvo posicion %d a partir de PID %d, Pagina %d y Offset %d en Memoria", direccion_memoria, pid, pagina, offset);
-			puts("");
+			printf("Se obtuvo posicion %d a partir de PID %d, Pagina %d y Offset %d en Memoria\n", direccion_memoria, pid, pagina, offset);
+			printf("\n");
 
 			char* mensajeACpu = string_new();
 			string_append(&mensajeACpu, string_itoa(direccion_memoria));
@@ -1275,92 +1283,24 @@ void subconsola_contenido_memoria(){
 
 void grabar_valor(int direccion, int valor){
 
-	char* valor_string = string_new();
+	char str[MAXBUF];
+	sprintf(str, "%d", valor);
 
-	//ACA SI EL VALOR TIENE 5 DIGITOS (COMO ALGUNAS DIRECCIONES DE HEAP)
-	//NO SE GUARDAN...
+	pthread_mutex_lock(&mutex_bloque_memoria);
 
-	if(valor > 999){
-		int milesima = valor / 1000;
-		int centena = (valor % 1000) / 100;
-		int decena = (valor % 100) / 10;
-		int unidad = valor % 10;
-		pthread_mutex_lock(&mutex_bloque_memoria);
-		bloque_memoria[direccion] = (char) (milesima + 48);
-		bloque_memoria[direccion + 1] = (char) (centena + 48);
-		bloque_memoria[direccion + 2] = (char) (decena + 48);
-		bloque_memoria[direccion + 3] = (char) (unidad + 48);
+	//ESTO GUARDA EL NUMERO EN BIG ENDIAN
+	bloque_memoria[direccion+0] = (valor >> 24) & 0xFF;
+	bloque_memoria[direccion+1] = (valor >> 16) & 0xFF;
+	bloque_memoria[direccion+2] = (valor >> 8) & 0xFF;
+	bloque_memoria[direccion+3] = valor & 0xFF;
 
-		valor_string[0] = bloque_memoria[direccion];
-		valor_string[1] = bloque_memoria[direccion + 1];
-		valor_string[2] = bloque_memoria[direccion + 2];
-		valor_string[3] = bloque_memoria[direccion + 3];
-		valor_string[4] = '\0';
+	printf("Valor String (Para la cache): [%s]\n",str);
+	printf("\n");
 
-		if (cache_habilitada)
-			grabar_valor_en_cache(direccion, valor_string);
+	if (cache_habilitada)
+				grabar_valor_en_cache(direccion, str);
 
-		pthread_mutex_unlock(&mutex_bloque_memoria);
-	}else if(valor > 99){
-		int centena = (valor % 1000) / 100;
-		int decena = (valor % 100) / 10;
-		int unidad = valor % 10;
-		pthread_mutex_lock(&mutex_bloque_memoria);
-		bloque_memoria[direccion] = '0';
-		bloque_memoria[direccion + 1] = (char) (centena + 48);
-		bloque_memoria[direccion + 2] = (char) (decena + 48);
-		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-
-		valor_string[0] = bloque_memoria[direccion];
-		valor_string[1] = bloque_memoria[direccion + 1];
-		valor_string[2] = bloque_memoria[direccion + 2];
-		valor_string[3] = bloque_memoria[direccion + 3];
-		valor_string[4] = '\0';
-
-		if (cache_habilitada)
-			grabar_valor_en_cache(direccion, valor_string);
-
-		pthread_mutex_unlock(&mutex_bloque_memoria);
-	}else if(valor > 9){
-		int decena = (valor % 100) / 10;
-		int unidad = valor % 10;
-		pthread_mutex_lock(&mutex_bloque_memoria);
-		bloque_memoria[direccion] = '0';
-		bloque_memoria[direccion + 1] = '0';
-		bloque_memoria[direccion + 2] = (char) (decena + 48);
-		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-
-		valor_string[0] = '0';
-		valor_string[1] = '0';
-		valor_string[2] = (char) (decena + 48);
-		valor_string[3] = (char) (unidad + 48);
-		valor_string[4] = '\0';
-
-		if (cache_habilitada)
-			grabar_valor_en_cache(direccion, valor_string);
-
-		pthread_mutex_unlock(&mutex_bloque_memoria);
-	}else{
-		int unidad = valor % 10;
-		pthread_mutex_lock(&mutex_bloque_memoria);
-		bloque_memoria[direccion] = '0';
-		bloque_memoria[direccion + 1] = '0';
-		bloque_memoria[direccion + 2] = '0';
-		bloque_memoria[direccion + 3] = (char) (unidad + 48);
-
-		valor_string[0] = '0';
-		valor_string[1] = '0';
-		valor_string[2] = '0';
-		valor_string[3] = (char) (unidad + 48);
-		valor_string[4] = '\0';
-
-		if (cache_habilitada)
-			grabar_valor_en_cache(direccion, valor_string);
-
-		pthread_mutex_unlock(&mutex_bloque_memoria);
-	}
-
-return;
+	pthread_mutex_unlock(&mutex_bloque_memoria);
 
 }
 
@@ -1570,7 +1510,12 @@ char* serializar_entrada_indice_stack(t_Stack* indice_stack){
 	return entrada_stack;
 }
 
+//ESTO BUSCA LA ULTIMA POSICION LIBRE DE LA PAGINA
 int obtener_offset_pagina(t_pagina_invertida* pagina){
+
+	return pagina->offset;
+
+	/*
 
 	int inicio = obtener_inicio_pagina(pagina);
 
@@ -1583,6 +1528,8 @@ int obtener_offset_pagina(t_pagina_invertida* pagina){
 	offset = longitud_datos_bloque_asignado;
 
 	return offset;
+
+	*/
 }
 
 int obtener_inicio_pagina(t_pagina_invertida* pagina){
@@ -1591,6 +1538,10 @@ int obtener_inicio_pagina(t_pagina_invertida* pagina){
 }
 
 bool pagina_llena(t_pagina_invertida* pagina){
+
+	return configuracion->marco_size == pagina->offset;
+
+	/*
 
 	bool pagina_llena = false;
 
@@ -1603,6 +1554,8 @@ bool pagina_llena(t_pagina_invertida* pagina){
 		pagina_llena = true;
 
 	return pagina_llena;
+
+	*/
 }
 
 bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
