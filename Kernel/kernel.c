@@ -556,26 +556,22 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 3:
 				accion_correcta = 1;
 
-				/*int encontrar_pid(t_fileProceso* fp){
-					return (fp->pid == p->pid);
-				}
+				t_lista_fileProcesos* tablaDeProcesoActual = malloc(sizeof(t_lista_fileProcesos));
+				tablaDeProcesoActual = existeEnListaProcesosArchivos(p->pid);
 
-				t_list* lista_aux = list_create();
-				lista_aux = list_filter(lista_File_proceso, (void*) encontrar_pid);
-
-				if(lista_aux->elements_count == 0){
+				if(tablaDeProcesoActual->tablaProceso == NULL){
 					printf("EL proceso no tiene tabla de archivos");
 				}else{
-					int size = lista_aux->elements_count;
+					int size = tablaDeProcesoActual->tablaProceso->elements_count;
 					int i = 0;
 					printf("El proceso tiene los siguientes FD \n");
 					while (i < size){
-						printf("FD: %d \n", ((t_fileProceso*) list_get(lista_aux, i))->fileDescriptor);
+						printf("FD: %d \n", ((t_fileProceso*) list_get(tablaDeProcesoActual->tablaProceso, i))->fileDescriptor);
 						i++;
 					}
 				}
 
-				list_destroy(lista_aux);*/
+				list_destroy(tablaDeProcesoActual->tablaProceso);
 
 				break;
 			case 4:
