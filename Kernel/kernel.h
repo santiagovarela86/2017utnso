@@ -209,6 +209,7 @@ t_pcb* existe_proceso(int pid);
 t_estadistica* encontrar_estadistica(int p);
 void finalizarProgramaEnMemoria(int pid);
 int obtener_pid_de_cpu(int* skt);
+char* serializar_codigo_por_instrucciones(char* codigo);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

@@ -77,9 +77,7 @@ t_list * lista_paginas_heap;;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
-sem_t sem_news;
 sem_t sem_cpus;
-sem_t sem_mult;
 int programCounter;
 
 int main(int argc, char **argv) {
@@ -95,7 +93,7 @@ int main(int argc, char **argv) {
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
 	pthread_t thread_planificador;
-	pthread_t thread_multiprogramacion;
+
 
 	char * pathConfig = argv[1];
 	inicializarEstructuras(pathConfig);
@@ -108,7 +106,6 @@ int main(int argc, char **argv) {
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
 	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
 	creoThread(&thread_planificador, planificar, NULL);
-	creoThread(&thread_multiprogramacion, multiprogramar, NULL);
 
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
@@ -137,7 +134,7 @@ void inicializarEstructuras(char * pathConfig){
 	sem_init(&semaforoMemoria, 0, 0);
 	sem_init(&semaforoFileSystem, 0, 0);
 	sem_init(&sem_cpus, 0, 0);
-	sem_init(&sem_news, 0, 0);
+
 	sem_init(&sem_prog, 0, 0);
 
 	lista_paginas_heap = list_create();
@@ -190,8 +187,6 @@ void inicializarEstructuras(char * pathConfig){
 		w++;
 	}
 
-	sem_init(&sem_mult, 0, grado_multiprogramacion);
-
 	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
@@ -227,7 +222,7 @@ void liberarEstructuras(){
 	sem_destroy(&semaforoMemoria);
 	sem_destroy(&semaforoFileSystem);
 	sem_destroy(&sem_cpus);
-	sem_destroy(&sem_news);
+
 	sem_destroy(&sem_prog);
 }
 
@@ -319,7 +314,7 @@ void * inicializar_consola(void* args){
 				if(dif_gr_mult > 0){
 					int i = 0;
 					for(;i < dif_gr_mult;){
-						sem_post(&sem_mult);
+						multiprogramar();
 						i++;
 					}
 				}
@@ -561,9 +556,45 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 3:
 				accion_correcta = 1;
 
+				int encontrar_pid(t_fileProceso* fp){
+					return (fp->pid == p->pid);
+				}
+
+				t_list* lista_aux = list_create();
+				lista_aux = list_filter(lista_File_proceso, (void*) encontrar_pid);
+
+				if(lista_aux->elements_count == 0){
+					printf("EL proceso no tiene tabla de archivos");
+				}else{
+					int size = lista_aux->elements_count;
+					int i = 0;
+					printf("El proceso tiene los siguientes FD \n");
+					while (i < size){
+						printf("FD: %d \n", ((t_fileProceso*) list_get(lista_aux, i))->fileDescriptor);
+						i++;
+					}
+				}
+
+				list_destroy(lista_aux);
+
 				break;
 			case 4:
 				accion_correcta = 1;
+
+				int buscar_pid(heapElement* he){
+					return (he->pid == p->pid);
+				}
+
+				t_list* list_aux = list_create();
+				list_aux = list_filter(lista_paginas_heap, (void *) buscar_pid);
+
+				if(list_aux == NULL){
+					printf("El proceso tiene %d paginas de heap \n", 0);
+				}else{
+					printf("El proceso tiene %d paginas de heap \n", list_aux->elements_count);
+				}
+
+				list_destroy(list_aux);
 
 				break;
 			case 5:
@@ -631,11 +662,11 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
-				sem_post(&sem_mult);
 				sem_wait(&sem_prog);
 
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+
 				int * sock = &temporalP->socket_consola;
 
 				printf("Murio en Listos\n");
@@ -643,12 +674,16 @@ void matarProceso(int pidAMatar){
 
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
+
 				int pidDelMatado = temporalP->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
+
 				free(msjAConsolaXEstadistica);
 				pthread_mutex_unlock(&mtx_terminados);
 
+				multiprogramar();
 			}
 
 			largoColaListada--;
@@ -670,10 +705,9 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
-				sem_post(&sem_mult);
-
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+
 				int * sock =  &temporalP->socket_consola;
 
 				printf("Murio en Bloqueados\n");
@@ -681,13 +715,16 @@ void matarProceso(int pidAMatar){
 
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
+
 				int pidDelMatado = temporalP->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
+
 				free(msjAConsolaXEstadistica);
 				pthread_mutex_unlock(&mtx_terminados);
 
-
+				multiprogramar();
 			}
 
 			largoColaListada--;
@@ -709,23 +746,26 @@ void matarProceso(int pidAMatar){
 
 			}else{
 
-				sem_post(&sem_mult);
-
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, temporalP);
+
 				int * sock =  &temporalP->socket_consola;
 
 				printf("Murio en Ejec\n");
 				printf("pid: %d\n", tempPid);
-				printf("SOCKET DE CONSOLA: %d\n", * sock);
 
 				char* msjAConsolaXEstadistica = string_new();
 				string_append(&msjAConsolaXEstadistica, "666;");
+
 				int pidDelMatado = temporalP->pid;
 				string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 				enviarMensaje(&(temporalP->socket_consola), msjAConsolaXEstadistica);
+
 				free(msjAConsolaXEstadistica);
 				pthread_mutex_unlock(&mtx_terminados);
+
+				multiprogramar();
 			}
 
 			largoColaListada--;
@@ -1765,12 +1805,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 
 void * multiprogramar() {
 	//validacion de nivel de multiprogramacion
-	while (1) {
-
-		sem_wait(&sem_news);
-		sem_wait(&sem_mult);
-
-		if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
+	if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
 			//Se crea programa nuevo
 
 			if (queue_size(cola_nuevos) > 0) {
@@ -1780,8 +1815,30 @@ void * multiprogramar() {
 				envioProgramaAMemoria(new_pcb, nue);
 				free(nue);
 			}
-		}
 	}
+}
+
+
+char* serializar_codigo_por_instrucciones(char* codigo){
+	char* codigo_serializado = string_new();
+
+	t_metadata_program * metadataProgram = metadata_desde_literal(codigo);
+
+	int i;
+	for (i = 0; i < metadataProgram->instrucciones_size; i++){
+		elementoIndiceCodigo * elem = malloc(sizeof(elementoIndiceCodigo));
+		elem->start = metadataProgram->instrucciones_serializado[i].start;
+		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
+		char* instruccion = string_substring(codigo, elem->start, elem->offset);
+		string_append(&codigo_serializado, instruccion);
+		string_append(&codigo_serializado, ";");
+		free(elem);
+		free(instruccion);
+	}
+
+	free(metadataProgram);
+
+	return codigo_serializado;
 }
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
@@ -1864,7 +1921,7 @@ void creoPrograma(t_pcb * new_pcb, char * codigo, int inicio_codigo, int cantida
 	pthread_mutex_unlock(&mtx_listos);
 
 	sem_post(&sem_prog);
-	sem_wait(&sem_mult);
+
 }
 
 void informoAConsola(int socketConsola, int pid){
@@ -2079,8 +2136,6 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 		queue_push(cola_nuevos, nue);
 		pthread_mutex_unlock(&mtx_nuevos);
 
-		sem_post(&sem_news);
-
 	} else {
 		//Se crea programa nuevo
 		printf("SOCKET DE CONSOLA: %d\n",socketCliente);
@@ -2147,7 +2202,6 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 			pthread_mutex_unlock(&mtx_listos);
 
 			sem_post(&sem_prog);
-			sem_wait(&sem_mult);
 
 			// INFORMO A CONSOLA EL RESULTADO DE LA CREACION DEL PROCESO
 			char* info_pid = string_new();
@@ -2204,7 +2258,7 @@ void finalizarPrograma(int pidACerrar) {
 			encontre = 1;
 
 			sem_wait(&sem_prog);
-			sem_post(&sem_mult);
+			multiprogramar();
 
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
@@ -2246,7 +2300,7 @@ void finalizarPrograma(int pidACerrar) {
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreBloq = 1;
 
-			sem_post(&sem_mult);
+			multiprogramar();
 
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
@@ -2285,7 +2339,7 @@ void finalizarPrograma(int pidACerrar) {
 			pthread_mutex_unlock(&mtx_terminados);
 			encontreEjec = 1;
 
-			sem_post(&sem_mult);
+			multiprogramar();
 
 			printf("Se termino el proceso: %d\n", temporalN->pid);
 
@@ -2327,17 +2381,22 @@ void cerrarConsola(int socketCliente) {
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
+
 			char* msjAConsolaXEstadistica = string_new();
 			string_append(&msjAConsolaXEstadistica, "666;");
+
 			int pidDelMatado = temporalN->pid;
 			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
 
 			sem_wait(&sem_prog);
-			sem_post(&sem_mult);
+
+			multiprogramar();
 
 		} else {
 			pthread_mutex_lock(&mtx_listos);
@@ -2367,12 +2426,14 @@ void cerrarConsola(int socketCliente) {
 
 			int pidDelMatado = temporalN->pid;
 			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
 
-			sem_post(&sem_mult);
+			multiprogramar();
 		} else {
 			pthread_mutex_lock(&mtx_bloqueados);
 			queue_push(cola_bloqueados, temporalN);
@@ -2400,12 +2461,14 @@ void cerrarConsola(int socketCliente) {
 
 			int pidDelMatado = temporalN->pid;
 			string_append(&msjAConsolaXEstadistica, string_itoa(pidDelMatado));
+
 			enviarMensaje(&(temporalN->socket_consola), msjAConsolaXEstadistica);
+
 			free(msjAConsolaXEstadistica);
 
 			pthread_mutex_unlock(&mtx_terminados);
 
-			sem_post(&sem_mult);
+			multiprogramar();
 
 		} else {
 			pthread_mutex_lock(&mtx_ejecucion);
@@ -2674,8 +2737,6 @@ void finDePrograma(int * socketCliente) {
 				pcb_a_cambiar->program_counter =
 				pcb_deserializado->program_counter;
 
-				sem_post(&sem_mult);
-
 				pthread_mutex_lock(&mtx_terminados);
 				queue_push(cola_terminados, pcb_a_cambiar);
 				finalizarProgramaEnMemoria(pcb_deserializado->pid);
@@ -2691,6 +2752,8 @@ void finDePrograma(int * socketCliente) {
 				free(msjAConsolaXEstadistica);
 
 				pthread_mutex_unlock(&mtx_terminados);
+
+				multiprogramar();
 
 			} else {
 
@@ -2995,7 +3058,46 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	int fdNuevo;
 	 if((int)lista_File_global->elements_count != 0)
 	 {
-		 fdNuevo = lista_File_global->elements_count + 3;
+		 if((int)lista_File_proceso->elements_count != 0)
+		 {
+			 puts("1");
+				int encontrar_archGlobal(t_fileGlobal* glo){
+					if(direccion == glo->path)
+						return 1;
+					else
+						return 0;
+				}
+				 puts("1");
+
+				t_fileGlobal* regTablaGlobal = list_find(lista_File_global, (void*) encontrar_archGlobal);
+				 puts("1");
+				int encontrar_archProceso(t_fileProceso* glo){
+					if(regTablaGlobal->fdGlobal == glo->global_fd && pid_mensaje == glo->pid)
+						return 1;
+					else
+						return 0;
+				}
+				 puts("1");
+				t_fileProceso* regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
+				 puts("1");
+				if(regTablaProceso != NULL)
+				{
+					 puts("2");
+					 fdNuevo = regTablaGlobal->fdGlobal;
+				}
+				else
+				{
+					 puts("3");
+					 fdNuevo = lista_File_global->elements_count + 3;
+				}
+		 }
+		 else
+		 {
+			 puts("1");
+			 fdNuevo = lista_File_global->elements_count + 3;
+		 }
+
+
 	 }
 	 else
 	 {
