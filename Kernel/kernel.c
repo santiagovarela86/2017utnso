@@ -1784,6 +1784,28 @@ void * multiprogramar() {
 	}
 }
 
+char* serializar_codigo_por_instrucciones(char* codigo){
+	char* codigo_serializado = string_new();
+
+	t_metadata_program * metadataProgram = metadata_desde_literal(codigo);
+
+	int i;
+	for (i = 0; i < metadataProgram->instrucciones_size; i++){
+		elementoIndiceCodigo * elem = malloc(sizeof(elementoIndiceCodigo));
+		elem->start = metadataProgram->instrucciones_serializado[i].start;
+		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
+		char* instruccion = string_substring(codigo, elem->start, elem->offset);
+		string_append(&codigo_serializado, instruccion);
+		string_append(&codigo_serializado, ";");
+		free(elem);
+		free(instruccion);
+	}
+
+	free(metadataProgram);
+
+	return codigo_serializado;
+}
+
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
 	char* mensajeInicioPrograma = string_new();
 	string_append(&mensajeInicioPrograma, "250");
