@@ -209,9 +209,6 @@ void * escuchar_Kernel(void * args){
 		if (result > 0){
 			char** respuesta_kernel = string_split(buffer, ";");
 
-			printf("CODIGO: %s\n", respuesta_kernel[0]);
-			printf("C1: %s\n", respuesta_kernel[1]);
-
 			if(atoi(respuesta_kernel[0]) == 103){
 				/*103 es creacion*/
 				programa* program = malloc(sizeof(program));
@@ -228,7 +225,7 @@ void * escuchar_Kernel(void * args){
 				program->socket_kernel = *socketKernel;
 
 				queue_push(cola_programas, program);
-				 printf("Hora es: %2d:%02d\n", (program->inicio->tm_hour), program->inicio->tm_min);
+
 			}else if(atoi(respuesta_kernel[0]) == 197){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else if (atoi(respuesta_kernel[0]) == 575){
