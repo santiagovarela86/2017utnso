@@ -3217,50 +3217,61 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
-	int encontrar_archProceso(t_fileProceso* regFileProcess){
-		if(fd == (int)regFileProcess->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-
-	t_fileProceso* archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
-
-    list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
-
-	t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
-	int index = ((int)archAbrir1->global_fd) - 3;
-	archFileGlobal = list_get(lista_File_global, index);
-
-	if(archFileGlobal->cantidadDeAperturas < 1)
+	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
+	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
+	if(listaDeArchivosDelProceso != NULL)
 	{
-		puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
+		int encontrar_archProceso(t_fileProceso* regFileProcess){
+					if(fd == (int)regFileProcess->fileDescriptor)
+						return 1;
+					else
+						return 0;
+				}
+
+			t_fileProceso* archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+
+		    list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+
+			t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
+			int index = (int)archAbrir1->global_fd;
+			archFileGlobal = list_get(lista_File_global, index);
+			if(archFileGlobal->cantidadDeAperturas < 2)
+			{
+				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
+			}
+			else
+			{
+				list_remove(lista_File_global, index);
+				char* mensajeAFS = string_new();
+				string_append(&mensajeAFS, "802");
+				string_append(&mensajeAFS, ";");
+				string_append(&mensajeAFS, archFileGlobal->path);
+				string_append(&mensajeAFS, ";");
+
+				free(archAbrir1);
+				free(archFileGlobal);
+
+				enviarMensaje(&skt_filesystem, mensajeAFS);
+
+				/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+				if (result > 0) {
+					puts("archivo borrado desde el fs");
+				}
+				else {
+					perror("Error no se pudo borrar\n");
+				}*/
+				free(mensajeAFS);
+
+			}
+
 	}
 	else
 	{
-
-		char* mensajeAFS = string_new();
-		string_append(&mensajeAFS, "802");
-		string_append(&mensajeAFS, ";");
-		string_append(&mensajeAFS, archFileGlobal->path);
-		string_append(&mensajeAFS, ";");
-
-		free(archAbrir1);
-		free(archFileGlobal);
-
-		enviarMensaje(&skt_filesystem, mensajeAFS);
-
-		/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
-
-		if (result > 0) {
-			puts("archivo borrado desde el fs");
-		}
-		else {
-			perror("Error no se pudo borrar\n");
-		}*/
-		free(mensajeAFS);
-
+		puts("El archivo a ser eliminado no se encuentra o no fue creado");
 	}
+
+
 	return;
 }
 void cerrarArchivo(int pid_mensaje, int fd)
