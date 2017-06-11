@@ -190,7 +190,7 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 void borrarArchivo(int pid_mensaje, int fd);
 void cerrarArchivo(int pid_mensaje, int fd);
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
-t_fileGlobal* traducirFDaPath(int fd);
+t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd);
 t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal);
 t_lista_fileProcesos* existeEnListaProcesosArchivos(int pid_mensaje);
 t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion);

@@ -145,9 +145,9 @@ void * hilo_conexiones_kernel(void * args){
 					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 				break;
 			  }
-			puts("4");
+
 			result = recv(socketKernel, message, sizeof(message), 0);
-			puts("5");
+
 		    }
 
 		if (result <= 0) {

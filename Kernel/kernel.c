@@ -2972,23 +2972,28 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 	free(mensajeACPU);
 }
 
-t_fileGlobal* traducirFDaPath(int fd)
+t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd)
 {
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-	t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
-	regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
+	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
+	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
 
-	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-	regTablaGlobal = list_get(lista_File_global, ((int)regTablaProceso->global_fd));
+		int encontrar_archProceso(t_fileProceso* glo){
+			if(fd == glo->fileDescriptor)
+				return 1;
+			else
+				return 0;
+		}
+		t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
+		regTablaProceso = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-	return regTablaGlobal;
-	free(regTablaGlobal);
-	free(regTablaProceso);
+		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+		regTablaGlobal = list_get(lista_File_global, ((int)regTablaProceso->global_fd));
+
+		return regTablaGlobal;
+		free(regTablaGlobal);
+		free(regTablaProceso);
+
+
 
 }
 
@@ -2997,7 +3002,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 	{
 		char* mensajeFS= string_new();
 		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-		regTablaGlobal = traducirFDaPath(fd);
+		regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
 
 		string_append(&mensajeFS, "800");
 		string_append(&mensajeFS, ";");
@@ -3276,6 +3281,8 @@ void borrarArchivo(int pid_mensaje, int fd)
 }
 void cerrarArchivo(int pid_mensaje, int fd)
 {
+	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
+	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
 	int encontrar_archProceso(t_fileProceso* glo){
 		if(fd == glo->fileDescriptor)
 			return 1;
@@ -3283,15 +3290,9 @@ void cerrarArchivo(int pid_mensaje, int fd)
 			return 0;
 	}
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
-	archAbrir1 = list_find(lista_File_proceso,(void*) encontrar_archProceso);
-	list_remove_by_condition(lista_File_proceso,(void*) encontrar_archProceso);
+	archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+	list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-	int encontrar_archGlobal(t_fileGlobal* glo){
-		if(archAbrir1->global_fd == glo->fdGlobal)
-			return 1;
-		else
-			return 0;
-	}
 	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
 
@@ -3302,7 +3303,7 @@ void cerrarArchivo(int pid_mensaje, int fd)
 	else
 	{
 		archAbrir2->cantidadDeAperturas--;
-		list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
+		//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 	}
 	return;
 }
@@ -3311,7 +3312,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
 	{
 	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-	regTablaGlobal = traducirFDaPath(fd);
+	regTablaGlobal = traducirFDaPath(pid_mensaje, fd);
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "800");
 	string_append(&mensajeAFS, ";");
