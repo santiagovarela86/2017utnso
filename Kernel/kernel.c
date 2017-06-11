@@ -556,9 +556,45 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 3:
 				accion_correcta = 1;
 
+				int encontrar_pid(t_fileProceso* fp){
+					return (fp->pid == p->pid);
+				}
+
+				t_list* lista_aux = list_create();
+				lista_aux = list_filter(lista_File_proceso, (void*) encontrar_pid);
+
+				if(lista_aux == NULL){
+					printf("EL proceso no tiene tabla de archivos");
+				}else{
+					int size = lista_aux->elements_count;
+					int i = 0;
+					printf("El proceso tiene los siguientes FD \n");
+					while (i < size){
+						printf("FD: %d \n", ((t_fileProceso*) list_get(lista_aux, i))->fileDescriptor);
+						i++;
+					}
+				}
+
+				list_destroy(lista_aux);
+
 				break;
 			case 4:
 				accion_correcta = 1;
+
+				int buscar_pid(heapElement* he){
+					return (he->pid == p->pid);
+				}
+
+				t_list* list_aux = list_create();
+				list_aux = list_filter(lista_paginas_heap, (void *) buscar_pid);
+
+				if(list_aux == NULL){
+					printf("El proceso tiene %d paginas de heap \n", 0);
+				}else{
+					printf("El proceso tiene %d paginas de heap \n", list_aux->elements_count);
+				}
+
+				list_destroy(list_aux);
 
 				break;
 			case 5:
