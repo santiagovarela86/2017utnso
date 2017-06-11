@@ -98,9 +98,9 @@ void* manejo_kernel(void *args) {
 	char* instruccion = string_new();
 	while (1) {
 		//RECIBO EL PCB
-
 		pcb = reciboPCB(&socketKernel);
 		bloqueo = 0;
+		printf("Recibi un PCB para Ejecutar\n");
 		//MUESTRO LA INFO DEL PCB
 		imprimoInfoPCB(pcb);
 
@@ -233,7 +233,7 @@ void imprimoInfoPCB(t_pcb * pcb) {
 		i++;
 	}
 
-	printf("\n");
+	printf("\n\n");
 	/*
 	 int i;
 	 for (i = 0; i < pcb->indiceCodigo->elements_count; i++){
@@ -700,6 +700,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 
 	free(msj);
 	printf("El valor de la compartida es: %d \n", valor);
+	printf("\n");
 	return valor;
 
 }
@@ -720,6 +721,7 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	free(mensajeAKernel);
 
 	printf("Se asigno el valor %d \n", valor);
+	printf("\n");
 
 	return valor;
 }
@@ -753,6 +755,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 
 	//pcb->program_counter++;
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("\n");
 	return;
 }
 
@@ -761,6 +764,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	puts("");
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("\n");
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
 	stackFuncion->retPost = pcb->program_counter;
@@ -800,6 +804,7 @@ void finalizar(void) {
 
 void retornar(t_valor_variable retorno) {
 	puts("Retornar");
+	puts("");
 
 	t_Stack* stackFuncion = malloc(sizeof(t_Stack*));
 	stackFuncion = list_get(pcb->indiceStack, pcb->indiceStack->elements_count - 1);

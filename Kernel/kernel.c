@@ -1987,8 +1987,6 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		return hayLugarHeap(elem) && coincideHeapPID(elem);
 	}
 
-	//printf("pasa las definiciones de funciones\n");
-
 	//Verifico si todavía no hay paginas de Heap para este proceso
 	if(!(list_any_satisfy(lista_paginas_heap, coincideHeapPID))){
 		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
@@ -2049,8 +2047,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		}else{
 			//TENGO QUE PEDIR UNA PAGINA NUEVA
 			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
-			printf("Pido Pagina Nueva: PID: %d, bytes: %d, socket: %d\n", pcb->pid, bytes, * socketCPU);
-
+			//printf("Pido Pagina Nueva: PID: %d, bytes: %d, socket: %d\n", pcb->pid, bytes, * socketCPU);
 		}
 	}
 }
@@ -2103,9 +2100,9 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	printf("\n");
 
 	_Bool coincideHeapPIDyDireccion(heapElement * elem){
-		printf("PID PAGINA: %d, PID BUSCADO: %d, DIRECCION PAGINA: %d, DIRECCION PAGINA BUSCADA: %d\n",
-				elem->pid, pcb->pid, elem->direccion, direccion);
-		printf("\n");
+		//printf("PID PAGINA: %d, PID BUSCADO: %d, DIRECCION PAGINA: %d, DIRECCION PAGINA BUSCADA: %d\n",
+		//		elem->pid, pcb->pid, elem->direccion, direccion);
+		//printf("\n");
 
 		return elem->pid == pcb->pid && direccion == elem->direccion;
 	}
@@ -2113,6 +2110,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	//Verifico que exista una pagina en esa direccion y para ese proceso
 	if(list_any_satisfy(lista_paginas_heap, coincideHeapPIDyDireccion)){
 		//FALSO OK
+		printf("Falsa Eliminacion de Heap Exitosa\n");
 		enviarMensaje(socketCliente, serializarMensaje(1, 710));
 	}else{
 		printf("Se intento eliminar memoria en heap no reservada previamente\n");

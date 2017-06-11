@@ -35,6 +35,7 @@ typedef struct {
 	int nro_marco;
 	int pid;
 	int nro_pagina;
+	int offset;
 } t_pagina_invertida;
 
 typedef struct {
