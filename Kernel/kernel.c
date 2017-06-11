@@ -556,7 +556,7 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 3:
 				accion_correcta = 1;
 
-				int encontrar_pid(t_fileProceso* fp){
+				/*int encontrar_pid(t_fileProceso* fp){
 					return (fp->pid == p->pid);
 				}
 
@@ -575,7 +575,7 @@ void abrir_subconsola_dos(t_pcb* p){
 					}
 				}
 
-				list_destroy(lista_aux);
+				list_destroy(lista_aux);*/
 
 				break;
 			case 4:
@@ -3053,69 +3053,158 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 }
 
 
-int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
+t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion)
 {
-	int fdNuevo;
-	 if((int)lista_File_global->elements_count != 0)
+	int encontrar_archGlobal(t_fileGlobal* glo){
+
+	return (string_equals_ignore_case(((char*)glo->path),direccion));
+	}
+	 if(list_any_satisfy(lista_File_global, (void*)encontrar_archGlobal))
 	 {
-		 if((int)lista_File_proceso->elements_count != 0)
-		 {
-			 puts("1");
-				int encontrar_archGlobal(t_fileGlobal* glo){
-					if(direccion == glo->path)
-						return 1;
-					else
-						return 0;
-				}
-				 puts("1");
+		 t_fileGlobal* reg = malloc(sizeof(t_fileGlobal));
+		 reg = list_find(lista_File_global, (void*)encontrar_archGlobal);
 
-				t_fileGlobal* regTablaGlobal = list_find(lista_File_global, (void*) encontrar_archGlobal);
-				 puts("1");
-				int encontrar_archProceso(t_fileProceso* glo){
-					if(regTablaGlobal->fdGlobal == glo->global_fd && pid_mensaje == glo->pid)
-						return 1;
-					else
-						return 0;
-				}
-				 puts("1");
-				t_fileProceso* regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
-				 puts("1");
-				if(regTablaProceso != NULL)
-				{
-					 puts("2");
-					 fdNuevo = regTablaGlobal->fdGlobal;
-				}
-				else
-				{
-					 puts("3");
-					 fdNuevo = lista_File_global->elements_count + 3;
-				}
-		 }
-		 else
-		 {
-			 puts("1");
-			 fdNuevo = lista_File_global->elements_count + 3;
-		 }
-
-
+		 return reg;
 	 }
 	 else
 	 {
-		 fdNuevo = 3;
+		 return NULL;
 	 }
+}
 
+t_lista_fileProcesos* existeEnListaProcesosArchivos(pid_mensaje)
+{
+		int encontrar_elementoListaProceso(t_lista_fileProcesos* glo){
+			if(pid_mensaje == glo->pid)
+				return 1;
+			else
+				return 0;
+		}
+	    if(list_any_satisfy(lista_File_proceso, (void*)encontrar_elementoListaProceso))
+		{
+	      t_lista_fileProcesos* regListaProcesos = malloc(sizeof(t_lista_fileProcesos));
+	      regListaProcesos = list_find(lista_File_proceso,(void*) encontrar_elementoListaProceso);
+
+	      return regListaProcesos;
+		}
+	    else
+	    {
+			 return NULL;
+	    }
+}
+
+t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal)
+{
+	int encontrar_elementoFileProceso(t_fileProceso* glo){
+		if(fdGlobal == glo->global_fd)
+			return 1;
+		else
+			return 0;
+	}
+    if(list_any_satisfy(tablaDelProceso, (void*)encontrar_elementoFileProceso))
+	{
+		t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
+		regTablaProceso = list_find(tablaDelProceso,(void*) encontrar_elementoFileProceso);
+
+		return regTablaProceso;
+	}
+    else
+    {
+    	return NULL;
+    }
+}
+
+void grabarEnTablaGlobal(int cantidadAperturas, int FdGlobal, char* direccion)
+{
 	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
-	archNuevo->cantidadDeAperturas = 1;
-	archNuevo->fdGlobal = fdNuevo;
+	archNuevo->cantidadDeAperturas = cantidadAperturas;
+	archNuevo->fdGlobal = FdGlobal;
 	archNuevo->path = direccion;
-	list_add(lista_File_global,archNuevo);
 
-	t_fileProceso* archTablaProcesos = malloc(sizeof(t_fileProceso));
-	archTablaProcesos->fileDescriptor = fdNuevo;
-	archTablaProcesos->global_fd = fdNuevo;
-	archTablaProcesos->flags = flag;
+	list_add(lista_File_global,archNuevo);
+}
+void grabarEnTablaProcesos(int pid_mensaje, int fd, int globalFD, char* flag)
+{
+	t_lista_fileProcesos* archTablaProcesos = malloc(sizeof(t_lista_fileProcesos));
 	archTablaProcesos->pid = pid_mensaje;
+	archTablaProcesos->tablaProceso = list_create();
+
+	t_fileProceso* archElemProceso = malloc(sizeof(t_fileProceso));
+	archElemProceso->fileDescriptor = fd;
+	archElemProceso->global_fd = globalFD;
+	archElemProceso->flags = flag;
+
+	list_add(archTablaProcesos->tablaProceso,archElemProceso);
+
 	list_add(lista_File_proceso,archTablaProcesos);
+
+}
+void grabarEnTablaProcesosUnProcesoTabla(t_list* listaProcesoDeLaTablaProesos, int fd, int globalFD, char* flag)
+{
+	t_fileProceso* archElemProceso = malloc(sizeof(t_fileProceso));
+	archElemProceso->fileDescriptor = fd;
+	archElemProceso->global_fd = globalFD;
+	archElemProceso->flags = flag;
+
+	list_add(listaProcesoDeLaTablaProesos,archElemProceso);
+}
+
+int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
+{
+	int fdNuevo;
+	if((int)lista_File_global->elements_count != 0)
+	{
+		 t_fileGlobal* regTablaGlobal =  existeEnTablaGlobalArchivos(direccion);
+			 if(regTablaGlobal != NULL) //pregunto si lo encontró el archivo en la global
+			 {
+			 regTablaGlobal->cantidadDeAperturas++;
+
+			  t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
+
+			  if(regListaProceso != NULL) //Pregunto si hay una lista de archivos para ese proceso
+				{
+					t_fileProceso* regTablaProceso = existeEnElementoTablaArchivo(regListaProceso->tablaProceso, regTablaGlobal->fdGlobal);
+
+					if(regTablaProceso != NULL) //pregunto si existe una referencia a ese archivo en la tabla de procesos, en la lista de ese proceso
+					{
+						fdNuevo = regTablaProceso->fileDescriptor;
+					}
+					else
+					{
+					  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
+					  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
+					}
+				}
+				else
+				{
+					fdNuevo = 3;
+					grabarEnTablaProcesos(pid_mensaje, fdNuevo, regTablaGlobal->fdGlobal, flag);
+				}
+			 }
+			 else
+			 {
+				grabarEnTablaGlobal(1, lista_File_global->elements_count, direccion);
+
+				t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
+
+				if(regListaProceso != NULL) //Pregunto si hay una lista de archivos para ese proceso
+				{
+				  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
+				  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso, fdNuevo, (lista_File_global->elements_count-1),flag);
+				}
+				else
+				{
+				 fdNuevo = lista_File_global->elements_count-1;
+				 grabarEnTablaProcesos(pid_mensaje, 3, fdNuevo, flag);
+				}
+		     }
+	      }
+		 else
+		 {
+			fdNuevo = 3;
+			grabarEnTablaGlobal(1, 0,direccion);
+			grabarEnTablaProcesos(pid_mensaje, fdNuevo, 0, flag);
+		 }
 
 	char* mensajeAFS = string_new();
 	string_append(&mensajeAFS, "803");
@@ -3124,8 +3213,6 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	string_append(&mensajeAFS, ";");
 	string_append(&mensajeAFS, direccion);
 	string_append(&mensajeAFS, ";");
-
-	free(archNuevo);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
