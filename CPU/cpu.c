@@ -1040,8 +1040,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo,
 
 	return;
 }
-void escribir(t_descriptor_archivo descriptor_archivo, void * informacion,
-		t_valor_variable tamanio) {
+void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio) {
 	puts("Escribir");
 	puts("");
 

@@ -3019,7 +3019,46 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	int fdNuevo;
 	 if((int)lista_File_global->elements_count != 0)
 	 {
-		 fdNuevo = lista_File_global->elements_count + 3;
+		 if((int)lista_File_proceso->elements_count != 0)
+		 {
+			 puts("1");
+				int encontrar_archGlobal(t_fileGlobal* glo){
+					if(direccion == glo->path)
+						return 1;
+					else
+						return 0;
+				}
+				 puts("1");
+
+				t_fileGlobal* regTablaGlobal = list_find(lista_File_global, (void*) encontrar_archGlobal);
+				 puts("1");
+				int encontrar_archProceso(t_fileProceso* glo){
+					if(regTablaGlobal->fdGlobal == glo->global_fd && pid_mensaje == glo->pid)
+						return 1;
+					else
+						return 0;
+				}
+				 puts("1");
+				t_fileProceso* regTablaProceso = list_find(lista_File_global,(void*) encontrar_archProceso);
+				 puts("1");
+				if(regTablaProceso != NULL)
+				{
+					 puts("2");
+					 fdNuevo = regTablaGlobal->fdGlobal;
+				}
+				else
+				{
+					 puts("3");
+					 fdNuevo = lista_File_global->elements_count + 3;
+				}
+		 }
+		 else
+		 {
+			 puts("1");
+			 fdNuevo = lista_File_global->elements_count + 3;
+		 }
+
+
 	 }
 	 else
 	 {
