@@ -11,6 +11,8 @@
 //512 CPU A MEM - DEFINIR VARIABLE
 //513 CPU A MEM - DEREFERENCIAR VARIABLE
 //605 KER A MEM - RESERVAR MEMORIA HEAP
+//605 MEM A KER - PAGINA HEAP NUEVA
+//606 MEM A KER - USAR PAGINA HEAP EXISTENTE
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
@@ -188,6 +190,13 @@ void * hilo_conexiones_kernel(){
 					usarPaginaHeap(pid, paginaExistente, bytesSolicitados);
 					break;
 
+				case 705:
+					;
+					int pid = atoi(mensajeDelKernel[1]);
+					int direccion = atoi(mensajeDelKernel[2]);
+					eliminarMemoriaHeap(pid, direccion);
+					break;
+
 				case 612:
 					stack_size = atoi(mensajeDelKernel[1]);
 					break;
@@ -214,6 +223,22 @@ void * hilo_conexiones_kernel(){
 	close(socketKernel);
 
 	return EXIT_SUCCESS;
+}
+
+void eliminarMemoriaHeap(int pid, int direccion){
+	int posicionMetadata = direccion-sizeof(heapMetadata);
+
+	heapMetadata * metadataAEliminar = (heapMetadata *) (bloque_memoria + posicionMetadata);
+
+	printf("Antes de eliminar la metadata\n");
+	printf("Metadata Posicion: %d, Metadata Free: %d, Size: %d\n", posicionMetadata, metadataAEliminar->isFree, metadataAEliminar->size);
+
+	metadataAEliminar->isFree = true;
+
+	printf("Después de eliminar la metadata\n");
+	printf("Metadata Posicion: %d, Metadata Free: %d, Size: %d\n", posicionMetadata, metadataAEliminar->isFree, metadataAEliminar->size);
+
+	enviarMensaje(&socketKernel, serializarMensaje(1, 706));
 }
 
 void iniciarPrograma(int pid, int paginas, char * codigo_programa) {

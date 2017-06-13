@@ -13,6 +13,9 @@
 //500 CPU A KER - HANDSHAKE DEL CPU
 //600 CPU A KER - RESERVAR MEMORIA HEAP
 //700 CPU A KER - ELIMINAR MEMORIA HEAP
+//705 KER A MEM - ELIMINAR MEMORIA HEAP
+//706 MEM A KER - ELIMINAR MEMORIA HEAP OK
+//710 KER A CPU - ELIMINAR MEMORIA HEAP OK
 //605 KER A MEM - NUEVA PAGINA
 //606 KER A CPU - NUEVA PAGINA OK
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
@@ -93,7 +96,6 @@ int main(int argc, char **argv) {
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
 	pthread_t thread_planificador;
-
 
 	char * pathConfig = argv[1];
 	inicializarEstructuras(pathConfig);
@@ -577,7 +579,7 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 4:
 				accion_correcta = 1;
 
-				int buscar_pid(heapElement* he){
+				int buscar_pid(admPaginaHeap* he){
 					return (he->pid == p->pid);
 				}
 
@@ -1799,7 +1801,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 	return pcb;
 }
 
-void * multiprogramar() {
+void multiprogramar() {
 	//validacion de nivel de multiprogramacion
 	if ((queue_size(cola_listos) + (queue_size(cola_bloqueados) + (queue_size(cola_ejecucion)))) < grado_multiprogramacion) {
 			//Se crea programa nuevo
@@ -1966,50 +1968,38 @@ void finalizarProgramaEnMemoria(int pid){
 }
 
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
-	//printf("PID: %d, Bytes; %d\n", pcb->pid, bytes);
 
-	_Bool coincideHeapPID(heapElement * elem){
-		//printf("Test:Pid: %d, Pid %d\n", elem->pid, pcb->pid);
+	_Bool coincideHeapPID(admPaginaHeap * elem){
 		return elem->pid == pcb->pid;
 	}
 
-	_Bool hayLugarHeap (heapElement * elem){
-		//printf("Test: Tamanio: %d, Bytes %d\n", elem->tamanio_disponible, bytes);
+	_Bool hayLugarHeap (admPaginaHeap * elem){
 		return elem->tamanio_disponible >= bytes;
 	}
 
-	_Bool hayLugarHeapMismoPID(heapElement * elem){
-		//printf("Test: Nro de Pagina: %d, PID: %d, Tamanio Disponible: %d\n", elem->nro_pagina, elem->pid, elem->tamanio_disponible);
+	_Bool hayLugarHeapMismoPID(admPaginaHeap * elem){
 		return hayLugarHeap(elem) && coincideHeapPID(elem);
 	}
 
 	//Verifico si todavía no hay paginas de Heap para este proceso
-	if(!(list_any_satisfy(lista_paginas_heap, coincideHeapPID))){
+	if(!(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPID))){
 		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
 		pedirPaginaHeapNueva(pcb, bytes, socketCPU);
-		//printf("pasa pedir una pagina nueva\n");
 	}else {
-		//printf("pasa y usa una pagina existente\n");
-		if (list_any_satisfy(lista_paginas_heap, hayLugarHeapMismoPID)){
+		if (list_any_satisfy(lista_paginas_heap, (void *) hayLugarHeapMismoPID)){
 			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
 			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
-			heapElement * paginaHeapLibre = list_find(lista_paginas_heap, hayLugarHeapMismoPID);
-			//printf("pasa el haylugarheapmismopid\n");
+			admPaginaHeap * paginaHeapLibre = list_find(lista_paginas_heap, (void *) hayLugarHeapMismoPID);
+
 			//ENVIO A MEMORIA LA SOLICITUD DE GRABAR EN PAGINA HEAP EXISTENTE
 			printf("Encontre la siguiente pagina de Heap Libre, PID: %d, PAGINA: %d, Bytes Libres: %d\n", paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, paginaHeapLibre->tamanio_disponible);
 			enviarMensaje(&skt_memoria, serializarMensaje(4, 607, paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, bytes));
 
-			//printf("pasa el envio de mensaje a memorIa \n");
-
 			char * buffer = malloc(MAXBUF);
 			int result = recv(skt_memoria, buffer, MAXBUF, 0);
-			//printf("%s\n", buffer);
-			//buffer = string_substring(buffer, 0, strlen(buffer));
 
 			if (result > 0) {
 				char ** respuesta = string_split(buffer, ";");
-
-				//printf("pasa y recibe algo de memorIa\n");
 
 				if (strcmp(respuesta[0], "608") == 0 || strcmp(respuesta[0], "605") == 0) {
 					int pid = atoi(respuesta[1]);
@@ -2017,20 +2007,22 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 					int direccion = atoi(respuesta[3]);
 					int newFreeSpace = atoi(respuesta[4]);
 
-					_Bool mismaPaginaHeap(heapElement * elem){
-						return elem->pid == pid && elem->nro_pagina == pagina;
-					}
-
-					//printf("pasa y antes de buscar entrada heap existente\n");
+					//_Bool mismaPaginaHeap(admPaginaHeap * elem){
+					//	return elem->pid == pid && elem->nro_pagina == pagina;
+					//}
 
 					//EDITO LA ENTRADA EXISTENTE
- 					heapElement * entradaHeapExistente = list_find(lista_paginas_heap, mismaPaginaHeap);
- 					entradaHeapExistente->tamanio_disponible = newFreeSpace;
+					paginaHeapLibre->tamanio_disponible = newFreeSpace;
+					//admPaginaHeap * entradaHeapExistente = list_find(lista_paginas_heap, (void *) mismaPaginaHeap);
+ 					//entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
- 					//printf("pasa y despues de buscar entrada heap existente\n");
+					reservaHeap * reserva = malloc(sizeof(reservaHeap));
+ 					reserva->direccion = direccion;
+					reserva->size = bytes;
+					list_add(paginaHeapLibre->alocaciones, reserva);
+					//list_add(entradaHeapExistente->alocaciones, reserva);
 
  					enviarMensaje(socketCPU, serializarMensaje(1, direccion));
- 					//printf("pasa el enviar mensaje a CPU\n");
 
 				}else{
 					printf("Error en el protocolo de mensajes entre procesos\n");
@@ -2061,17 +2053,23 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 		char ** respuestaDeMemoria = string_split(buffer, ";");
 
 		if (strcmp(respuestaDeMemoria[0], "605") == 0) {
-			heapElement * heapElem = malloc(sizeof(heapElement));
+			admPaginaHeap * heapElem = malloc(sizeof(admPaginaHeap));
+			heapElem->alocaciones = list_create();
 			heapElem->pid = atoi(respuestaDeMemoria[1]);
 			heapElem->nro_pagina = atoi(respuestaDeMemoria[2]);
 			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[3]);
-			heapElem->direccion = atoi(respuestaDeMemoria[4]);
 
+			reservaHeap * reserva = malloc(sizeof(reservaHeap));
+			int direccion = atoi(respuestaDeMemoria[4]);
+			reserva->direccion = direccion;
+			reserva->size = bytes;
+
+			list_add(heapElem->alocaciones, reserva);
 			list_add(lista_paginas_heap, heapElem);
 
 			pcb->cantidadPaginas++;
 
-			enviarMensaje(socketCPU, serializarMensaje(2, 606, heapElem->direccion));
+			enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
 		} else {
 			//SI HAY UN ERROR DE RESERVA DE HEAP EL PROCESO DEBE FINALIZAR
 			if (strcmp(respuestaDeMemoria[0], "617") == 0){
@@ -2095,19 +2093,49 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	printf("Intento eliminar Pagina Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
 	printf("\n");
 
-	_Bool coincideHeapPIDyDireccion(heapElement * elem){
-		//printf("PID PAGINA: %d, PID BUSCADO: %d, DIRECCION PAGINA: %d, DIRECCION PAGINA BUSCADA: %d\n",
-		//		elem->pid, pcb->pid, elem->direccion, direccion);
-		//printf("\n");
-
-		return elem->pid == pcb->pid && direccion == elem->direccion;
+	_Bool coincideDireccion(reservaHeap * elem){
+		return elem->direccion = direccion;
 	}
 
-	//Verifico que exista una pagina en esa direccion y para ese proceso
-	if(list_any_satisfy(lista_paginas_heap, coincideHeapPIDyDireccion)){
+	_Bool coincideHeapPIDyDireccion(admPaginaHeap * elem){
+		return elem->pid == pcb->pid && list_any_satisfy(elem->alocaciones, (void *) coincideDireccion);
+	}
+
+	//Verifico que exista una pagina que tenga esa direccion y sea para ese proceso
+	if(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPIDyDireccion)){
 		//FALSO OK
-		printf("Falsa Eliminacion de Heap Exitosa\n");
-		enviarMensaje(socketCliente, serializarMensaje(1, 710));
+		printf("Existe la reserva heap con direccion %d y PID %d\n", direccion, pcb->pid);
+
+		enviarMensaje(&skt_memoria, serializarMensaje(3, 705, pcb->pid, direccion));
+
+		char * buffer = malloc(MAXBUF);
+
+		int result = recv(skt_memoria, buffer, MAXBUF, 0);
+
+		if (result > 0){
+			char ** respuesta = string_split(buffer, ";");
+
+			if (strcmp(respuesta[0], "706") == 0){
+				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
+
+				reservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
+
+				paginaHeapAEditar->tamanio_disponible = paginaHeapAEditar->tamanio_disponible + reserva->size;
+
+				list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) (void *) coincideDireccion);
+
+				printf("Se remueve el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
+				printf("El nuevo espacio libre de la pagina es %d\n", paginaHeapAEditar->tamanio_disponible);
+
+				enviarMensaje(socketCliente, serializarMensaje(1, 710));
+			}else{
+				printf("Error de protocolo al liberar memoria de heap\n");
+				exit(errno);
+			}
+		}else{
+			printf("Error de comunicación con memoria eliminando memoria de Heap\n");
+			exit(errno);
+		}
 	}else{
 		printf("Se intento eliminar memoria en heap no reservada previamente\n");
 		finalizarPrograma(pcb->pid);

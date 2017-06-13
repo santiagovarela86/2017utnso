@@ -83,9 +83,14 @@ typedef struct {
 typedef struct {
 	int pid;
 	int nro_pagina;
+	t_list * alocaciones;
 	int tamanio_disponible;
+} admPaginaHeap;
+
+typedef struct {
+	int size;
 	int direccion;
-} heapElement;
+} reservaHeap;
 
 typedef struct {
 	int pid;
@@ -171,7 +176,7 @@ bool esNewLine(char* linea);
 char * limpioCodigo(char * codigo);
 void cargoIndicesPCB(t_pcb * pcb, char * codigo);
 t_pcb * deserializar_pcb(char * mensajeRecibido);
-void * multiprogramar();
+void multiprogramar();
 
 void iniciarPrograma(char * codigo, int socket, int pid);
 void finalizarPrograma(int pidACerrar);
@@ -220,6 +225,8 @@ t_estadistica* encontrar_estadistica(int p);
 void finalizarProgramaEnMemoria(int pid);
 int obtener_pid_de_cpu(int* skt);
 char* serializar_codigo_por_instrucciones(char* codigo);
+void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU);
+void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
