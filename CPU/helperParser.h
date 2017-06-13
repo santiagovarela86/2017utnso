@@ -32,7 +32,6 @@ void finalizar(void);
 void retornar(t_valor_variable retorno);
 void wait(t_nombre_semaforo identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
-t_puntero alocar(t_valor_variable espacio);
 void liberar(t_puntero puntero);
 t_puntero reservar(t_valor_variable espacio);
 t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags);

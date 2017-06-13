@@ -535,7 +535,7 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
 
-	grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
+	//grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
 
 	pag_a_cargar->offset = pag_a_cargar->offset + OFFSET_VAR; ////ACTUALIZO EL VALOR DEL OFFSET
 
@@ -561,7 +561,7 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
 
-	grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+	//grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
 
 	pag_encontrada->offset = pag_encontrada->offset + OFFSET_VAR; ////ACTUALIZO EL VALOR DEL OFFSET
 
@@ -594,7 +594,7 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 	list_add(lista_paginas_stack, pag_stack);
 
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
-	grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+	//grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
 
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
