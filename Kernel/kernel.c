@@ -2022,7 +2022,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 					list_add(paginaHeapLibre->alocaciones, reserva);
 					//list_add(entradaHeapExistente->alocaciones, reserva);
 
- 					enviarMensaje(socketCPU, serializarMensaje(1, direccion));
+ 					enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
 
 				}else{
 					printf("Error en el protocolo de mensajes entre procesos\n");
@@ -2094,7 +2094,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	printf("\n");
 
 	_Bool coincideDireccion(reservaHeap * elem){
-		return elem->direccion = direccion;
+		return elem->direccion == direccion;
 	}
 
 	_Bool coincideHeapPIDyDireccion(admPaginaHeap * elem){

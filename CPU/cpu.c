@@ -898,6 +898,7 @@ t_puntero reservar(t_valor_variable espacio) {
 			printf("El programa fue finalizado en Kernel\n");
 			//FORMA CABEZA DE TERMINARLO
 			pcbHabilitado = false;
+			return 0;
 		}
 	} else {
 		printf("Error de comunicacion reservando Memoria de Heap\n");
