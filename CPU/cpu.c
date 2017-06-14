@@ -492,29 +492,23 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		printf("Obtener Posicion Variable %c\n", identificador_variable);
 		puts("");
 
+		int encontrar_var(t_variables* var) {
+			return (var->nombre_variable == (char) identificador_variable);
+		}
+
 		t_variables* entrada_encontrada;
+
+		t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
 
 		//ESTO PINCHA SI LA VARIABLE NO FUE DECLARADA, HAY QUE VER LA FORMA DE
 		//TERMINAR EL PROCESO, EL CPU NO DEBE MORIR, EL PROGRAMA SI
 		//Y DEBE TERMINARSE EL FLUJO DE EJECUCION SIN EJECUTAR NINGUNA INSTRUCCION DE MAS
 
 		if (esArgumentoDeFuncion(identificador_variable)) {
-
-			int encontrar_var(t_variables* var) {
-
-				return (var->nombre_variable == (char) identificador_variable);
-			}
-
-			t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
-			entrada_encontrada = list_find(StackDeContexto->args,(void*) encontrar_var);
+			entrada_encontrada = list_find(StackDeContexto->args, (void*) encontrar_var);
 		}
 
 		else {
-			int encontrar_var(t_variables* var) {
-				return (var->nombre_variable == (char) identificador_variable);
-			}
-
-			t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
 			entrada_encontrada = list_find(StackDeContexto->variables, (void*) encontrar_var);
 		}
 

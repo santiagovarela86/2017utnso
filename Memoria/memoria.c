@@ -531,7 +531,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock){
 
-	t_pagina_invertida* pag_encontrada;
+	t_pagina_invertida * pag_encontrada;
 	t_pagina_proceso * manejo_programa = get_manejo_programa(pid);
 
 	if(manejo_programa == NULL){
@@ -746,7 +746,7 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 	}
 
 	char* mensajeACpu = string_new();
-	string_append(&mensajeACpu, string_itoa(valor_variable)); //HAY QUE VER QUE PASA CON CPU
+	string_append(&mensajeACpu, string_itoa(valor_variable));
 	string_append(&mensajeACpu, ";");
 
 	enviarMensaje(&sock, mensajeACpu);
