@@ -3291,7 +3291,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 			int index = (int)archAbrir1->global_fd;
 			archFileGlobal = list_get(lista_File_global, index);
 			printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
-			if(archFileGlobal->cantidadDeAperturas < 2)
+			if(archFileGlobal->cantidadDeAperturas < 3)
 			{
 				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 			}
