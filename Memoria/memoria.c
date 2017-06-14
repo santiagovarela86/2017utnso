@@ -293,7 +293,10 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 	printf("INICIAR PROGRAMA %d\n", pid);
 	puts("");
 
-	if (string_length(bloque_memoria) == 0 || string_length(codigo_programa) <= string_length(bloque_memoria)) {
+	if (strlen(codigo_programa) <=
+			(configuracion->marcos - tamanio_maximo->maxima_cant_paginas_administracion)
+				* configuracion->marco_size){
+//	if (string_length(bloque_memoria) == 0 || string_length(codigo_programa) <= string_length(bloque_memoria)) {
 
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
 		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
