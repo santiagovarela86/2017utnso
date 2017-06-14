@@ -202,6 +202,7 @@ t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion);
 void grabarEnTablaGlobal(int cantidadAperturas, int FdGlobal, char* direccion);
 void grabarEnTablaProcesos(int pid_mensaje, int fd, int globalFD, char* flag);
 void grabarEnTablaProcesosUnProcesoTabla(t_list* listaProcesoDeLaTablaProesos, int fd, int globalFD, char* flag);
+int hayOffsetArch(int fd);
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue);
 void rechazoFaltaMemoria(int socketConsola);

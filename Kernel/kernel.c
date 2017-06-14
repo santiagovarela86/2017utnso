@@ -1248,7 +1248,7 @@ void * handler_conexion_cpu(void * sock) {
 				regOffset->offset = atoi(mensajeDesdeCPU[2]);
 				list_add(offsetArch,regOffset);
 
-				free(regOffset);
+				//free(regOffset);
 
 				break;
 
@@ -1276,11 +1276,11 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 802:  //de CPU a File system (borrar)
-				puts("1");
+
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
 				 borrarArchivo(pid_mensaje, fd);
-				 puts("2");
+
 				break;
 
 			case 801://de CPU a File system (cerrar)
@@ -3020,7 +3020,32 @@ t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd)
 
 
 }
+int hayOffsetArch(int fd)
+{
 
+	int encontrar_offset(t_offsetArch* glo) {
+		if(fd == glo->fd)
+		{
+			return 1;
+		}
+		else
+		{
+			return 0;
+		}
+
+		 if(list_any_satisfy(offsetArch, (void*)encontrar_offset))
+		 {
+				t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
+				regOffset = list_find(offsetArch, (void*)encontrar_offset);
+
+			 return regOffset->offset;
+		 }
+		 else
+		 {
+			 return -1;
+		 }
+	}
+}
 void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
 	{
@@ -3043,12 +3068,12 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			else
 				return 0;
 		}
-		t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
-		regOffset = list_find(offsetArch, (void*)encontrar_archProceso);
-		if(regTablaGlobal != NULL)
+
+		int offset = hayOffsetArch(fd);
+		if( offset != -1)
 		{
 
-			string_append(&mensajeFS, string_itoa(regOffset->offset));
+			string_append(&mensajeFS, string_itoa(offset));
 			string_append(&mensajeFS, ";");
 
 		}
@@ -3164,6 +3189,7 @@ void grabarEnTablaProcesos(int pid_mensaje, int fd, int globalFD, char* flag)
 	list_add(lista_File_proceso,archTablaProcesos);
 
 }
+
 void grabarEnTablaProcesosUnProcesoTabla(t_list* listaProcesoDeLaTablaProesos, int fd, int globalFD, char* flag)
 {
 	t_fileProceso* archElemProceso = malloc(sizeof(t_fileProceso));
@@ -3264,6 +3290,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 			t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
 			int index = (int)archAbrir1->global_fd;
 			archFileGlobal = list_get(lista_File_global, index);
+			printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
 			if(archFileGlobal->cantidadDeAperturas < 2)
 			{
 				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
@@ -3347,18 +3374,11 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	string_append(&mensajeAFS, ((char*)infofile));
 	string_append(&mensajeAFS, ";");
 
-	int encontrar_archProceso(t_fileProceso* glo) {
-		if (fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-	t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
-	regOffset = list_find(offsetArch, (void*)encontrar_archProceso);
-	if (regTablaGlobal != NULL)
+	int offset = hayOffsetArch(fd);
+	if( offset != -1)
 	{
 
-		string_append(&mensajeAFS, string_itoa(regOffset->offset));
+		string_append(&mensajeAFS, string_itoa(offset));
 		string_append(&mensajeAFS, ";");
 
 	}
@@ -3367,6 +3387,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 		string_append(&mensajeAFS, string_itoa(-1));
 		string_append(&mensajeAFS, ";");
 	}
+
 
 	//free(archAbrir1);
 	free(regTablaGlobal);
