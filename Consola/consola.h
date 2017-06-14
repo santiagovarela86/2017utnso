@@ -13,9 +13,9 @@
 
 typedef struct{
 	int pid;
-	struct time_t * inicio;
-	struct time_t * fin;
-	int duracion;
+	struct tm * inicio;
+	struct tm * fin;
+	double duracion;
 	int mensajes;
 	int socket_kernel;
 } programa;

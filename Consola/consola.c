@@ -214,23 +214,23 @@ void * escuchar_Kernel(void * args){
 			if(atoi(respuesta_kernel[0]) == 103){
 				/*103 es creacion*/
 				programa* program = malloc(sizeof(program));
-				  time_t comienzo = malloc(sizeof(time_t));
-
-				  time(&comienzo);
+				  time_t * comienzo = malloc(sizeof(time_t));
+				  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+				  time(comienzo);
 				   /* Get GMT time */
 
 
 				program->pid = atoi(respuesta_kernel[1]);
-				program->inicio = time(&comienzo);
-				program->fin = 0;
+				program->inicio = localtime(comienzo);
+				program->fin = localtime(comienzo);
 				program->duracion = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
 
 				struct tm* tm_info;
-				tm_info = localtime(&comienzo);
+				tm_info = localtime(comienzo);
 
-				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
 				printf( "Comienzo: %s\n", bufferHoraCom );
 
 
@@ -254,15 +254,17 @@ void * escuchar_Kernel(void * args){
 								//pthread_mutex_lock(&mtx_bloqueados);
 								p = queue_pop(cola_programas);
 								//pthread_mutex_unlock(&mtx_bloqueados);
-								time_t final = malloc(sizeof(time_t));
+								time_t * final = malloc(sizeof(time_t));
 								if(p->pid == pid){
 									encontrado = 1;
-									p->fin =time(&final );
+									p->fin =localtime(final);
+									p->duracion = difftime(p->fin, p->inicio);
 
 									struct tm* tm_infoF;
-									tm_infoF = localtime(&final);
+									tm_infoF = localtime(final);
+									//tm_infoF = localtime(&final);
 
-									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", tm_infoF);
+									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", p->fin);
 									printf( "Final: %s\n", bufferHoraFin );
 								}
 
@@ -285,8 +287,10 @@ void * escuchar_Kernel(void * args){
 				//strftime(outputF,128,"%d/%m/%y %H:%M:%S",p->fin);
 				printf("Su hora finalizacion fue: \n");
 				printf( " %s\n", bufferHoraFin );
-			  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
 
+
+			  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
+			  printf( "ó: %f s\n", p->duracion );
 
 			}
 
