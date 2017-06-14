@@ -214,7 +214,7 @@ void * escuchar_Kernel(void * args){
 			if(atoi(respuesta_kernel[0]) == 103){
 				/*103 es creacion*/
 				programa* program = malloc(sizeof(program));
-				  time_t * comienzo = malloc(sizeof(time_t));
+				time_t * comienzo = malloc(sizeof(time_t));
 				  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
 				  time(comienzo);
 				   /* Get GMT time */
@@ -257,14 +257,17 @@ void * escuchar_Kernel(void * args){
 								time_t * final = malloc(sizeof(time_t));
 								if(p->pid == pid){
 									encontrado = 1;
+									time(final);
 									p->fin =localtime(final);
 									p->duracion = difftime(p->fin, p->inicio);
 
 									struct tm* tm_infoF;
 									tm_infoF = localtime(final);
 									//tm_infoF = localtime(&final);
+									 time(final);
 
-									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", p->fin);
+									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
+
 									printf( "Final: %s\n", bufferHoraFin );
 								}
 
