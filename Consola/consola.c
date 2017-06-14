@@ -257,14 +257,14 @@ void * escuchar_Kernel(void * args){
 								time_t * final = malloc(sizeof(time_t));
 								if(p->pid == pid){
 									encontrado = 1;
-									time(final);
+									//time(final);
 									p->fin =localtime(final);
 									p->duracion = difftime(p->fin, p->inicio);
 
 									struct tm* tm_infoF;
 									tm_infoF = localtime(final);
 									//tm_infoF = localtime(&final);
-									 time(final);
+									time(final);
 
 									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
 
