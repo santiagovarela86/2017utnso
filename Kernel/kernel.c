@@ -3290,8 +3290,8 @@ void borrarArchivo(int pid_mensaje, int fd)
 			t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
 			int index = (int)archAbrir1->global_fd;
 			archFileGlobal = list_get(lista_File_global, index);
-			printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
-			if(archFileGlobal->cantidadDeAperturas < 3)
+			//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
+			if(archFileGlobal->cantidadDeAperturas >= 2)
 			{
 				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 			}
@@ -3342,7 +3342,7 @@ void cerrarArchivo(int pid_mensaje, int fd)
 	}
 	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
 	archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-	list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+
 
 	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
@@ -3350,12 +3350,15 @@ void cerrarArchivo(int pid_mensaje, int fd)
 	if(archAbrir2->cantidadDeAperturas == 0)
 	{
 		list_remove(lista_File_global, archAbrir1->global_fd);
+		free(archAbrir2);
 	}
 	else
 	{
 		archAbrir2->cantidadDeAperturas--;
 		//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 	}
+	list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+	free(archAbrir1);
 	return;
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
