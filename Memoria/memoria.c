@@ -817,11 +817,12 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	//SUPONEMOS QUE EL CODIGO SOLO ESTA EN LA PAGINA 0
 	int paginaALeer = 0;
 
-	char* instruccion = malloc(MAXBUF);
+	char* instruccion;
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	printf("Se envia la instruccion %s\n", instruccion);
+	printf("Longitud Instruccion: %d\n", strlen(instruccion));
 
 	enviarMensaje(socketCliente, instruccion);
 
@@ -1023,7 +1024,7 @@ t_pagina_invertida *memory_read(char *base, int offset, int size){
 }
 
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
-	char * datos_pagina = malloc(configuracion->marco_size);
+	char * datos_pagina = malloc(tamanio);
 
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
@@ -1062,13 +1063,13 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 }
 
 char* leer_codigo_programa(int pid, int inicio, int offset){
-	char* codigo_programa = malloc(MAXBUF);
+	char* codigo_programa = malloc(offset);
 	codigo_programa = string_substring(bloque_memoria, inicio, offset);
 	return codigo_programa;
 }
 
 char* leer_memoria(int inicio, int bytes){
-	char * buffer = malloc(MAXBUF);
+	char * buffer = malloc(bytes);
 	memcpy(buffer, &bloque_memoria[inicio], bytes);
 	return buffer;
 }

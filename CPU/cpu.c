@@ -104,8 +104,6 @@ void* manejo_kernel(void *args) {
 		//MUESTRO LA INFO DEL PCB
 		imprimoInfoPCB(pcb);
 
-		instruccion = "";
-
 		//Guardo el Quantum
 		int q = pcb->quantum;
 
@@ -115,8 +113,10 @@ void* manejo_kernel(void *args) {
 						&& pcbHabilitado == true) {
 
 			pthread_mutex_lock(&mutex_instrucciones);
-			instruccion = solicitoInstruccion(pcb);
 
+			instruccion = "";
+
+			instruccion = solicitoInstruccion(pcb);
 
 			analizadorLinea(instruccion, funciones, kernel);
 
@@ -210,8 +210,15 @@ char * solicitoInstruccion(t_pcb* pcb) {
 	int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("Se procesa la instruccion: %s\n", buffer);
-		return trim(buffer);
+
+		//DE ESTA MANERA ME ASEGURO DE TOMAR LA INSTRUCCION Y NO BASURA
+		char * instr = malloc(result);
+		instr = string_substring(buffer, 0, result);
+
+		printf("Se recibe la instruccion: %s\n", instr);
+		printf("Longitud Instruccion: %d\n", strlen(instr));
+		printf("\n");
+		return instr;
 
 	} else {
 		printf("Error de comunicacion al recibir Instruccion a la Memoria\n");
@@ -744,7 +751,12 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	stackFuncion->variables = list_create();
 	list_add(pcb->indiceStack, stackFuncion);
 
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	printf("Etiqueta: %s\n", trim(etiqueta));
+	printf("\n");
+
+	imprimoInfoPCB(pcb);
+
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion-1;
 
 	//pcb->program_counter++;
