@@ -117,6 +117,8 @@ void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int*
 void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
 void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock);
 void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock);
+void eliminarMemoriaHeap(int pid, int direccion);
+int reordenarPaginaHeap(int indicePaginaHeap);
 
 #define VARIABLE_EN_CACHE 99
 

@@ -2002,25 +2002,16 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 				char ** respuesta = string_split(buffer, ";");
 
 				if (strcmp(respuesta[0], "608") == 0 || strcmp(respuesta[0], "605") == 0) {
-					int pid = atoi(respuesta[1]);
-					int pagina = atoi(respuesta[2]);
-					int direccion = atoi(respuesta[3]);
-					int newFreeSpace = atoi(respuesta[4]);
-
-					//_Bool mismaPaginaHeap(admPaginaHeap * elem){
-					//	return elem->pid == pid && elem->nro_pagina == pagina;
-					//}
+					int direccion = atoi(respuesta[1]);
+					int newFreeSpace = atoi(respuesta[2]);
 
 					//EDITO LA ENTRADA EXISTENTE
 					paginaHeapLibre->tamanio_disponible = newFreeSpace;
-					//admPaginaHeap * entradaHeapExistente = list_find(lista_paginas_heap, (void *) mismaPaginaHeap);
- 					//entradaHeapExistente->tamanio_disponible = newFreeSpace;
 
-					reservaHeap * reserva = malloc(sizeof(reservaHeap));
+					admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
  					reserva->direccion = direccion;
 					reserva->size = bytes;
 					list_add(paginaHeapLibre->alocaciones, reserva);
-					//list_add(entradaHeapExistente->alocaciones, reserva);
 
  					enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
 
@@ -2035,7 +2026,6 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		}else{
 			//TENGO QUE PEDIR UNA PAGINA NUEVA
 			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
-			//printf("Pido Pagina Nueva: PID: %d, bytes: %d, socket: %d\n", pcb->pid, bytes, * socketCPU);
 		}
 	}
 }
@@ -2055,12 +2045,12 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 		if (strcmp(respuestaDeMemoria[0], "605") == 0) {
 			admPaginaHeap * heapElem = malloc(sizeof(admPaginaHeap));
 			heapElem->alocaciones = list_create();
-			heapElem->pid = atoi(respuestaDeMemoria[1]);
-			heapElem->nro_pagina = atoi(respuestaDeMemoria[2]);
-			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[3]);
+			heapElem->pid = pcb->pid;
+			heapElem->nro_pagina = paginaActual;
+			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[2]);
 
-			reservaHeap * reserva = malloc(sizeof(reservaHeap));
-			int direccion = atoi(respuestaDeMemoria[4]);
+			admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
+			int direccion = atoi(respuestaDeMemoria[1]);
 			reserva->direccion = direccion;
 			reserva->size = bytes;
 
@@ -2093,7 +2083,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	printf("Intento eliminar Pagina Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
 	printf("\n");
 
-	_Bool coincideDireccion(reservaHeap * elem){
+	_Bool coincideDireccion(admReservaHeap * elem){
 		return elem->direccion == direccion;
 	}
 
@@ -2103,7 +2093,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
 	//Verifico que exista una pagina que tenga esa direccion y sea para ese proceso
 	if(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPIDyDireccion)){
-		//FALSO OK
+
 		printf("Existe la reserva heap con direccion %d y PID %d\n", direccion, pcb->pid);
 
 		enviarMensaje(&skt_memoria, serializarMensaje(3, 705, pcb->pid, direccion));
@@ -2116,13 +2106,17 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 			char ** respuesta = string_split(buffer, ";");
 
 			if (strcmp(respuesta[0], "706") == 0){
+				int indiceADesplazar = atoi(respuesta[1]);
 				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
-
-				reservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
-
+				admReservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
 				paginaHeapAEditar->tamanio_disponible = paginaHeapAEditar->tamanio_disponible + reserva->size;
+				list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
 
-				list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) (void *) coincideDireccion);
+				void desplazarReservas(admReservaHeap * elem){
+					elem->direccion = elem->direccion - indiceADesplazar;
+				}
+
+				list_iterate(paginaHeapAEditar->alocaciones, (void *) desplazarReservas);
 
 				printf("Se remueve el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", paginaHeapAEditar->tamanio_disponible);

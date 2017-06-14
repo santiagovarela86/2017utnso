@@ -90,7 +90,7 @@ typedef struct {
 typedef struct {
 	int size;
 	int direccion;
-} reservaHeap;
+} admReservaHeap;
 
 typedef struct {
 	int pid;

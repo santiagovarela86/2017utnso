@@ -52,7 +52,7 @@ struct sockaddr_in direccionMemoria;
 sem_t semaforoKernel;
 
 //CONTADOR CABEZA
-int contadorCabeza = 0;
+int contadorPaginasHeap = 0;
 
 int main(int argc, char **argv) {
 
@@ -157,7 +157,7 @@ void * hilo_conexiones_kernel(){
 
 		while (result > 0) {
 
-			retardo_acceso_memoria();
+			//retardo_acceso_memoria(); //SERIA MEJOR UNIFICAR EL RETARDO EN UN UNICO ACCEDER BLOQUE MEMORIA
 
 			char**mensajeDelKernel = string_split(message, ";");
 			int operacion = atoi(mensajeDelKernel[0]);
@@ -238,7 +238,54 @@ void eliminarMemoriaHeap(int pid, int direccion){
 	printf("Después de eliminar la metadata\n");
 	printf("Metadata Posicion: %d, Metadata Free: %d, Size: %d\n", posicionMetadata, metadataAEliminar->isFree, metadataAEliminar->size);
 
-	enviarMensaje(&socketKernel, serializarMensaje(1, 706));
+	int indicePaginaHeap = direccion / configuracion->marco_size;
+
+	int indiceADezplazarEnKernel = reordenarPaginaHeap(indicePaginaHeap);
+
+	enviarMensaje(&socketKernel, serializarMensaje(2, 706, indiceADezplazarEnKernel));
+}
+
+int reordenarPaginaHeap(indicePaginaHeap){
+
+	//TOMO LAS REFERENCIAS
+	int direccionActual = indicePaginaHeap * configuracion->marco_size;
+	int direccionBasePagina = direccionActual;
+
+	//ME COPIO TEMPORALMENTE LA PAGINA ENTERA
+	char * buffer = malloc(configuracion->marco_size);
+	memcpy(buffer, &bloque_memoria[direccionBasePagina], configuracion->marco_size);
+
+	//RECORRO BUSCANDO EL METADATA QUE FUE ELIMINADO
+	heapMetadata * metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
+	while (!metadataActual->isFree){
+		direccionActual = direccionActual + sizeof(heapMetadata) + metadataActual->size;
+		metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
+	}
+
+	//DIRECCION DONDE EMPIEZAN LOS METADATA OCUPADOS
+	int direccionMetadataUtil = direccionActual+sizeof(heapMetadata)+metadataActual->size;
+
+	//POSICION EN EL BUFFER
+	int posicionEnBuffer = direccionMetadataUtil % configuracion->marco_size;
+
+	//LONGITUD DE LOS METADATA OCUPADOS
+	int longitudMetadataUtil = configuracion->marco_size - posicionEnBuffer;
+
+	//MUEVO LOS METADATA UTILES A LA DIRECCION DE LA METADATA A ELIMINAR
+	//memmove(&bloque_memoria[direccionActual], &buffer[posicionEnBuffer], longitudMetadataUtil);
+	memcpy(&bloque_memoria[direccionActual], &buffer[posicionEnBuffer], longitudMetadataUtil);
+
+	//RECORRO DESDE DONDE DEJE PARA TOCAR EL ULTIMO FREE
+	metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
+	while (!metadataActual->isFree){
+		direccionActual = direccionActual + sizeof(heapMetadata) + metadataActual->size;
+		metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
+	}
+
+	//AGRANDO EL ULTIMO FREE
+	metadataActual->size = metadataActual->size + posicionEnBuffer;
+
+	return posicionEnBuffer;
 }
 
 void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
@@ -340,9 +387,7 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 			int direccion = posicionActual + sizeof(heapMetadata);
 
 			printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n",pagina->pid, pagina->nro_pagina, direccion,	ultimoMetadata->size);
-
-			enviarMensaje(&socketKernel, serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina,	direccion, ultimoMetadata->size));
-			printf("Envio a Kernel: %s\n", serializarMensaje(5, 608, pagina->pid, pagina->nro_pagina,	direccion, ultimoMetadata->size));
+			enviarMensaje(&socketKernel, serializarMensaje(3, 608, direccion, ultimoMetadata->size));
 		}
 	}
 
@@ -368,20 +413,18 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
-		enviarMensaje(&socketKernel, serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree));
+		//enviarMensaje(&socketKernel, serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree));
+		enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
 		//printf("Envie mensaje: %s\n", respuestaAKernel);
 
-		contadorCabeza++;
+		contadorPaginasHeap++;
 		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
-				contadorCabeza, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
+				contadorPaginasHeap, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 		printf("\n");
 	} else {
 		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
 		printf("Error al crear Pagina de Heap\n");
 		enviarMensaje(&socketKernel, serializarMensaje(2, 617, pid));
-		//printf("Se notifica al Kernel la finalizacion del proceso %d\n", pid);
-		//finalizar_programa(pid);
-		//printf("Se finaliza el programa %d en memoria\n", pid);
 	}
 }
 
