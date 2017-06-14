@@ -821,10 +821,11 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
-	printf("Se envia la instruccion %s\n", instruccion);
-	printf("Longitud Instruccion: %d\n", strlen(instruccion));
+	char * instr = string_substring(instruccion, 0, offset);
+	printf("Se envia la instruccion %s\n", instr);
+	printf("Longitud Instruccion: %d\n", strlen(instr));
 
-	enviarMensaje(socketCliente, instruccion);
+	enviarMensaje(socketCliente, instr);
 
 	free(instruccion);
 }

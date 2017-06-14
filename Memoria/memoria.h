@@ -56,7 +56,7 @@ typedef struct {
 
 typedef struct {
 	uint32_t size;
-	bool isFree;
+	_Bool isFree;
 } heapMetadata;
 
 void* inicializar_consola(void*);
