@@ -3398,6 +3398,14 @@ void cerrarArchivo(int pid_mensaje, int fd)
 
 	if(archAbrir2->cantidadDeAperturas == 0)
 	{
+		char* mensajeAFS = string_new();
+		string_append(&mensajeAFS, "802");
+		string_append(&mensajeAFS, ";");
+		string_append(&mensajeAFS, archAbrir2->path);
+		string_append(&mensajeAFS, ";");
+
+		enviarMensaje(&skt_filesystem, mensajeAFS);
+
 		list_remove(lista_File_global, archAbrir1->global_fd);
 		free(archAbrir2);
 	}
