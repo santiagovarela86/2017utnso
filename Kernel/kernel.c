@@ -572,19 +572,33 @@ void abrir_subconsola_dos(t_pcb* p){
 				t_lista_fileProcesos* tablaDeProcesoActual = malloc(sizeof(t_lista_fileProcesos));
 				tablaDeProcesoActual = existeEnListaProcesosArchivos(p->pid);
 
-				if(tablaDeProcesoActual->tablaProceso == NULL){
-					printf("EL proceso no tiene tabla de archivos");
+				if(tablaDeProcesoActual == NULL){
+
+					printf("EL proceso no tiene archivos asociados");
 				}else{
+
 					int size = tablaDeProcesoActual->tablaProceso->elements_count;
 					int i = 0;
-					printf("El proceso tiene los siguientes FD \n");
-					while (i < size){
-						printf("FD: %d \n", ((t_fileProceso*) list_get(tablaDeProcesoActual->tablaProceso, i))->fileDescriptor);
-						i++;
+
+					if(size != 0)
+					{
+						printf("El proceso tiene los siguientes FD \n");
+						t_fileProceso* filePro = malloc(sizeof(t_fileProceso));
+
+						while (i < size){
+
+							filePro = list_get(tablaDeProcesoActual->tablaProceso, i);
+							printf("FD: %d \n", filePro->fileDescriptor);
+								puts("1");
+							i++;
+						}
+						free(filePro);
+					}
+					else
+					{
+						printf("EL proceso no tiene archivos asociados");
 					}
 				}
-
-				list_destroy(tablaDeProcesoActual->tablaProceso);
 
 				break;
 			case 4:
@@ -3135,23 +3149,34 @@ t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion)
 
 t_lista_fileProcesos* existeEnListaProcesosArchivos(pid_mensaje)
 {
+
+	if(lista_File_proceso->elements_count != 0){
 		int encontrar_elementoListaProceso(t_lista_fileProcesos* glo){
 			if(pid_mensaje == glo->pid)
 				return 1;
 			else
 				return 0;
 		}
+
 	    if(list_any_satisfy(lista_File_proceso, (void*)encontrar_elementoListaProceso))
 		{
-	      t_lista_fileProcesos* regListaProcesos = malloc(sizeof(t_lista_fileProcesos));
+	    t_lista_fileProcesos* regListaProcesos = malloc(sizeof(t_lista_fileProcesos));
 	      regListaProcesos = list_find(lista_File_proceso,(void*) encontrar_elementoListaProceso);
 
 	      return regListaProcesos;
 		}
 	    else
 	    {
-			 return NULL;
+	    	return NULL;
+
 	    }
+	}
+	else
+	{
+		return NULL;
+	}
+
+
 }
 
 t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal)
