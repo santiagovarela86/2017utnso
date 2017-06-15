@@ -288,23 +288,33 @@ void * inicializar_consola(void* args){
 				char* tablaGlobalArchivos = string_new();
 
 				int j= 0;
+				if(lista_File_global->elements_count != 0)
+				{
+					for (j = 0; j < lista_File_global->elements_count; j++){
 
-				for (j = 0; j < lista_File_global->elements_count; j++){
+						t_fileGlobal * elem = malloc(sizeof(elem));
+						elem = list_get(lista_File_global, j);
 
-					t_fileGlobal * elem = malloc(sizeof(elem));
-					elem = list_get(lista_File_global, j);
+						string_append(&tablaGlobalArchivos, "Canitdad de Aparturas:");
+						string_append(&tablaGlobalArchivos, string_itoa(elem->cantidadDeAperturas));
+						string_append(&tablaGlobalArchivos, ";");
 
-					string_append(&tablaGlobalArchivos, string_itoa(elem->cantidadDeAperturas));
-					string_append(&tablaGlobalArchivos, ";");
+						string_append(&tablaGlobalArchivos, "Indice de Tabla Global:");
+						string_append(&tablaGlobalArchivos, string_itoa(elem->fdGlobal));
+						string_append(&tablaGlobalArchivos, ";");
 
-					string_append(&tablaGlobalArchivos, string_itoa(elem->fdGlobal));
-					string_append(&tablaGlobalArchivos, ";");
-
-					string_append(&tablaGlobalArchivos, elem->path);
-				    string_append(&tablaGlobalArchivos, ";");
+						string_append(&tablaGlobalArchivos, "Dirección del Archivo:");
+						string_append(&tablaGlobalArchivos, elem->path);
+						string_append(&tablaGlobalArchivos, ";");
+					}
+				}
+				else
+				{
+					tablaGlobalArchivos = "No hay archivos creados en la Tabla Global de Archivos";
 				}
 
 				log_console_in_disk(tablaGlobalArchivos);
+				puts("La tabla de archivos globales fue grabada en Log correctamente");
 				break;
 			case 4:
 				accion_correcta = 1;
