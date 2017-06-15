@@ -546,7 +546,7 @@ void abrir_subconsola_dos(t_pcb* p){
 			switch(accion){
 			case 1:
 				accion_correcta = 1;
-				printf("La cantidad de rafagas realizadas son: %d \n", p->program_counter);
+				printf("La cantidad de rafagas realizadas son: %d \n", p->program_counter + 1);
 				break;
 			case 2:
 				accion_correcta = 1;
@@ -558,6 +558,7 @@ void abrir_subconsola_dos(t_pcb* p){
 			case 3:
 				accion_correcta = 1;
 
+				//ESTA OPCION ESTA FALLANDO
 				t_lista_fileProcesos* tablaDeProcesoActual = malloc(sizeof(t_lista_fileProcesos));
 				tablaDeProcesoActual = existeEnListaProcesosArchivos(p->pid);
 
@@ -1479,7 +1480,7 @@ void switchear_colas(t_queue* origen, t_queue* fin, t_pcb* element){
 	queue_push(fin, element);
 }
 
-void logExitCode(int code)
+void logExitCode(int code) //ESTO NO SE ESTA USANDO
 {
 	char* errorLog = string_new();
 	switch(code){
