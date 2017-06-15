@@ -23,5 +23,6 @@ char *trim(char *s);
 char *rtrim(char *s);
 char *ltrim(char *s);
 char * serializarMensaje(int cant, ... );
+int ceiling(int x, int y);
 
 #endif /* HELPERFUNCTIONS_H_ */

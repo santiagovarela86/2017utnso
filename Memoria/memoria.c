@@ -36,6 +36,7 @@ pthread_mutex_t mutex_bloque_memoria;
 
 t_list* tabla_paginas;
 t_list* tabla_cache;
+t_list* paginasCodigoProceso;
 int stack_size = 0;
 char* bloque_memoria;
 Memoria_Config* configuracion;
@@ -96,12 +97,12 @@ void inicializarEstructuras(char * pathConfig){
 
 	configuracion = leerConfiguracion(pathConfig);
 
-	bloque_memoria = string_new();
+	//bloque_memoria = string_new();
 
 	//Alocacion de bloque de memoria contigua
 	//Seria el tamanio del marco * la cantidad de marcos
 
-	bloque_memoria = calloc(configuracion->marcos, configuracion->marco_size);
+	bloque_memoria = malloc(configuracion->marcos * configuracion->marco_size);
 	if (bloque_memoria == NULL){
 		perror("No se pudo reservar el bloque de memoria del Sistema\n");
 	}
@@ -117,6 +118,7 @@ void inicializarEstructuras(char * pathConfig){
 
 	tabla_cache = list_create();
 	lista_paginas_stack = list_create();
+	paginasCodigoProceso = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
 
@@ -132,6 +134,7 @@ void liberarEstructuras(){
 
 	list_destroy_and_destroy_elements(tabla_cache, free);
 	list_destroy_and_destroy_elements(lista_paginas_stack, free);
+	list_destroy_and_destroy_elements(paginasCodigoProceso, free);
 
 	free(configuracion);
 	free(tamanio_maximo);
@@ -169,9 +172,7 @@ void * hilo_conexiones_kernel(){
 					;
 					pid = atoi(mensajeDelKernel[1]);
 					char * codigo_programa = mensajeDelKernel[2];
-					int cantidadDePaginas = string_length(codigo_programa) / configuracion->marco_size;
-					if (cantidadDePaginas == 0) cantidadDePaginas++;
-					iniciarPrograma(pid, cantidadDePaginas, codigo_programa);
+					iniciarPrograma(pid, codigo_programa);
 					break;
 
 				case 605:
@@ -288,10 +289,23 @@ int reordenarPaginaHeap(indicePaginaHeap){
 	return posicionEnBuffer;
 }
 
-void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
+void iniciarPrograma(int pid, char * codigo_programa) {
 
 	printf("INICIAR PROGRAMA %d\n", pid);
 	puts("");
+
+	int paginas = ceiling(strlen(codigo_programa), configuracion->marco_size);
+
+	void imprimoInfo(t_pagina_invertida * elem){
+		printf("Se asigno el marco %d al PID %d para almacenar codigo del programa\n", elem->nro_marco, elem->pid);
+		puts("");
+	}
+
+	void agregoACache(t_pagina_invertida * elem){
+		pthread_mutex_lock(&mutex_estructuras_administrativas);
+		almacenar_pagina_en_cache_para_pid(pid, elem);
+		pthread_mutex_unlock(&mutex_estructuras_administrativas);
+	}
 
 	if (strlen(codigo_programa) <=
 			(configuracion->marcos - tamanio_maximo->maxima_cant_paginas_administracion)
@@ -299,35 +313,30 @@ void iniciarPrograma(int pid, int paginas, char * codigo_programa) {
 //	if (string_length(bloque_memoria) == 0 || string_length(codigo_programa) <= string_length(bloque_memoria)) {
 
 		pthread_mutex_lock(&mutex_estructuras_administrativas);
-		t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
+		t_list * listaPaginasPrograma = list_create();
+		//t_pagina_invertida* pagina = grabar_en_bloque(pid, paginas, codigo_programa);
+		listaPaginasPrograma = grabar_en_bloque(pid, codigo_programa);
 		pthread_mutex_unlock(&mutex_estructuras_administrativas);
-		char* respuestaAKernel = string_new();
 
-		if (pagina != NULL) {
+		list_iterate(listaPaginasPrograma, (void *) imprimoInfo);
 
-			printf("Se asigno el marco %d al PID %d para almacenar codigo del programa\n", pagina->nro_marco, pagina->pid);
-			puts("");
+		if (cache_habilitada) list_iterate(listaPaginasPrograma, (void *) agregoACache);
 
-			pthread_mutex_lock(&mutex_estructuras_administrativas);
-			if (cache_habilitada)
-				almacenar_pagina_en_cache_para_pid(pid, pagina);
-			pthread_mutex_unlock(&mutex_estructuras_administrativas);
+		/*
+		elementoListaCodigoProceso * elem = malloc(sizeof(elementoListaCodigoProceso));
+		elem->pid = pid;
+		elem->paginas = listaPaginasPrograma;
 
-			string_append(&respuestaAKernel, "203;");
-			string_append(&respuestaAKernel, string_itoa(obtener_inicio_pagina(pagina)));
-			string_append(&respuestaAKernel, ";");
-			string_append(&respuestaAKernel, string_itoa(paginas));
-			enviarMensaje(&socketKernel, respuestaAKernel);
-		}
+		list_add(paginasCodigoProceso, elem);
+		*/
 
-		else {
-			//Si el codigo del programa supera el tamanio del bloque
-			//Le aviso al Kernel que no puede reservar el espacio para el programa
-			string_append(&respuestaAKernel, "298;");
-			enviarMensaje(&socketKernel, respuestaAKernel);
-		}
+		t_pagina_invertida * primeraPagina = list_get(listaPaginasPrograma, 0);
 
-		free(respuestaAKernel);
+		enviarMensaje(&socketKernel, serializarMensaje(3, 203, obtener_inicio_pagina(primeraPagina), paginas));
+	}else {
+		//Si el codigo del programa supera el tamanio del bloque
+		//Le aviso al Kernel que no puede reservar el espacio para el programa
+		enviarMensaje(&socketKernel, serializarMensaje(1, 298));
 	}
 }
 
@@ -817,12 +826,13 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	int pid = atoi(mensajeDesdeCPU[1]);
 	int inicio_instruccion = atoi(mensajeDesdeCPU[2]);
 	int offset = atoi(mensajeDesdeCPU[3]);
-	//SUPONEMOS QUE EL CODIGO SOLO ESTA EN LA PAGINA 0
-	int paginaALeer = 0;
 
-	char* instruccion;
+	int paginaALeer = inicio_instruccion / configuracion->marco_size;
+	int posicionInicioInstruccion = inicio_instruccion % configuracion->marco_size;
+
+	char * instruccion;
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
-	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, inicio_instruccion, offset);
+	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
 	printf("Se envia la instruccion %s\n", instr);
@@ -1387,44 +1397,42 @@ void grabar_valor(int direccion, int valor){
 
 }
 
-t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo){
+//t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo){
+t_list * grabar_en_bloque(int pid, char* codigo){
+
+	int cantidad_paginas = ceiling(strlen(codigo), configuracion->marco_size);
+	int longUltimaPagina = strlen(codigo) % configuracion->marco_size;
+
+	t_list * listaPaginas = list_create();
 
 	t_pagina_invertida* pagina_invertida = NULL;
 
-	int i = 0, j = 0;
+	int i = 0;
 
-	if (cantidad_paginas == 1){
-		pagina_invertida = buscar_pagina_para_insertar(pid, 0);
-		pagina_invertida->nro_pagina = 0;
+	while (i < cantidad_paginas - 1){
+		pagina_invertida = buscar_pagina_para_insertar(pid, i);
+		pagina_invertida->nro_pagina = i;
 		pagina_invertida->pid = pid;
 
-		grabar_codigo_programa(&j, pagina_invertida, codigo);
-
+		memcpy(&bloque_memoria[obtener_inicio_pagina(pagina_invertida)], &codigo[i*configuracion->marco_size], configuracion->marco_size);
 		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
-	}
-	else {
-		for(i = 0; i < cantidad_paginas; i++){
-			int nro_pagina = 0;
-			pagina_invertida = buscar_pagina_para_insertar(pid, cantidad_paginas);
-
-			if (pagina_invertida == NULL){
-				break;
-			}
-
-			grabar_codigo_programa(&j, pagina_invertida, codigo);
-
-			//Actualizo la tabla de paginas
-			pagina_invertida->nro_pagina = nro_pagina;
-			pagina_invertida->pid = pid;
-			list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
-
-			nro_pagina++;
-		}
+		list_add(listaPaginas, pagina_invertida);
+		i++;
 	}
 
-	return pagina_invertida;
+	//TRATO LA ULTIMA
+	pagina_invertida = buscar_pagina_para_insertar(pid, i);
+	pagina_invertida->nro_pagina = i;
+	pagina_invertida->pid = pid;
+
+	memcpy(&bloque_memoria[obtener_inicio_pagina(pagina_invertida)], &codigo[i * configuracion->marco_size], longUltimaPagina);
+	list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
+	list_add(listaPaginas, pagina_invertida);
+
+	return listaPaginas;
 }
 
+/*
 void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 
 	int indice_bloque = obtener_inicio_pagina(pagina);
@@ -1435,6 +1443,7 @@ void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo){
 	}
 
 }
+*/
 
 int f_hash_nene_malloc(int pid, int pagina) {
 	int nro_marco_insertar = 0;
@@ -1678,7 +1687,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		puts("");
 
 	}
-	else if (nro_paginas_en_cache == configuracion->cache_x_proc) {
+	else if (nro_paginas_en_cache == configuracion->cache_x_proc) { //ACA TENGO QUE REEMPLAZAR LA MAS VIEJA DEL MISMO PROCESO
 		printf("No se puede guardar el marco %d pagina %d por superar el maximo de cache habilitado para el proceso %d\n", pagina->nro_marco, pagina->nro_pagina, pid);
 		puts("");
 		guardadoOK = false;

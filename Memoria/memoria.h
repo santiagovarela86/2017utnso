@@ -59,6 +59,11 @@ typedef struct {
 	_Bool isFree;
 } heapMetadata;
 
+typedef struct {
+	int pid;
+	t_list * paginas;
+} elementoListaCodigoProceso;
+
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);
@@ -70,7 +75,7 @@ void log_contenido_memoria_cache();
 void * hilo_conexiones_kernel();
 void * hilo_conexiones_cpu();
 void * handler_conexiones_cpu(void * args);
-void iniciarPrograma(int pid, int paginas, char * codigo_programa);
+void iniciarPrograma(int pid, char * codigo_programa);
 char* leer_codigo_programa(int pid, int inicio_bloque, int offset);
 void agregar_registro_dump(t_pagina_invertida*);
 char* leer_memoria(int posicion_de_la_Variable, int off);
@@ -79,7 +84,7 @@ void inicializarEstructuras(char * pathConfig);
 void liberarEstructuras();
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_tabla_paginas(Memoria_Config* config);
-t_pagina_invertida* grabar_en_bloque(int pid, int cantidad_paginas, char* codigo);
+t_list * grabar_en_bloque(int pid, char * codigo);
 t_pagina_proceso* get_manejo_programa(int pid);
 t_pagina_proceso* crear_nuevo_manejo_programa(int pid, int pagina);
 void liberar_pagina(t_pagina_invertida* pagina);

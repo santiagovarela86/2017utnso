@@ -1841,7 +1841,7 @@ char* serializar_codigo_por_instrucciones(char* codigo){
 }
 
 void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
-	char* mensajeInicioPrograma = string_new();
+	char * mensajeInicioPrograma = string_new();
 	string_append(&mensajeInicioPrograma, "250");
 	string_append(&mensajeInicioPrograma, ";");
 	string_append(&mensajeInicioPrograma, string_itoa(new_pcb->pid));

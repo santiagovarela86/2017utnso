@@ -161,3 +161,7 @@ char * serializarMensaje(int cant, ... ){
 
 	return message;
 }
+
+int ceiling(int x, int y){
+	return x / y + (x % y != 0);
+}
