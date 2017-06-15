@@ -24,6 +24,7 @@
 //621 KER A CPU - ESPACIO INSUFICIENTE EN MEMORIA DE HEAP
 //622 KER A CPU - ERROR AL LIBERAR MEMORIA DE HEAP INEXISTENTE
 //777 CPU A KER - SUMO EN UNO LA CANTIDAD DE PAGINAS DE UN PCB
+//778 CPU A KER - FINALIZAR PROGRAMA POR ERROR EN OBTENER VARIABLE
 //617 MEM A KER - FINALIZAR PROGRAMA POR ERROR DE HEAP
 
 #include <stdio.h>
@@ -1369,6 +1370,8 @@ void * handler_conexion_cpu(void * sock) {
 			case 615:
 				;
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
+				t_pcb * un_pcb = pcbFromPid(pid_msg);
+				un_pcb->exit_code = FIN_ERROR_EXCEPCION_MEMORIA;
 				finalizarPrograma(pid_msg);
 				break;
 
@@ -1376,10 +1379,17 @@ void * handler_conexion_cpu(void * sock) {
 				//SUMO EN UNO LA CANTIDAD DE PAGINAS
 				;
 				int pid_pcb = atoi(mensajeDesdeCPU[1]);
-				t_pcb * un_pcb = pcbFromPid(pid_pcb);
+				un_pcb = pcbFromPid(pid_pcb);
 				un_pcb->cantidadPaginas++;
 				//CONFIRMACION DEL KERNEL PARA SINCRONIZAR
 				enviarMensaje(socketCliente, serializarMensaje(1, 777));
+				break;
+			case 778:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				un_pcb = pcbFromPid(pid_msg);
+				un_pcb->exit_code = FIN_ERROR_SIN_DEFINICION;
+				finalizarPrograma(pid_msg);
+				break;
 
 		}
 

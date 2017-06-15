@@ -458,7 +458,18 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 		printf("Asignar Valor %d en la Direccion %d\n", valor, direccion);
 		printf("\n");
 
-		if (direccion == VARIABLE_EN_CACHE) {
+		if (direccion == -1){
+
+			puts("Variable no definida");
+			char* mensajeAKernel = string_new();
+			string_append(&mensajeAKernel, "778");
+			string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, string_itoa(pcb->pid));
+			string_append(&mensajeAKernel, ";");
+
+			enviarMensaje(&sktKernel, mensajeAKernel);
+			free(mensajeAKernel);
+		} else if (direccion == VARIABLE_EN_CACHE) {
 			enviarMensaje(&socketMemoria, serializarMensaje(6, 511, direccion, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, valor));
 		} else {
 			enviarMensaje(&socketMemoria, serializarMensaje(3, 511, direccion, valor));
@@ -507,9 +518,9 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 		t_Stack* StackDeContexto = list_get(pcb->indiceStack, (pcb->indiceStack->elements_count - 1));
 
-		//ESTO PINCHA SI LA VARIABLE NO FUE DECLARADA, HAY QUE VER LA FORMA DE
-		//TERMINAR EL PROCESO, EL CPU NO DEBE MORIR, EL PROGRAMA SI
-		//Y DEBE TERMINARSE EL FLUJO DE EJECUCION SIN EJECUTAR NINGUNA INSTRUCCION DE MAS
+		if (StackDeContexto == NULL){
+			return -1;
+		}
 
 		if (esArgumentoDeFuncion(identificador_variable)) {
 			entrada_encontrada = list_find(StackDeContexto->args, (void*) encontrar_var);
@@ -517,6 +528,11 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 
 		else {
 			entrada_encontrada = list_find(StackDeContexto->variables, (void*) encontrar_var);
+		}
+
+		if (entrada_encontrada == NULL){
+			//Si no encontro la variable retorna -1 acorde a la documentacion del parser
+			return -1;
 		}
 
 		char * buffer = malloc(MAXBUF);
@@ -552,7 +568,19 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	printf("Dereferenciar Direccion %d\n", direccion_variable);
 	printf("\n");
 
-	if (direccion_variable == VARIABLE_EN_CACHE) {
+	if (direccion_variable == -1){
+
+		//Se asigna el exit code -20 (Sin definicion)
+		puts("Variable no definida");
+		char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "778");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(pcb->pid));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+		free(mensajeAKernel);
+	}else if (direccion_variable == VARIABLE_EN_CACHE) {
 		enviarMensaje(&socketMemoria, serializarMensaje(6, 513, direccion_variable, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, tamanio_a_leer_cache));
 	}else{
 		enviarMensaje(&socketMemoria, serializarMensaje(2, 513, direccion_variable));
