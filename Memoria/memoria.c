@@ -1420,14 +1420,25 @@ t_list * grabar_en_bloque(int pid, char* codigo){
 		i++;
 	}
 
-	//TRATO LA ULTIMA
-	pagina_invertida = buscar_pagina_para_insertar(pid, i);
-	pagina_invertida->nro_pagina = i;
-	pagina_invertida->pid = pid;
+	if (cantidad_paginas == 1){
+		//TRATO LA PRIMERA
+		pagina_invertida = buscar_pagina_para_insertar(pid, i);
+		pagina_invertida->nro_pagina = i;
+		pagina_invertida->pid = pid;
 
-	memcpy(&bloque_memoria[obtener_inicio_pagina(pagina_invertida)], &codigo[i * configuracion->marco_size], longUltimaPagina);
-	list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
-	list_add(listaPaginas, pagina_invertida);
+		memcpy(&bloque_memoria[obtener_inicio_pagina(pagina_invertida)], &codigo[i * configuracion->marco_size], strlen(codigo));
+		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
+		list_add(listaPaginas, pagina_invertida);
+	}else{
+		//TRATO LA ULTIMA
+		pagina_invertida = buscar_pagina_para_insertar(pid, i);
+		pagina_invertida->nro_pagina = i;
+		pagina_invertida->pid = pid;
+
+		memcpy(&bloque_memoria[obtener_inicio_pagina(pagina_invertida)], &codigo[i * configuracion->marco_size], longUltimaPagina);
+		list_replace(tabla_paginas, pagina_invertida->nro_marco, pagina_invertida);
+		list_add(listaPaginas, pagina_invertida);
+	}
 
 	return listaPaginas;
 }
