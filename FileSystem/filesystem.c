@@ -138,6 +138,7 @@ void * hilo_conexiones_kernel(void * args){
 			    break;
 
 				case 802:
+					puts("2 \n");
 					borrarArchivo(mensajeAFileSystem[1]);
 				break;
 
@@ -335,21 +336,22 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 }
 
 void borrarArchivo(char* directorio){
-
+		puts("2 \n");
+		printf("el valor del directorio es %s \n", directorio);
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
 		string_append(&pathAbsoluto, directorioAux);
-
+		puts("2 \n");
 		int encontrar_sem(t_archivosFileSystem* archivo) {
 
 			return (int)string_contains(pathAbsoluto, (char*)archivo->path);
 
 		}
-
+		puts("2 \n");
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
-
+		puts("2 \n");
 		printf("la lista tiene %s", (char*)archDestroy->path);
 		//printf("la lista tiene %s", (char*)archDestroy->referenciaArchivo);
 		int result = remove((char*)archDestroy->path);
@@ -362,6 +364,7 @@ void borrarArchivo(char* directorio){
 			puts("El archivo no pudo eliminarse, revise el path");
 
 		}
+		puts("2 \n");
 		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
 		free(pathAbsoluto);

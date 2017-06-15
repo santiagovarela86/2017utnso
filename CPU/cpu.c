@@ -1084,8 +1084,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	return;
 }
 
-void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset,
-		t_valor_variable tamanio) {
+void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio) {
 	puts("Leer");
 	puts("");
 
@@ -1096,7 +1095,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero offset,
 	string_append(&mensaje, ";");
 	string_append(&mensaje, string_itoa(pcb->pid));
 	string_append(&mensaje, ";");
-	string_append(&mensaje, string_itoa(offset));
+	string_append(&mensaje, string_itoa(informacion));
 	string_append(&mensaje, ";");
 	string_append(&mensaje, string_itoa(tamanio));
 	string_append(&mensaje, ";");

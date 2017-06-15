@@ -3285,8 +3285,6 @@ void borrarArchivo(int pid_mensaje, int fd)
 
 			t_fileProceso* archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-		    list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-
 			t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
 			int index = (int)archAbrir1->global_fd;
 			archFileGlobal = list_get(lista_File_global, index);
@@ -3297,17 +3295,23 @@ void borrarArchivo(int pid_mensaje, int fd)
 			}
 			else
 			{
-				list_remove(lista_File_global, index);
+
 				char* mensajeAFS = string_new();
 				string_append(&mensajeAFS, "802");
 				string_append(&mensajeAFS, ";");
 				string_append(&mensajeAFS, archFileGlobal->path);
 				string_append(&mensajeAFS, ";");
 
-				free(archAbrir1);
-				free(archFileGlobal);
-
+				puts("1");
 				enviarMensaje(&skt_filesystem, mensajeAFS);
+
+				puts("1");
+				list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+				free(archAbrir1);
+				puts("1");
+				list_remove(lista_File_global,index);
+				free(archFileGlobal);
+				puts("1");
 
 				/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
 
