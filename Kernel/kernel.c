@@ -589,7 +589,6 @@ void abrir_subconsola_dos(t_pcb* p){
 
 							filePro = list_get(tablaDeProcesoActual->tablaProceso, i);
 							printf("FD: %d \n", filePro->fileDescriptor);
-								puts("1");
 							i++;
 						}
 						free(filePro);
