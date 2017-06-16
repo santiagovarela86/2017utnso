@@ -153,7 +153,7 @@ void * hilo_conexiones_kernel(){
 	if (socketKernel > 0) {
 		sem_post(&semaforoKernel);
 		printf("%s:%d conectado\n", inet_ntoa(direccionKernel.sin_addr), ntohs(direccionKernel.sin_port));
-		handShakeListen(&socketKernel, "100", "201", "299", "Kernel");
+		handShakeListen(&socketKernel, "100", "201", "299", "Kernel", configuracion->marco_size);
 		char message[MAXBUF];
 
 		int result = recv(socketKernel, message, sizeof(message), 0);
@@ -470,7 +470,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 	int paginaNueva = 0;
 
-	handShakeListen(&sock, "500", "202", "299", "CPU");
+	handShakeListen(&sock, "500", "202", "299", "CPU", 0);
 
 	char * message = malloc(MAXBUF);
 	int result = recv(sock, message, MAXBUF, 0);
