@@ -160,7 +160,7 @@ void * hilo_conexiones_kernel(){
 
 		while (result > 0) {
 
-			//retardo_acceso_memoria(); //SERIA MEJOR UNIFICAR EL RETARDO EN UN UNICO ACCEDER BLOQUE MEMORIA
+			retardo_acceso_memoria(); //SERIA MEJOR UNIFICAR EL RETARDO EN UN UNICO ACCEDER BLOQUE MEMORIA
 
 			char**mensajeDelKernel = string_split(message, ";");
 			int operacion = atoi(mensajeDelKernel[0]);
@@ -988,12 +988,12 @@ void inicializar_tabla_paginas(Memoria_Config* config){
 
 	int k = 0;
 	for (k = 0; k < config->marcos; k++){
-		t_pagina_invertida *aux = memory_read(bloque_memoria, k * sizeof(t_pagina_invertida), sizeof(t_pagina_invertida));
+		t_pagina_invertida *aux = leer_pagina_de_bloque(bloque_memoria, k * sizeof(t_pagina_invertida), sizeof(t_pagina_invertida));
 		list_add(tabla_paginas, aux);
 	}
 }
 
-t_pagina_invertida *memory_read(char *base, int offset, int size){
+t_pagina_invertida *leer_pagina_de_bloque(char *base, int offset, int size){
     char *buffer;
     buffer = malloc(size);
     memcpy(buffer,base+offset,size);
@@ -1037,12 +1037,6 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 
 	}
 	return datos_pagina;
-}
-
-char* leer_codigo_programa(int pid, int inicio, int offset){
-	char* codigo_programa = malloc(offset);
-	codigo_programa = string_substring(bloque_memoria, inicio, offset);
-	return codigo_programa;
 }
 
 char* leer_memoria(int inicio, int bytes){
