@@ -610,7 +610,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 		return 0;
 	} else {
 
-		enviarMensaje(&socketMemoria, serializarMensaje(2, 513, direccion_variable)); //// REVISAR MEMORIA
+		enviarMensaje(&socketMemoria, serializarMensaje(3, 513, pcb->pid, direccion_variable)); //// REVISAR MEMORIA
 
 		/*
 		 *

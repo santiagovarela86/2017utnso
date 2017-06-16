@@ -737,14 +737,13 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 
 	int valor_variable;
-	//int pid = atoi(mensajeDesdeCPU[1]);
-	int direccion = atoi(mensajeDesdeCPU[1]);
-	//int pagina = direccion / configuracion->marco_size;
-	//int offset = direccion % configuracion->marco_size;
+	int pid = atoi(mensajeDesdeCPU[1]);
+	int direccion = atoi(mensajeDesdeCPU[2]);
+	int marco = direccion / configuracion->marco_size;
+	t_pagina_invertida* pagina_buscada = list_get(tabla_paginas, marco);
+	int offset = direccion % configuracion->marco_size;
 
-	//char * bloquePagina = solicitar_datos_de_pagina(pid, pagina, offset, OFFSET_VAR);
-
-	char * bloquePagina = leer_memoria(direccion, OFFSET_VAR);
+	char * bloquePagina = solicitar_datos_de_pagina(pid, pagina_buscada->nro_pagina, offset, OFFSET_VAR);
 
 	valor_variable = ((unsigned char)bloquePagina[0] << 24) +
 						((unsigned char)bloquePagina[1] << 16) +
@@ -1022,7 +1021,6 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		//Se carga la nueva pagina en cache
 		if (cache_habilitada) almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
 	} else {
-		//Si encontro la entrada en cache
 
 		//Leo el contenido de la misma utilizando offset y tamanio
 		//datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
