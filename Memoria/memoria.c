@@ -1661,16 +1661,19 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		puts("");
 
 	}
-	else if (nro_paginas_en_cache == configuracion->cache_x_proc) { //ACA TENGO QUE REEMPLAZAR LA MAS VIEJA DEL MISMO PROCESO
-		printf("No se puede guardar el marco %d pagina %d por superar el maximo de cache habilitado para el proceso %d\n", pagina->nro_marco, pagina->nro_pagina, pid);
-		puts("");
-		guardadoOK = false;
-	}
-	else if (list_size(tabla_cache) == configuracion->entradas_cache) {
-		puts("Ejecucion del algoritmo de reemplazo");
-		puts("");
+	else {
 
-		t_entrada_cache* entrada_cache_reemplazo = obtener_entrada_reemplazo_cache();
+		t_entrada_cache* entrada_cache_reemplazo = NULL;
+
+		//Ejecuto el algoritmo de reemplazo
+		if (list_size(tabla_cache) == configuracion->entradas_cache){
+			//Reemplazo global
+			entrada_cache_reemplazo = obtener_entrada_reemplazo_cache(NULL);
+		}
+		else {
+			//Reemplazo local
+			entrada_cache_reemplazo = obtener_entrada_reemplazo_cache(pid);
+		}
 
 		printf("La victima del reemplazo en Cache es PID: %d Pagina %d Indice %d", entrada_cache_reemplazo->pid, entrada_cache_reemplazo->nro_pagina, entrada_cache_reemplazo->indice);
 		puts("");
@@ -1688,9 +1691,10 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Reorganizo las entradas de cache en base al reemplazo
 		reorganizar_indice_cache_y_ordenar();
 
-		printf("1. Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
+		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
 		puts("");
 	}
+
 
 	return guardadoOK;
 }
@@ -1754,16 +1758,27 @@ void grabar_valor_en_cache(int direccion, char * buffer){
 	}
 }
 
-t_entrada_cache* obtener_entrada_reemplazo_cache(){
+t_entrada_cache* obtener_entrada_reemplazo_cache(int pid){
 
 	t_entrada_cache* entrada_cache = malloc(sizeof(t_entrada_cache));
+
+	int obtener_entrada_proceso(t_entrada_cache* entrada){
+		return entrada->pid == pid;
+	}
 
 	if (string_equals_ignore_case(configuracion->reemplazo_cache, "LRU") == true){
 
 		puts("El algoritmo es LRU");
 		//Obtengo a la victima del reemplazo
-		//Que seria la pagina mas antigua de la cache, es decir, la primera
-		entrada_cache = list_get(tabla_cache, 0);
+
+		if (pid == NULL){
+			//Si es global seria la pagina mas antigua en la cache, es decir, la que tenga indice 0
+			entrada_cache = list_get(tabla_cache, 0);
+		}
+		else {
+			//Si es global seria la pagina mas antigua para ese PID en la cache, es decir, la primera que encuentre para ese PID
+			entrada_cache = list_find(tabla_cache, (void*) obtener_entrada_proceso);
+		}
 	}
 
 	return entrada_cache;

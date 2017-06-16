@@ -111,7 +111,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina);
 t_entrada_cache* obtener_entrada_cache(int pid, int pagina);
 void grabar_valor_en_cache(int direccion, char* valor);
 bool actualizar_pagina_en_cache(int pid, int pagina, char* contenido);
-t_entrada_cache* obtener_entrada_reemplazo_cache();
+t_entrada_cache* obtener_entrada_reemplazo_cache(int pid);
 void reorganizar_indice_cache_y_ordenar(void);
 void finalizar_programa(int pid);
 void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos);
