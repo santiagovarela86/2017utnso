@@ -1007,7 +1007,8 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
 
 	if (entrada_cache == NULL){
-		//CACHE_MISS
+		printf("CACHE_MISS para PID %d pagina %d \n", pid, pagina);
+		puts("");
 
 		//Ocurre el retardo para acceder a la memoria principal
 		retardo_acceso_memoria();
