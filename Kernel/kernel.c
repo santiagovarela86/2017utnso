@@ -1253,6 +1253,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 531:
+
 				finDePrograma(socketCliente);
 				break;
 
@@ -1290,7 +1291,7 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				//escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				break;
 
