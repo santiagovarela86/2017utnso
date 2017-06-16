@@ -240,6 +240,7 @@ void * escuchar_Kernel(void * args){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else if (atoi(respuesta_kernel[0]) == 575){
 				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
+				puts("");
 
 			}else if (atoi(respuesta_kernel[0]) == 666){
 				/*666 es muerte*/
