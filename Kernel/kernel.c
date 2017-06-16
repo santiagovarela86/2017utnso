@@ -83,6 +83,7 @@ sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
+int longitud_pag;
 
 int main(int argc, char **argv) {
 
@@ -926,7 +927,10 @@ void* manejo_memoria(void *args) {
 
 	skt_memoria = socketMemoria;
 
-	handShakeSend(&socketMemoria, "100", "201", "Memoria");
+	longitud_pag = handShakeSend(&socketMemoria, "100", "201", "Memoria");
+
+	printf("El tamaño de pagina es %d \n", longitud_pag);
+	puts("");
 
 	asignarCantidadMaximaStackPorProceso();
 
@@ -1274,6 +1278,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 531:
+
 				finDePrograma(socketCliente);
 				break;
 
@@ -1311,7 +1316,7 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				//escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				break;
 

@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <commons/string.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -73,7 +74,7 @@ void creoThread(pthread_t * threadID, void *(*threadHandler)(void *), void * arg
 	}
 }
 
-void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * proceso){
+void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAceptado, char * codigoRechazado, char * proceso, int marco_size){
 	char message[MAXBUF];
 	char * codigo;
 	char * separador = ";";
@@ -86,6 +87,8 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 		if(strcmp(codigo, codigoEsperado) == 0){
 			printf("Se acepto la conexion del proceso %s \n", proceso);
 			strcpy(message, codigoAceptado);
+			strcat(message, separador);
+			strcat(message, string_itoa(marco_size));
 			strcat(message, separador);
 			enviarMensaje(socketCliente, message);
 		}else{
