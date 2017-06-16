@@ -551,7 +551,7 @@ void abrir_subconsola_dos(t_pcb* p){
 		t_estadistica* est;
 
 		while (accion_correcta == 0){
-
+			char * log = string_new();
 			scanf("%d", &accion);
 
 			switch(accion){
@@ -563,8 +563,12 @@ void abrir_subconsola_dos(t_pcb* p){
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
+				printf("Grabando accion en Log");
+				string_append(&log, "La cantidad de operaciones privilegiadas son: ");
+				string_append(&log, string_itoa(est->cant_oper_privilegiadas));
+				log_console_in_disk(log);
+				printf("La accion requeriada fue grabada en Log");
 
-				printf("La cantidad de operaciones privilegiadas son: %d \n", est->cant_oper_privilegiadas);
 				break;
 			case 3:
 				accion_correcta = 1;
@@ -575,7 +579,8 @@ void abrir_subconsola_dos(t_pcb* p){
 
 				if(tablaDeProcesoActual == NULL){
 
-					printf("EL proceso no tiene archivos asociados");
+					string_append(&log, "EL proceso no tiene archivos asociados");
+					log_console_in_disk(log);
 				}else{
 
 					int size = tablaDeProcesoActual->tablaProceso->elements_count;
@@ -583,20 +588,26 @@ void abrir_subconsola_dos(t_pcb* p){
 
 					if(size != 0)
 					{
-						printf("El proceso tiene los siguientes FD \n");
+						string_append(&log, "El proceso tiene los siguientes FD");
 						t_fileProceso* filePro = malloc(sizeof(t_fileProceso));
 
 						while (i < size){
 
 							filePro = list_get(tablaDeProcesoActual->tablaProceso, i);
 							printf("FD: %d \n", filePro->fileDescriptor);
+							string_append(&log, "FD: ");
+							string_append(&log, string_itoa(filePro->fileDescriptor));
+							string_append(&log, ";");
+
 							i++;
 						}
+						log_console_in_disk(log);
 						free(filePro);
 					}
 					else
 					{
-						printf("EL proceso no tiene archivos asociados");
+						string_append(&log, "EL proceso no tiene archivos asociados");
+						log_console_in_disk(log);
 					}
 				}
 
@@ -612,9 +623,14 @@ void abrir_subconsola_dos(t_pcb* p){
 				list_aux = list_filter(lista_paginas_heap, (void *) buscar_pid);
 
 				if(list_aux == NULL){
-					printf("El proceso tiene %d paginas de heap \n", 0);
+					string_append(&log, "El proceso tiene 0 paginas de heap");
+					log_console_in_disk(log);
+
 				}else{
-					printf("El proceso tiene %d paginas de heap \n", list_aux->elements_count);
+					string_append(&log, "El proceso tiene ");
+					string_append(&log, string_itoa(list_aux->elements_count));
+					string_append(&log, "paginas de heap");
+					log_console_in_disk(log);
 				}
 
 				list_destroy(list_aux);
@@ -625,21 +641,30 @@ void abrir_subconsola_dos(t_pcb* p){
 
 				est = encontrar_estadistica(p->pid);
 
-				printf("La cantidad de acciones alocar son: %d \n", est->cant_alocar);
+				string_append(&log, "La cantidad de acciones alocar son: ");
+				string_append(&log, string_itoa(est->cant_alocar));
+				log_console_in_disk(log);
+
 				break;
 			case 6:
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
 
-				printf("La cantidad de acciones liberar son: %d \n", est->cant_liberar);
+				string_append(&log, "La cantidad de acciones liberar son: ");
+				string_append(&log, string_itoa(est->cant_liberar));
+				log_console_in_disk(log);
+
 				break;
 			case 7:
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
 
-				printf("La cantidad Syscalls son: %d \n", est->cant_syscalls);
+				string_append(&log, "La cantidad Syscalls son: ");
+				string_append(&log, string_itoa(est->cant_syscalls));
+				log_console_in_disk(log);
+
 				break;
 
 			default:
