@@ -557,10 +557,13 @@ void abrir_subconsola_dos(t_pcb* p){
 
 			switch(accion){
 			case 1:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 				printf("La cantidad de rafagas realizadas son: %d \n", p->program_counter + 1);
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 				break;
 			case 2:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
@@ -568,10 +571,11 @@ void abrir_subconsola_dos(t_pcb* p){
 				string_append(&log, "La cantidad de operaciones privilegiadas son: ");
 				string_append(&log, string_itoa(est->cant_oper_privilegiadas));
 				log_console_in_disk(log);
-				printf("La accion requeriada fue grabada en Log");
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 
 				break;
 			case 3:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				//ESTA OPCION ESTA FALLANDO
@@ -611,9 +615,10 @@ void abrir_subconsola_dos(t_pcb* p){
 						log_console_in_disk(log);
 					}
 				}
-
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 				break;
 			case 4:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				int buscar_pid(admPaginaHeap* he){
@@ -632,12 +637,14 @@ void abrir_subconsola_dos(t_pcb* p){
 					string_append(&log, string_itoa(list_aux->elements_count));
 					string_append(&log, "paginas de heap");
 					log_console_in_disk(log);
+
 				}
 
-				list_destroy(list_aux);
-
+				//list_destroy(list_aux);
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 				break;
 			case 5:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
@@ -645,9 +652,11 @@ void abrir_subconsola_dos(t_pcb* p){
 				string_append(&log, "La cantidad de acciones alocar son: ");
 				string_append(&log, string_itoa(est->cant_alocar));
 				log_console_in_disk(log);
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 
 				break;
 			case 6:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
@@ -655,9 +664,11 @@ void abrir_subconsola_dos(t_pcb* p){
 				string_append(&log, "La cantidad de acciones liberar son: ");
 				string_append(&log, string_itoa(est->cant_liberar));
 				log_console_in_disk(log);
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 
 				break;
 			case 7:
+				puts("Procesando solicitud");
 				accion_correcta = 1;
 
 				est = encontrar_estadistica(p->pid);
@@ -665,6 +676,7 @@ void abrir_subconsola_dos(t_pcb* p){
 				string_append(&log, "La cantidad Syscalls son: ");
 				string_append(&log, string_itoa(est->cant_syscalls));
 				log_console_in_disk(log);
+				puts("Solicitud procesada. Almacenada en Archivo Log");
 
 				break;
 
