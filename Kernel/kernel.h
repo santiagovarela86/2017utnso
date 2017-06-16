@@ -193,7 +193,7 @@ void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 int abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 void borrarArchivo(int pid_mensaje, int fd);
-void cerrarArchivo(int pid_mensaje, int fd);
+char* cerrarArchivo(int pid_mensaje, int fd);
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd);
 t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal);

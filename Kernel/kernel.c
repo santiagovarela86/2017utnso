@@ -1355,8 +1355,8 @@ void * handler_conexion_cpu(void * sock) {
 				 fd = atoi(mensajeDesdeCPU[1]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 
-				 cerrarArchivo(pid_mensaje, fd);
-				 enviarMensaje(socketCliente, "el archivo fue cerrado correctamente");
+				 char* result = cerrarArchivo(pid_mensaje, fd);
+				 enviarMensaje(socketCliente, result);
 
 				break;
 
@@ -3466,44 +3466,58 @@ void borrarArchivo(int pid_mensaje, int fd)
 
 	return;
 }
-void cerrarArchivo(int pid_mensaje, int fd)
+char* cerrarArchivo(int pid_mensaje, int fd)
 {
 	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
 	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
-	int encontrar_archProceso(t_fileProceso* glo){
-		if(fd == glo->fileDescriptor)
-			return 1;
-		else
-			return 0;
-	}
-	t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
-	archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
+	char* resultado = string_new();
 
-	t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-	archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
-
-	if(archAbrir2->cantidadDeAperturas == 0)
+	if(listaDeArchivosDelProceso != NULL)
 	{
-		char* mensajeAFS = string_new();
-		string_append(&mensajeAFS, "802");
-		string_append(&mensajeAFS, ";");
-		string_append(&mensajeAFS, archAbrir2->path);
-		string_append(&mensajeAFS, ";");
+		int encontrar_archProceso(t_fileProceso* glo){
+			if(fd == glo->fileDescriptor)
+				return 1;
+			else
+				return 0;
+		}
+		t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+		archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-		enviarMensaje(&skt_filesystem, mensajeAFS);
 
-		list_remove(lista_File_global, archAbrir1->global_fd);
-		free(archAbrir2);
+		t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+		archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
+
+		if(archAbrir2->cantidadDeAperturas == 0)
+		{
+			char* mensajeAFS = string_new();
+			string_append(&mensajeAFS, "802");
+			string_append(&mensajeAFS, ";");
+			string_append(&mensajeAFS, archAbrir2->path);
+			string_append(&mensajeAFS, ";");
+
+			enviarMensaje(&skt_filesystem, mensajeAFS);
+
+			list_remove(lista_File_global, archAbrir1->global_fd);
+			free(archAbrir2);
+			string_append(&resultado, "El archivo fue cerrado y eliminado ya que tiene referencias en otros procesos");
+		}
+		else
+		{
+			archAbrir2->cantidadDeAperturas--;
+			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
+			string_append(&resultado, "El archivo fue cerrado del proceso, pero no se eliminó dado que tiene referencias en otros procesos");
+		}
+		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+		free(archAbrir1);
+
 	}
 	else
 	{
-		archAbrir2->cantidadDeAperturas--;
-		//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
+		string_append(&resultado, "No se encuentra el archivo que se quiere cerrar.");
 	}
-	list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-	free(archAbrir1);
-	return;
+
+	return resultado;
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
