@@ -905,6 +905,7 @@ void* manejo_memoria(void *args) {
 	longitud_pag = handShakeSend(&socketMemoria, "100", "201", "Memoria");
 
 	printf("El tamaño de pagina es %d \n", longitud_pag);
+	puts("");
 
 	asignarCantidadMaximaStackPorProceso();
 

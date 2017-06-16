@@ -88,6 +88,8 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 			printf("Se acepto la conexion del proceso %s \n", proceso);
 			strcpy(message, codigoAceptado);
 			strcat(message, separador);
+			strcat(message, codigoAceptado);
+			strcat(message, separador);
 			enviarMensaje(socketCliente, message);
 		}else{
 			strcpy(message, codigoRechazado);

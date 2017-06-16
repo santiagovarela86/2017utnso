@@ -119,7 +119,7 @@ int handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado,
 			printf("El proceso %s acepto la conexion \n", proceso);
 			printf("\n");
 
-			int marco_size = atoi(strtok(message, separador));
+			int marco_size = atoi(strtok(NULL, separador));
 
 			return marco_size;
 		} else {
