@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <commons/string.h>
 
 void creoSocket(int * sock, struct sockaddr_in * direccion, in_addr_t ip, int puerto) {
 
@@ -100,7 +101,7 @@ void handShakeListen(int * socketCliente, char * codigoEsperado, char * codigoAc
 
 }
 
-void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
+int handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado, char * proceso){
 	char message[MAXBUF];
 	char * codigo;
 	char * separador = ";";
@@ -117,13 +118,20 @@ void handShakeSend(int * socketServer, char * codigoEnvio, char * codigoEsperado
 		if (strcmp(codigo, codigoEsperado) == 0) {
 			printf("El proceso %s acepto la conexion \n", proceso);
 			printf("\n");
+
+			int marco_size = atoi(strtok(message, separador));
+
+			return marco_size;
 		} else {
 			printf("El proceso %s rechazo la conexion \n", proceso);
 			exit(errno);
+
 		}
 	} else {
 		printf("Error al recibir datos del %s", proceso);
 	}
+
+	return -1;
 
 }
 char *ltrim(char *s)
