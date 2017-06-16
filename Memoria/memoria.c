@@ -693,10 +693,11 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 
 void asignarVariable(char** mensajeDesdeCPU, int sock){
 
-	int valor = 0;
-	bool valorEnCache = false;
+	//int pid = atoi(mensajeDesdeCPU[1]);
 	int direccion = atoi(mensajeDesdeCPU[1]);
-	t_pagina_invertida* pagina;
+	int valor = atoi(mensajeDesdeCPU[2]);
+
+	/*
 
 	//Valor en Cache
 	if (direccion == VARIABLE_EN_CACHE){
@@ -712,8 +713,15 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 		valor = atoi(mensajeDesdeCPU[2]);
 	}
 
+	*/
+
 	grabar_valor(direccion, valor);
 
+	printf("Se asigno el valor %d en Memoria \n", valor);
+			printf("\n");
+			enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
+
+	/*
 	if (valorEnCache){
 		printf("Se asigno el valor %d en Cache \n", valor);
 		printf("\n");
@@ -723,39 +731,28 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 		printf("\n");
 		enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
 	}
+	*/
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 
 	int valor_variable;
-	int posicion_de_la_variable = atoi(mensajeDesdeCPU[1]);
+	//int pid = atoi(mensajeDesdeCPU[1]);
+	int direccion = atoi(mensajeDesdeCPU[1]);
+	//int pagina = direccion / configuracion->marco_size;
+	//int offset = direccion % configuracion->marco_size;
 
-	if (posicion_de_la_variable == VARIABLE_EN_CACHE){
+	//char * bloquePagina = solicitar_datos_de_pagina(pid, pagina, offset, OFFSET_VAR);
 
-		int pid = atoi(mensajeDesdeCPU[2]);
-		int pagina = atoi(mensajeDesdeCPU[3]);
-		int offset = atoi(mensajeDesdeCPU[4]);
-		int tamanio = atoi(mensajeDesdeCPU[5]);
-		char * bloquePagina = solicitar_datos_de_pagina(pid, pagina, offset, tamanio);
+	char * bloquePagina = leer_memoria(direccion, OFFSET_VAR);
 
-		valor_variable = ((unsigned char)bloquePagina[0] << 24) +
-									((unsigned char)bloquePagina[1] << 16) +
-										((unsigned char)bloquePagina[2] << 8) +
-											((unsigned char)bloquePagina[3] << 0);
+	valor_variable = ((unsigned char)bloquePagina[0] << 24) +
+						((unsigned char)bloquePagina[1] << 16) +
+							((unsigned char)bloquePagina[2] << 8) +
+								((unsigned char)bloquePagina[3] << 0);
 
-		printf("Se leyo el valor %d en cache con PID %d y Pagina %d\n", valor_variable, pid, pagina);
-		puts("");
-	}
-	else {
-		//CONVIERTO DE BIG ENDIAN A INTEGER
-		valor_variable = ((unsigned char)bloque_memoria[posicion_de_la_variable+0] << 24) +
-							((unsigned char)bloque_memoria[posicion_de_la_variable+1] << 16) +
-								((unsigned char)bloque_memoria[posicion_de_la_variable+2] << 8) +
-									((unsigned char)bloque_memoria[posicion_de_la_variable+3] << 0);
-
-		printf("Se leyo el valor %d en memoria\n", valor_variable);
-		puts("");
-	}
+	printf("Se leyo el valor %d en memoria\n", valor_variable);
+	puts("");
 
 	char* mensajeACpu = string_new();
 	string_append(&mensajeACpu, string_itoa(valor_variable));
@@ -766,59 +763,25 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 }
 
 void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
-	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
+	t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
 
-	if (entrada_cache == NULL){
-		//CACHE_MISS
+	if (pagina_buscada == NULL){
+		////MANEJAR ERROR, REVISAR
+		printf("Error al obtener posicion variable, se finaliza el proceso\n");
+		finalizar_programa(pid);
+	}else{
+		int inicio = obtener_inicio_pagina(pagina_buscada);
+		int direccion_memoria = inicio + offset;
 
-		//Ocurre el retardo para acceder a la memoria principal
-		retardo_acceso_memoria();
-
-		t_pagina_invertida* pagina_buscada = buscar_pagina_para_consulta(pid, pagina);
-		if (pagina_buscada != NULL){
-
-			int inicio = obtener_inicio_pagina(pagina_buscada);
-			int direccion_memoria = inicio + offset;
-
-			printf("Se obtuvo posicion %d a partir de PID %d, Pagina %d y Offset %d en Memoria\n", direccion_memoria, pid, pagina, offset);
-			printf("\n");
-
-			char* mensajeACpu = string_new();
-			string_append(&mensajeACpu, string_itoa(direccion_memoria));
-			string_append(&mensajeACpu, ";");
-
-			enviarMensaje(&sock, mensajeACpu);
-			free(mensajeACpu);
-		}
-
-		//Se carga la nueva pagina en cache
-		if (cache_habilitada)
-			almacenar_pagina_en_cache_para_pid(pid, pagina_buscada);
-
-	} else {
-
-		//Si encontro la entrada en cache
-
-		//Le aviso a la CPU que la variable se encuentra en cache
-		//Y que debe leerla utilizando pid, pagina, offset y tamanio
-		puts("El valor buscado se encuentra disponible en cache");
-		puts("");
+		printf("Se obtuvo posicion %d a partir de PID %d, Pagina %d y Offset %d en Memoria\n", direccion_memoria, pid, pagina, offset);
+		printf("\n");
 
 		char* mensajeACpu = string_new();
-		string_append(&mensajeACpu, string_itoa(VARIABLE_EN_CACHE));
+		string_append(&mensajeACpu, string_itoa(direccion_memoria));
 		string_append(&mensajeACpu, ";");
 
 		enviarMensaje(&sock, mensajeACpu);
 		free(mensajeACpu);
-
-		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache);
-		int indice_antiguo = entrada_cache->indice;
-		entrada_cache->indice = indice_cache;
-
-		list_replace(tabla_cache, indice_antiguo, entrada_cache);
-
-		reorganizar_indice_cache_y_ordenar();
 	}
 }
 
@@ -837,6 +800,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	char * instr = string_substring(instruccion, 0, offset);
 	printf("Se envia la instruccion %s\n", instr);
 	printf("Longitud Instruccion: %d\n", strlen(instr));
+	printf("\n");
 
 	enviarMensaje(socketCliente, instr);
 
@@ -1725,7 +1689,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Reorganizo las entradas de cache en base al reemplazo
 		reorganizar_indice_cache_y_ordenar();
 
-		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
+		printf("1. Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
 		puts("");
 	}
 
@@ -1749,7 +1713,7 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char * nuevoContenido){
 		//entrada_a_actualizar->contenido_pagina = nuevoContenido;
 		list_replace(tabla_cache, entrada_a_actualizar->indice, nueva_entrada_cache);
 
-		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", entrada_a_actualizar->indice, entrada_a_actualizar->nro_pagina, entrada_a_actualizar->pid);
+		printf("2. Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", entrada_a_actualizar->indice, entrada_a_actualizar->nro_pagina, entrada_a_actualizar->pid);
 		puts("");
 	}
 
@@ -1820,4 +1784,5 @@ void reorganizar_indice_cache_y_ordenar(){
 
 	list_sort(tabla_cache, (void*)_indice_menor);
 }
+
 

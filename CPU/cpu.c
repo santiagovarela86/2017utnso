@@ -454,11 +454,11 @@ void* manejo_memoria(void * args) {
 }
 
 void asignar(t_puntero direccion, t_valor_variable valor) {
-	if (pcbHabilitado == true){
+	if (pcbHabilitado == true) {
 		printf("Asignar Valor %d en la Direccion %d\n", valor, direccion);
 		printf("\n");
 
-		if (direccion == -1){
+		if (direccion == -1) {
 
 			puts("Variable no definida");
 			char* mensajeAKernel = string_new();
@@ -469,39 +469,63 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 
 			enviarMensaje(&sktKernel, mensajeAKernel);
 			free(mensajeAKernel);
-		} else if (direccion == VARIABLE_EN_CACHE) {
-			enviarMensaje(&socketMemoria, serializarMensaje(6, 511, direccion, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, valor));
 		} else {
-			enviarMensaje(&socketMemoria, serializarMensaje(3, 511, direccion, valor));
-		}
+			enviarMensaje(&socketMemoria,
+									serializarMensaje(3, 511, direccion, valor));
 
-		char * buffer = malloc(MAXBUF);
+			/*
 
-		int result = recv(socketMemoria, buffer, MAXBUF, 0);
+			if (direccion == VARIABLE_EN_CACHE) {
+				enviarMensaje(&socketMemoria,
+						serializarMensaje(6, 511, direccion, pcb->pid,
+								pagina_a_leer_cache, offset_a_leer_cache,
+								valor));
+			} else {
+				enviarMensaje(&socketMemoria,
+						serializarMensaje(3, 511, direccion, valor));
+			}
+			*/
 
-		if (result > 0) {
+			char * buffer = malloc(MAXBUF);
 
-			char**mensajeDesdeMemoria = string_split(buffer, ";");
-			int direccion = atoi(mensajeDesdeMemoria[0]);
-			valor = atoi(mensajeDesdeMemoria[1]);
+			int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
-			if (direccion != VARIABLE_EN_CACHE){
-				printf("Asigne el valor %d en la direccion %d\n", valor, direccion);
-				printf("\n");
-			}else{
-				printf("Asigne el valor %d en la pagina %d offset %d de la Cache\n", valor, pagina_a_leer_cache, offset_a_leer_cache);
-				printf("\n");
+			if (result > 0) {
+
+				char**mensajeDesdeMemoria = string_split(buffer, ";");
+				int direccion = atoi(mensajeDesdeMemoria[0]);
+				valor = atoi(mensajeDesdeMemoria[1]);
+
+				printf("Asigne el valor %d en la direccion %d\n", valor,
+											direccion);
+									printf("\n");
+
+				/*
+
+				if (direccion != VARIABLE_EN_CACHE) {
+					printf("Asigne el valor %d en la direccion %d\n", valor,
+							direccion);
+					printf("\n");
+				} else {
+					printf(
+							"Asigne el valor %d en la pagina %d offset %d de la Cache\n",
+							valor, pagina_a_leer_cache, offset_a_leer_cache);
+					printf("\n");
+				}
+				*/
+
+				free(mensajeDesdeMemoria);
+			} else {
+				printf("Error de comunicacion con Memoria al Asignar Valor\n");
+				exit(errno);
 			}
 
-			free(mensajeDesdeMemoria);
-		}else{
-			printf("Error de comunicacion con Memoria al Asignar Valor\n");
-			exit(errno);
-		}
+			free(buffer);
 
-		free(buffer);
-	}else{
-		printf("Instruccion Asignar cancelada debido a finalizacion del programa\n");
+		}
+	} else {
+		printf(
+				"Instruccion Asignar cancelada debido a finalizacion del programa\n");
 	}
 }
 
@@ -538,21 +562,23 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		char * buffer = malloc(MAXBUF);
 
 		enviarMensaje(&socketMemoria,
-				serializarMensaje(5, 601, pcb->pid, entrada_encontrada->pagina,	entrada_encontrada->offset, entrada_encontrada->size));
+				serializarMensaje(4, 601, pcb->pid, entrada_encontrada->pagina,	entrada_encontrada->offset));
 
 		int result = recv(socketMemoria, buffer, MAXBUF, 0);
 
 		if (result > 0) {
 			char**mensajeDesdeMemoria = string_split(buffer, ";");
-			int valor = atoi(mensajeDesdeMemoria[0]);
+			int direccion = atoi(mensajeDesdeMemoria[0]);
 
+			/*
 			if (valor == VARIABLE_EN_CACHE) {
 				pagina_a_leer_cache = entrada_encontrada->pagina;
 				offset_a_leer_cache = entrada_encontrada->offset;
 				tamanio_a_leer_cache = entrada_encontrada->size;
 			}
+			*/
 
-			return valor;
+			return direccion;
 
 		} else {
 			printf("Error de comunicacion entre Memoria y CPU al Obtener Posicion Variable\n");
@@ -560,7 +586,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 		}
 	}else{
 		printf("Instruccion Obtener Posicion Variable cancelada debido a finalizacion del programa\n");
-		return NULL;
+		return 0;
 	}
 }
 
@@ -568,7 +594,7 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 	printf("Dereferenciar Direccion %d\n", direccion_variable);
 	printf("\n");
 
-	if (direccion_variable == -1){
+	if (direccion_variable == -1) {
 
 		//Se asigna el exit code -20 (Sin definicion)
 		puts("Variable no definida");
@@ -580,37 +606,57 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 
 		enviarMensaje(&sktKernel, mensajeAKernel);
 		free(mensajeAKernel);
-	}else if (direccion_variable == VARIABLE_EN_CACHE) {
-		enviarMensaje(&socketMemoria, serializarMensaje(6, 513, direccion_variable, pcb->pid, pagina_a_leer_cache, offset_a_leer_cache, tamanio_a_leer_cache));
-	}else{
-		enviarMensaje(&socketMemoria, serializarMensaje(2, 513, direccion_variable));
-	}
 
-	char * buffer = malloc(MAXBUF);
+		return 0;
+	} else {
 
-	int result = recv(socketMemoria, buffer, MAXBUF, 0);
+		enviarMensaje(&socketMemoria, serializarMensaje(2, 513, direccion_variable)); //// REVISAR MEMORIA
 
-	if (result > 0) {
-		char ** respuestaDeMemoria = string_split(buffer, ";");
+		/*
+		 *
+		if (direccion_variable == VARIABLE_EN_CACHE) {
+			enviarMensaje(&socketMemoria,
+					serializarMensaje(6, 513, direccion_variable, pcb->pid,
+							pagina_a_leer_cache, offset_a_leer_cache,
+							tamanio_a_leer_cache));
+		} else {
+			enviarMensaje(&socketMemoria,
+					serializarMensaje(2, 513, direccion_variable));
+		}
+		*/
 
-		if (direccion_variable != VARIABLE_EN_CACHE){
+		char * buffer = malloc(MAXBUF);
+
+		int result = recv(socketMemoria, buffer, MAXBUF, 0);
+
+		if (result > 0) {
+			char ** respuestaDeMemoria = string_split(buffer, ";");
+
 			printf("Lei el valor %s en la posicion %d\n", respuestaDeMemoria[0], direccion_variable);
 			printf("\n");
-		}else{
-			printf("Lei el valor %s almacenado en la pagina %d offset %d de la Cache\n", respuestaDeMemoria[0], pagina_a_leer_cache, offset_a_leer_cache);
-			printf("\n");
+
+			/*
+			if (direccion_variable != VARIABLE_EN_CACHE) {
+
+			} else {
+				printf(
+						"Lei el valor %s almacenado en la pagina %d offset %d de la Cache\n",
+						respuestaDeMemoria[0], pagina_a_leer_cache,
+						offset_a_leer_cache);
+				printf("\n");
+			}
+			*/
+
+			int valor = atoi(respuestaDeMemoria[0]);
+
+			free(buffer);
+
+			return valor;
+		} else {
+			printf("Error de comunicación con Memoria al Dereferenciar\n");
+			exit(errno);
 		}
-		int valor = atoi(respuestaDeMemoria[0]);
-
-		free(buffer);
-
-		return valor;
-	}else{
-		printf("Error de comunicación con Memoria al Dereferenciar\n");
-		exit(errno);
 	}
-
-	return 0;
 }
 
 t_puntero definirVariable(t_nombre_variable identificador_variable) {
