@@ -1328,7 +1328,7 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				//escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				break;
 
@@ -3096,8 +3096,8 @@ t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd)
 
 
 }
-int hayOffsetArch(int fd)
-{
+
+int hayOffsetArch(int fd){
 
 	int encontrar_offset(t_offsetArch* glo) {
 		if(fd == glo->fd)
@@ -3121,10 +3121,53 @@ int hayOffsetArch(int fd)
 			 return -1;
 		 }
 	}
+
+	return 0;
+
 }
+
 void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
-	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
-	{
+
+	if(fd == 1 || fd == 0){
+
+		t_pcb* aux;
+
+		int encontrado = 0;
+
+		int fin = queue_size((cola_ejecucion));
+
+		while(encontrado == 0 || fin > 0){
+			pthread_mutex_lock(&mtx_ejecucion);
+			aux = queue_pop(cola_ejecucion);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+			if(aux->pid == pid_mensaje){
+				encontrado = 1;
+			}
+
+			pthread_mutex_lock(&mtx_ejecucion);
+			queue_push(cola_ejecucion, aux);
+			pthread_mutex_unlock(&mtx_ejecucion);
+
+			fin--;
+		}
+
+		char* mensaje_conso = string_new();
+		string_append(&mensaje_conso, "575");
+		string_append(&mensaje_conso, ";");
+		string_append(&mensaje_conso, string_itoa(pid_mensaje));
+		string_append(&mensaje_conso, ";");
+		string_append(&mensaje_conso, infofile);
+		string_append(&mensaje_conso, ";");
+
+		enviarMensaje(&aux->socket_consola, mensaje_conso);
+
+		free(mensaje_conso);
+
+	}else{
+
+		if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0){
+
 		char* mensajeFS= string_new();
 		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
 		regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
@@ -3174,7 +3217,9 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			exit(errno);
 		}
 		free(mensajeFS);
-		//return mensajeAFS;
+
+	}
+
 	}
 }
 
