@@ -3493,7 +3493,8 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 
 		t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 		archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
-
+		//printf("el valor a borrar es %d en global \n", archAbrir1->global_fd);
+		//printf("el valor a borrar es %d en FD \n", archAbrir1->fileDescriptor);
 		if(archAbrir2->cantidadDeAperturas >= 1)
 		{
 			char* mensajeAFS = string_new();
@@ -3503,8 +3504,8 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			string_append(&mensajeAFS, ";");
 
 			enviarMensaje(&skt_filesystem, mensajeAFS);
-			//free(archAbrir2);
-			//list_remove(lista_File_global, archAbrir1->global_fd);
+			free(archAbrir2);
+			list_remove(lista_File_global, archAbrir1->global_fd);
 
 			string_append(&resultado, "El archivo fue cerrado y eliminado ya que tiene referencias en otros procesos");
 		}
@@ -3514,8 +3515,8 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 			string_append(&resultado, "El archivo fue cerrado del proceso, pero no se eliminó dado que tiene referencias en otros procesos");
 		}
-		//free(archAbrir1);
-		//list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+		free(archAbrir1);
+		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
 
 	}
