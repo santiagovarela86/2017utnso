@@ -797,7 +797,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
-	//printf("Se envia la instruccion %s\n", instr);
+	printf("Se envia la instruccion %s\n", instr);
 	//printf("Longitud Instruccion: %d\n", strlen(instr));
 	//printf("\n");
 
@@ -1003,6 +1003,9 @@ t_pagina_invertida *leer_pagina_de_bloque(char *base, int offset, int size){
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char * datos_pagina = malloc(tamanio);
 
+	puts("Solicitar datos de pagina");
+	printf("PID: %d Pagina %d Offset %d tamanio %d", pid, pagina, offset, tamanio);
+
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina); ////ESTO A VECES TRAE BASURA
 
 	if (entrada_cache == NULL){
@@ -1032,7 +1035,7 @@ char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		memcpy(datos_pagina, &entrada_cache->contenido_pagina[offset], tamanio);
 
 		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache);
+		int indice_cache = obtener_nuevo_indice_cache();
 		int indice_antiguo = entrada_cache->indice;
 		entrada_cache->indice = indice_cache;
 
@@ -1650,7 +1653,9 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Y si no se supera el tamanio de la cache
 		//Agrego la entrada
 
-		int indice_cache = list_size(tabla_cache);
+		int indice_cache = obtener_nuevo_indice_cache();
+
+		printf("almacenar_pagina_en_cache_para_pid %d indice cache %d\n", pid, indice_cache);
 
 		t_entrada_cache * entrada_cache = crear_entrada_cache(indice_cache,
 				pagina->pid, pagina->nro_pagina,
@@ -1679,7 +1684,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		puts("");
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
 		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = list_size(tabla_cache);
+		int indice_cache = obtener_nuevo_indice_cache();
 		int indice_antiguo = entrada_cache_reemplazo->indice;
 		entrada_cache_reemplazo->indice = indice_cache;
 		entrada_cache_reemplazo->pid = pid;
@@ -1699,7 +1704,13 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 	return guardadoOK;
 }
 
+int obtener_nuevo_indice_cache(){
+	int cant_entradas_cache = list_size(tabla_cache);
+	return cant_entradas_cache;
+}
+
 bool actualizar_pagina_en_cache(int pid, int pagina, char * nuevoContenido){
+
 	bool updateOK = true;
 
 	int _encontrar_entrada_cache(t_entrada_cache* entrada){
@@ -1708,9 +1719,9 @@ bool actualizar_pagina_en_cache(int pid, int pagina, char * nuevoContenido){
 
 	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_encontrar_entrada_cache);
 
-	int indice_stack = list_size(tabla_cache);
+	int indice_cache = obtener_nuevo_indice_cache();
 
-	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_stack, pid, pagina, nuevoContenido);
+	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_cache, pid, pagina, nuevoContenido);
 
 	if (entrada_a_actualizar != NULL){
 		//entrada_a_actualizar->contenido_pagina = nuevoContenido;
@@ -1737,6 +1748,10 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 }
 
 void grabar_valor_en_cache(int direccion, char * buffer){
+
+	puts("Grabar_valor_en_cache");
+	puts("");
+	printf("NRO MARCO: %d\n", direccion / configuracion->marco_size);
 
 	t_pagina_invertida * pagina = list_get(tabla_paginas, direccion / configuracion->marco_size);
 
@@ -1787,7 +1802,9 @@ t_entrada_cache* obtener_entrada_reemplazo_cache(int pid){
 void reorganizar_indice_cache_y_ordenar(){
 
 	void _decrementar_indice_cache(t_entrada_cache* entrada){
-		entrada->indice = entrada->indice - 1;
+
+		if (entrada->indice > 0)
+			entrada->indice = entrada->indice - 1;
 	}
 
     bool _indice_menor(t_entrada_cache* unaEntrada, t_entrada_cache* otra_entrada) {
