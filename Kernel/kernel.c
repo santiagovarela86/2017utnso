@@ -1309,7 +1309,7 @@ void * handler_conexion_cpu(void * sock) {
 				break;
 
 			case 573:
-
+				detener_pcb(socketCliente);
 				break;
 
 			case 805: //mover cursor (offset)
@@ -1485,6 +1485,10 @@ void * handler_conexion_cpu(void * sock) {
 	}
 
 	return EXIT_SUCCESS;
+}
+
+void detener_pcb(int* skt){
+
 }
 
 int obtener_pid_de_cpu(int* skt){
