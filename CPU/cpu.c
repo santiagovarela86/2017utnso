@@ -231,7 +231,15 @@ char * solicitoInstruccion(t_pcb* pcb) {
 }
 
 void manejador_signal(){
+	puts("");
 	puts("A mi no me matas Gato");
+
+	char* mensajeAKernel = string_new();
+
+	string_append(&mensajeAKernel, "573");
+	string_append(&mensajeAKernel, ";");
+
+	enviarMensaje(&sktKernel, mensajeAKernel);
 }
 
 void imprimoInfoPCB(t_pcb * pcb) {
