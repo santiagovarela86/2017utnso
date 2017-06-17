@@ -56,6 +56,8 @@ int main(int argc, char **argv) {
 	pthread_t thread_id_kernel;
 	pthread_t thread_id_memoria;
 
+	signal(SIGINT, manejador_signal);
+
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
 	bloqueo = 0;
@@ -226,6 +228,10 @@ char * solicitoInstruccion(t_pcb* pcb) {
 		printf("Error de comunicacion al recibir Instruccion a la Memoria\n");
 		exit(errno);
 	}
+}
+
+void manejador_signal(){
+	puts("A mi no me matas Gato");
 }
 
 void imprimoInfoPCB(t_pcb * pcb) {
