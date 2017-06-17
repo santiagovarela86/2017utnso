@@ -220,8 +220,8 @@ char * solicitoInstruccion(t_pcb* pcb) {
 		instr = string_substring(buffer, 0, result);
 
 		printf("Se recibe la instruccion: %s\n", instr);
-		printf("Longitud Instruccion: %d\n", strlen(instr));
-		printf("\n");
+		//printf("Longitud Instruccion: %d\n", strlen(instr));
+		//printf("\n");
 		return instr;
 
 	} else {
