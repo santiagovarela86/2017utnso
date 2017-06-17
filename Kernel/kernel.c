@@ -1275,12 +1275,14 @@ void * handler_conexion_cpu(void * sock) {
 		char* infofile;
 		int pid_recibido;
 
-		int pid_del_programa = obtener_pid_de_cpu(socketCliente);
+		if(operacion != 573){
+			int pid_del_programa = obtener_pid_de_cpu(socketCliente);
 
-		t_estadistica* est = encontrar_estadistica(pid_del_programa);
+			t_estadistica* est = encontrar_estadistica(pid_del_programa);
 
-		est->cant_oper_privilegiadas++;
-		est->cant_syscalls++;
+			est->cant_oper_privilegiadas++;
+			est->cant_syscalls++;
+		}
 
 		switch (operacion){
 			case 530:
@@ -1304,6 +1306,10 @@ void * handler_conexion_cpu(void * sock) {
 				char* semaforo_buscado = string_new();
 				semaforo_buscado = mensajeDesdeCPU[1];
 				waitSemaforo(socketCliente, semaforo_buscado);
+				break;
+
+			case 573:
+
 				break;
 
 			case 805: //mover cursor (offset)
