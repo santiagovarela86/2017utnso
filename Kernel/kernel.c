@@ -1701,8 +1701,8 @@ char * limpioCodigo(char * codigo){
 		    	  	 string_append(&codigoLimpio, "\n");
 		    	  	 i++;
 
-		    	  	 printf("%s \n", curLine);
-		    	  	 printf("%d \n", i);
+		    	  	// printf("%s \n", curLine);
+		    	  	 //printf("%d \n", i);
 
 		      }
 
