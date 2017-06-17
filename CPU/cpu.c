@@ -1111,10 +1111,9 @@ void cerrar(t_descriptor_archivo descriptor) {
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+	//recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
 	int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
-
 
 	if (result > 0) {
 		printf("%s \n",mensajeAKernel);

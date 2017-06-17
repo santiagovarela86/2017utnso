@@ -593,13 +593,13 @@ void abrir_subconsola_dos(t_pcb* p){
 
 					if(size != 0)
 					{
-						string_append(&log, "El proceso tiene los siguientes FD");
+						string_append(&log, "El proceso tiene los siguientes Archivos: \n");
 						t_fileProceso* filePro = malloc(sizeof(t_fileProceso));
 
 						while (i < size){
 
 							filePro = list_get(tablaDeProcesoActual->tablaProceso, i);
-							printf("FD: %d \n", filePro->fileDescriptor);
+							//printf("FD: %d \n", filePro->fileDescriptor);
 							string_append(&log, "FD: ");
 							string_append(&log, string_itoa(filePro->fileDescriptor));
 							string_append(&log, ";");
@@ -1352,8 +1352,8 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 801://de CPU a File system (cerrar)
 
-				 fd = atoi(mensajeDesdeCPU[1]);
-			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
+				 fd = atoi(mensajeDesdeCPU[2]);
+			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 
 				 char* result = cerrarArchivo(pid_mensaje, fd);
 				 enviarMensaje(socketCliente, result);
@@ -3494,7 +3494,7 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
 		archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
 
-		if(archAbrir2->cantidadDeAperturas == 0)
+		if(archAbrir2->cantidadDeAperturas >= 1)
 		{
 			char* mensajeAFS = string_new();
 			string_append(&mensajeAFS, "802");
@@ -3503,9 +3503,9 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			string_append(&mensajeAFS, ";");
 
 			enviarMensaje(&skt_filesystem, mensajeAFS);
+			//free(archAbrir2);
+			//list_remove(lista_File_global, archAbrir1->global_fd);
 
-			list_remove(lista_File_global, archAbrir1->global_fd);
-			free(archAbrir2);
 			string_append(&resultado, "El archivo fue cerrado y eliminado ya que tiene referencias en otros procesos");
 		}
 		else
@@ -3514,8 +3514,9 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 			string_append(&resultado, "El archivo fue cerrado del proceso, pero no se eliminó dado que tiene referencias en otros procesos");
 		}
-		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-		free(archAbrir1);
+		//free(archAbrir1);
+		//list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+
 
 	}
 	else
@@ -3523,7 +3524,7 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		string_append(&resultado, "No se encuentra el archivo que se quiere cerrar.");
 	}
 
-	return resultado;
+	return "hola";
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
