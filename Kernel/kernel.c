@@ -1498,7 +1498,17 @@ void detener_pcb(int* skt){
 
 		if (temporalCpu->socket == *(skt)) {
 			colorada_te_extranio = 1;
-			temporalCpu->pid_asignado = 0;
+
+			if(temporalCpu->pid_asignado == 0){
+				temporalCpu->pid_asignado = -1;
+
+				sem_post(&sem_cpus);
+
+				multiprogramar();
+
+			}else{
+				temporalCpu->pid_asignado = 0;
+			}
 		}
 
 		pthread_mutex_lock(&mtx_cpu);
@@ -2953,7 +2963,7 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 					bloq->pid = p->pid;
 					bloq->sem = string_new();
 					bloq->sem = sem->nombre;
-					puts("entre");
+
 					list_add(registro_bloqueados, bloq);
 
 					encontrado = 1;
