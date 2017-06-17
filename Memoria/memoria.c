@@ -36,7 +36,7 @@ pthread_mutex_t mutex_bloque_memoria;
 
 t_list* tabla_paginas;
 t_list* tabla_cache;
-t_list* paginasCodigoProceso;
+//t_list* paginasCodigoProceso;
 int stack_size = 0;
 char* bloque_memoria;
 Memoria_Config* configuracion;
@@ -118,7 +118,7 @@ void inicializarEstructuras(char * pathConfig){
 
 	tabla_cache = list_create();
 	lista_paginas_stack = list_create();
-	paginasCodigoProceso = list_create();
+	//paginasCodigoProceso = list_create();
 
 	sem_init(&semaforoKernel, 0, 0);
 
@@ -134,7 +134,7 @@ void liberarEstructuras(){
 
 	list_destroy_and_destroy_elements(tabla_cache, free);
 	list_destroy_and_destroy_elements(lista_paginas_stack, free);
-	list_destroy_and_destroy_elements(paginasCodigoProceso, free);
+	//list_destroy_and_destroy_elements(paginasCodigoProceso, free);
 
 	free(configuracion);
 	free(tamanio_maximo);
