@@ -3421,13 +3421,19 @@ void borrarArchivo(int pid_mensaje, int fd)
 						return 0;
 				}
 
-			t_fileProceso* archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+			t_fileProceso* archBorrarPro = malloc(sizeof(t_fileProceso));
+			archBorrarPro	= list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-			t_fileGlobal* archFileGlobal = malloc(sizeof(t_fileGlobal));
-			int index = (int)archAbrir1->global_fd;
-			archFileGlobal = list_get(lista_File_global, index);
+			int encontrar_archGobal(t_fileGlobal* regFileGlobal){
+						if(archBorrarPro->global_fd == regFileGlobal->fdGlobal)
+							return 1;
+						else
+							return 0;
+					}
+			t_fileGlobal* archBorrarGlobal = malloc(sizeof(t_fileGlobal));
+			archBorrarGlobal = list_find(lista_File_global,(void*) encontrar_archGobal);
 			//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
-			if(archFileGlobal->cantidadDeAperturas >= 2)
+			if(archBorrarGlobal->cantidadDeAperturas >= 2)
 			{
 				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 			}
@@ -3437,19 +3443,17 @@ void borrarArchivo(int pid_mensaje, int fd)
 				char* mensajeAFS = string_new();
 				string_append(&mensajeAFS, "802");
 				string_append(&mensajeAFS, ";");
-				string_append(&mensajeAFS, archFileGlobal->path);
+				string_append(&mensajeAFS, archBorrarGlobal->path);
 				string_append(&mensajeAFS, ";");
 
-				puts("1");
 				enviarMensaje(&skt_filesystem, mensajeAFS);
 
-				puts("1");
+
 				list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-				free(archAbrir1);
-				puts("1");
-				list_remove(lista_File_global,index);
-				free(archFileGlobal);
-				puts("1");
+				free(archBorrarPro);
+
+				list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
+				free(archBorrarGlobal);
 
 				/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
 
