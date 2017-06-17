@@ -1489,6 +1489,23 @@ void * handler_conexion_cpu(void * sock) {
 
 void detener_pcb(int* skt){
 
+	int colorada_te_extranio = 0;
+
+	while(colorada_te_extranio == 0){
+		pthread_mutex_lock(&mtx_cpu);
+		estruct_cpu* temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+		pthread_mutex_unlock(&mtx_cpu);
+
+		if (temporalCpu->socket == *(skt)) {
+			colorada_te_extranio = 1;
+			temporalCpu->pid_asignado = 0;
+		}
+
+		pthread_mutex_lock(&mtx_cpu);
+		queue_push(cola_cpu, temporalCpu);
+		pthread_mutex_unlock(&mtx_cpu);
+	}
+
 }
 
 int obtener_pid_de_cpu(int* skt){
@@ -2639,7 +2656,9 @@ void finDeQuantum(int * socketCliente){
 
 	estruct_cpu* temporalCpu;
 
-	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+	int f = queue_size(cola_cpu);
+
+	while (f > 0) { //Libero la CPU que estaba ejecutando al programa
 
 		pthread_mutex_lock(&mtx_cpu);
 		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
@@ -2648,15 +2667,15 @@ void finDeQuantum(int * socketCliente){
 		if (temporalCpu->pid_asignado == pid_a_buscar) {
 			encontrado = 1;
 			temporalCpu->pid_asignado = -1;
+
+			sem_post(&sem_cpus);
 		}
-
-		sem_post(&sem_cpus);
-
 
 		pthread_mutex_lock(&mtx_cpu);
 		queue_push(cola_cpu, temporalCpu);
 		pthread_mutex_unlock(&mtx_cpu);
 
+		f--;
 	}
 }
 
@@ -2888,10 +2907,9 @@ void finDePrograma(int * socketCliente) {
 				if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
 					encontrado = 1;
 					temporalCpu->pid_asignado = -1;
+
+					sem_post(&sem_cpus);
 				}
-
-				sem_post(&sem_cpus);
-
 
 				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
