@@ -1640,6 +1640,7 @@ void * planificar() {
 	int corte, i, encontrado;
 
 	while (1) {
+
 		sem_wait(&sem_cpus);
 
 		sem_wait(&sem_prog);
@@ -1696,6 +1697,8 @@ void * planificar() {
 
 						free(mensajeACPUPlan);
 					}
+				}else{
+					sem_post(&sem_prog);
 				}
 			}
 		}
