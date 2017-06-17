@@ -82,7 +82,7 @@ sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_cpus;
-int programCounter = 1;
+int programCounter;
 int longitud_pag;
 
 int main(int argc, char **argv) {
@@ -1275,14 +1275,12 @@ void * handler_conexion_cpu(void * sock) {
 		char* infofile;
 		int pid_recibido;
 
-		if(operacion != 573){
-			int pid_del_programa = obtener_pid_de_cpu(socketCliente);
+		int pid_del_programa = obtener_pid_de_cpu(socketCliente);
 
-			t_estadistica* est = encontrar_estadistica(pid_del_programa);
+		t_estadistica* est = encontrar_estadistica(pid_del_programa);
 
-			est->cant_oper_privilegiadas++;
-			est->cant_syscalls++;
-		}
+		est->cant_oper_privilegiadas++;
+		est->cant_syscalls++;
 
 		switch (operacion){
 			case 530:
@@ -1306,10 +1304,6 @@ void * handler_conexion_cpu(void * sock) {
 				char* semaforo_buscado = string_new();
 				semaforo_buscado = mensajeDesdeCPU[1];
 				waitSemaforo(socketCliente, semaforo_buscado);
-				break;
-
-			case 573:
-				detener_pcb(socketCliente);
 				break;
 
 			case 805: //mover cursor (offset)
@@ -1487,37 +1481,6 @@ void * handler_conexion_cpu(void * sock) {
 	return EXIT_SUCCESS;
 }
 
-void detener_pcb(int* skt){
-
-	int colorada_te_extranio = 0;
-
-	while(colorada_te_extranio == 0){
-		pthread_mutex_lock(&mtx_cpu);
-		estruct_cpu* temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
-		pthread_mutex_unlock(&mtx_cpu);
-
-		if (temporalCpu->socket == *(skt)) {
-			colorada_te_extranio = 1;
-
-			if(temporalCpu->pid_asignado == 0){
-				temporalCpu->pid_asignado = -1;
-
-				sem_post(&sem_cpus);
-
-				multiprogramar();
-
-			}else{
-				temporalCpu->pid_asignado = 0;
-			}
-		}
-
-		pthread_mutex_lock(&mtx_cpu);
-		queue_push(cola_cpu, temporalCpu);
-		pthread_mutex_unlock(&mtx_cpu);
-	}
-
-}
-
 int obtener_pid_de_cpu(int* skt){
 
 	int fin = queue_size(cola_cpu);
@@ -1640,7 +1603,6 @@ void * planificar() {
 	int corte, i, encontrado;
 
 	while (1) {
-
 		sem_wait(&sem_cpus);
 
 		sem_wait(&sem_prog);
@@ -1697,8 +1659,6 @@ void * planificar() {
 
 						free(mensajeACPUPlan);
 					}
-				}else{
-					sem_post(&sem_prog);
 				}
 			}
 		}
@@ -1717,7 +1677,7 @@ bool esNewLine(char* linea){
 char * limpioCodigo(char * codigo){
 		char * curLine = codigo;
 		char * codigoLimpio = string_new();
-		int i = 1;
+		//int i = 1;
 		   while(curLine)
 		   {
 		      char * nextLine = strchr(curLine, '\n');
@@ -1729,17 +1689,14 @@ char * limpioCodigo(char * codigo){
 		 	 	 if(string_contains(ltrim(curLine), "begin"))
 		 		 	  {
 		 	 		 	 //printf("el valor de la liena es %s", curLine);
-		 		 		  programCounter =i;
+		 		 		  //programCounter =i;
 		 		 		  //puts("si entro");
 		 		 		  //printf("con el valor %d \n", programCounter);
 		 		 	  }
-		 	 	     else if (string_contains(ltrim(curLine), "function") || string_contains(ltrim(curLine), "end"))
-					{
-		 	 		 i--;
-					}
+
 		    	  	 string_append(&codigoLimpio, ltrim(curLine));
 		    	  	 string_append(&codigoLimpio, "\n");
-		    	  	 i++;
+		    	  	 //i++;
 
 		    	  	// printf("%s \n", curLine);
 		    	  	 //printf("%d \n", i);
@@ -1769,7 +1726,9 @@ void cargoIndicesPCB(t_pcb * pcb, char * codigo){
 		elementoIndiceCodigo * elem = malloc(sizeof(elementoIndiceCodigo));
 		elem->start = metadataProgram->instrucciones_serializado[i].start;
 		elem->offset = metadataProgram->instrucciones_serializado[i].offset;
+		pcb->program_counter= (int)metadataProgram->instruccion_inicio;
 		list_add(pcb->indiceCodigo, elem);
+		//printf("el program es %d", pcb->program_counter);
 
 	}
 
@@ -2669,9 +2628,7 @@ void finDeQuantum(int * socketCliente){
 
 	estruct_cpu* temporalCpu;
 
-	int f = queue_size(cola_cpu);
-
-	while (f > 0) { //Libero la CPU que estaba ejecutando al programa
+	while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
 
 		pthread_mutex_lock(&mtx_cpu);
 		temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
@@ -2680,15 +2637,15 @@ void finDeQuantum(int * socketCliente){
 		if (temporalCpu->pid_asignado == pid_a_buscar) {
 			encontrado = 1;
 			temporalCpu->pid_asignado = -1;
-
-			sem_post(&sem_cpus);
 		}
+
+		sem_post(&sem_cpus);
+
 
 		pthread_mutex_lock(&mtx_cpu);
 		queue_push(cola_cpu, temporalCpu);
 		pthread_mutex_unlock(&mtx_cpu);
 
-		f--;
 	}
 }
 
@@ -2920,9 +2877,10 @@ void finDePrograma(int * socketCliente) {
 				if (temporalCpu->pid_asignado == pcb_deserializado->pid) {
 					encontrado = 1;
 					temporalCpu->pid_asignado = -1;
-
-					sem_post(&sem_cpus);
 				}
+
+				sem_post(&sem_cpus);
+
 
 				pthread_mutex_lock(&mtx_cpu);
 				queue_push(cola_cpu, temporalCpu);
@@ -2966,7 +2924,7 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 					bloq->pid = p->pid;
 					bloq->sem = string_new();
 					bloq->sem = sem->nombre;
-
+					puts("entre");
 					list_add(registro_bloqueados, bloq);
 
 					encontrado = 1;

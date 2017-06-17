@@ -117,7 +117,7 @@ void* manejo_kernel(void *args) {
 						&& pcbHabilitado == true) {
 
 			pthread_mutex_lock(&mutex_instrucciones);
-
+			//printf("antes de ir a instrucción el progrma vale  %d",pcb->program_counter);
 			instruccion = "";
 
 			instruccion = solicitoInstruccion(pcb);
@@ -126,6 +126,9 @@ void* manejo_kernel(void *args) {
 
 			pcb->quantum--;
 			pcb->program_counter++;
+
+			printf("El program counter es: %d\n", pcb->program_counter);
+			printf("\n");
 
 			pthread_mutex_unlock(&mutex_instrucciones);
 		}
@@ -202,7 +205,7 @@ void* manejo_kernel(void *args) {
 char * solicitoInstruccion(t_pcb* pcb) {
 
 	int inst_pointer = pcb->program_counter;
-
+	//printf("los pm aca son %d", inst_pointer);
 	elementoIndiceCodigo* coordenadas_instruccion =
 			((elementoIndiceCodigo*) list_get(pcb->indiceCodigo, inst_pointer));
 	//printf("el indice de codigo devolvio las coodernadas %d \n", coordenadas_instruccion->start);
@@ -827,8 +830,7 @@ void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	pcb->program_counter = instruccion-1;
 
 	//pcb->program_counter++;
-	printf("ahora el program counter es: %d\n", pcb->program_counter);
-	printf("\n");
+
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -854,8 +856,8 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	pcb->program_counter = instruccion-1;
 
 	//pcb->program_counter++;
-	printf("ahora el program counter es: %d\n", pcb->program_counter);
-	printf("\n");
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	//printf("\n");
 	return;
 }
 
@@ -875,13 +877,13 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	list_add(pcb->indiceStack, stackFuncion);
 
 
-
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
 	pthread_mutex_unlock(&mutex_instrucciones);
 	pcb->program_counter = instruccion - 1;
 
 	//pcb->program_counter++;
-
+	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	//printf("\n");
 	//free(stackFuncion);
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
