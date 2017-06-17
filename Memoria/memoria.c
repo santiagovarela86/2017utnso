@@ -797,7 +797,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
-	printf("Se envia la instruccion %s\n", instr);
+	//printf("Se envia la instruccion %s\n", instr);
 	//printf("Longitud Instruccion: %d\n", strlen(instr));
 	//printf("\n");
 
@@ -1002,9 +1002,6 @@ t_pagina_invertida *leer_pagina_de_bloque(char *base, int offset, int size){
 
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char * datos_pagina = malloc(tamanio);
-
-	puts("Solicitar datos de pagina");
-	printf("PID: %d Pagina %d Offset %d tamanio %d", pid, pagina, offset, tamanio);
 
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina); ////ESTO A VECES TRAE BASURA
 
