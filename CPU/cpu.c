@@ -26,10 +26,12 @@
 #include <commons/string.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <signal.h>
 #include "configuracion.h"
 #include "helperFunctions.h"
 #include "helperParser.h"
 #include "cpu.h"
+
 
 CPU_Config* configuracion;
 int socketMemoria;
@@ -934,7 +936,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	return;
 }
 
-void signal(t_nombre_semaforo identificador_semaforo) {
+void signale(t_nombre_semaforo identificador_semaforo) {
 	puts("Signal");
 	puts("");
 

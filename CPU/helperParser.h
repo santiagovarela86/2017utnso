@@ -9,6 +9,7 @@
 #include "parser/parser.h"
 #include "parser/metadata_program.h"
 
+
 char * leerArchivo(char * path);
 void procesoLineas(char * programa);
 
@@ -31,7 +32,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar);
 void finalizar(void);
 void retornar(t_valor_variable retorno);
 void wait(t_nombre_semaforo identificador_semaforo);
-void signal(t_nombre_semaforo identificador_semaforo);
+void signale(t_nombre_semaforo identificador_semaforo);
 void liberar(t_puntero puntero);
 t_puntero reservar(t_valor_variable espacio);
 t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags);
