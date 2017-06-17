@@ -1003,11 +1003,16 @@ t_pagina_invertida *leer_pagina_de_bloque(char *base, int offset, int size){
 char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 	char * datos_pagina = malloc(tamanio);
 
-	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina);
+	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina); ////ESTO A VECES TRAE BASURA
 
 	if (entrada_cache == NULL){
+
+		if (cache_habilitada){
+
 		printf("CACHE_MISS para PID %d pagina %d \n", pid, pagina);
 		puts("");
+
+		}
 
 		//Ocurre el retardo para acceder a la memoria principal
 		retardo_acceso_memoria();
