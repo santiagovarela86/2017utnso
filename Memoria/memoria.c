@@ -553,7 +553,7 @@ void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int*
 		//puts("ya existen otras variables de ese programa");
 		pag_encontrada = buscar_pagina_para_consulta(manejo_programa->pid, manejo_programa->pagina);
 
-		if (!pagina_llena(pag_encontrada)) {
+		if (!pagina_llena(pag_encontrada)) { // CAMBIAR POR HAY LUGAR
 			definirVariableEnPagina(nombreVariable, pag_encontrada, paginaNueva, sock);
 		}
 		else {
@@ -601,7 +601,7 @@ void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariable
 
 	pag_a_cargar->nro_pagina = paginaParaVariables;
 	pag_a_cargar->pid = pid;
-	pag_a_cargar->offset = 0; ////SE INICIALIZA EL OFFSET
+	//pag_a_cargar->offset = 0; ////SE INICIALIZA EL OFFSET
 
 	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_a_cargar->nro_marco, pag_a_cargar->nro_pagina, pag_a_cargar->pid);
 	puts("");
@@ -1502,6 +1502,7 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 	int nro_marco = f_hash_nene_malloc(pid, pagina);
 	//printf("BUSCO PARA INSERTAR PID: %d, PAGINA: %d\n", pid, pagina);
 	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+	pagina_encontrada->offset = 0;
 	//printf("PAGINA ENCONTRADA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
 
 	//Si la pagina encontrada no es una estructura administrativa
