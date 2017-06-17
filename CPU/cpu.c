@@ -26,10 +26,12 @@
 #include <commons/string.h>
 #include <pthread.h>
 #include <ctype.h>
+#include <signal.h>
 #include "configuracion.h"
 #include "helperFunctions.h"
 #include "helperParser.h"
 #include "cpu.h"
+
 
 CPU_Config* configuracion;
 int socketMemoria;
@@ -53,6 +55,8 @@ int main(int argc, char **argv) {
 
 	pthread_t thread_id_kernel;
 	pthread_t thread_id_memoria;
+
+	signal(SIGINT, manejador_signal);
 
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
@@ -224,6 +228,18 @@ char * solicitoInstruccion(t_pcb* pcb) {
 		printf("Error de comunicacion al recibir Instruccion a la Memoria\n");
 		exit(errno);
 	}
+}
+
+void manejador_signal(){
+	puts("");
+	puts("A mi no me matas Gato");
+
+	char* mensajeAKernel = string_new();
+
+	string_append(&mensajeAKernel, "573");
+	string_append(&mensajeAKernel, ";");
+
+	enviarMensaje(&sktKernel, mensajeAKernel);
 }
 
 void imprimoInfoPCB(t_pcb * pcb) {
@@ -938,7 +954,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	return;
 }
 
-void signal(t_nombre_semaforo identificador_semaforo) {
+void signale(t_nombre_semaforo identificador_semaforo) {
 	puts("Signal");
 	puts("");
 

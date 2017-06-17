@@ -315,7 +315,7 @@ void procesoLineas(char * programa){ //tendria que usar el string_iterate_lines 
 	kernel->AnSISOP_escribir = escribir;
 	kernel->AnSISOP_leer = leer;
 	kernel->AnSISOP_liberar = liberar;
-	kernel->AnSISOP_signal = signal;
+	kernel->AnSISOP_signal = signale;
 	kernel->AnSISOP_wait = wait;
 	kernel->AnSISOP_moverCursor = moverCursor;
 	kernel->AnSISOP_reservar = reservar;
@@ -418,7 +418,7 @@ void inicializar_funciones(AnSISOP_funciones* funciones, AnSISOP_kernel* kernel)
 	kernel->AnSISOP_escribir = escribir;
 	kernel->AnSISOP_leer = leer;
 	kernel->AnSISOP_liberar = liberar;
-	kernel->AnSISOP_signal = signal;
+	kernel->AnSISOP_signal = signale;
 	kernel->AnSISOP_wait = wait;
 	kernel->AnSISOP_moverCursor = moverCursor;
 	kernel->AnSISOP_reservar = reservar;
