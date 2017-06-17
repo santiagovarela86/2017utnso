@@ -804,11 +804,15 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	puts("Ir a Label");
 	puts("");
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(
-			identificador_variable, pcb->etiquetas, pcb->etiquetas_size);
 
-	pcb->program_counter = instruccion;
-	pcb->program_counter++;
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
+
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(identificador_variable), pcb->etiquetas, pcb->etiquetas_size);
+	pcb->program_counter = instruccion-1;
+
+	//pcb->program_counter++;
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("\n");
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	return;
 }
@@ -828,7 +832,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	printf("Etiqueta: %s\n", trim(etiqueta));
 	printf("\n");
 
-	imprimoInfoPCB(pcb);
+//	imprimoInfoPCB(pcb);
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion-1;
@@ -1093,14 +1097,13 @@ void cerrar(t_descriptor_archivo descriptor) {
 
 	int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
-	free(mensajeAKernel);
 
 	if (result > 0) {
-		puts("archivo cerrado correctamente");
+		printf("%s \n",mensajeAKernel);
 	} else {
 		printf("Error el archivo no se pudo cerrar \n");
 	}
-
+	free(mensajeAKernel);
 	return;
 }
 

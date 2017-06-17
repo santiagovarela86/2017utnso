@@ -82,7 +82,7 @@ sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_cpus;
-int programCounter;
+int programCounter = 1;
 int longitud_pag;
 
 int main(int argc, char **argv) {
@@ -1512,7 +1512,7 @@ t_pcb *nuevo_pcb(int pid, int* socket_consola){
 	t_pcb* new = malloc(sizeof(t_pcb));
 
 	new->pid = pid;
-	new->program_counter = 0;
+	new->program_counter = programCounter;
 	new->cantidadPaginas = 0;
 	new->indiceCodigo = list_create();
 	//new->indiceEtiquetas = list_create();
@@ -1677,7 +1677,7 @@ bool esNewLine(char* linea){
 char * limpioCodigo(char * codigo){
 		char * curLine = codigo;
 		char * codigoLimpio = string_new();
-		int i = 0;
+		int i = 1;
 		   while(curLine)
 		   {
 		      char * nextLine = strchr(curLine, '\n');
@@ -1686,16 +1686,23 @@ char * limpioCodigo(char * codigo){
 		      }
 
 		      if (!esComentario(curLine) && !esNewLine(curLine)){
-		 	 	 if(string_starts_with(curLine, "begin"))
+		 	 	 if(string_contains(ltrim(curLine), "begin"))
 		 		 	  {
 		 	 		 	 //printf("el valor de la liena es %s", curLine);
 		 		 		  programCounter =i;
 		 		 		  //puts("si entro");
 		 		 		  //printf("con el valor %d \n", programCounter);
 		 		 	  }
-		    	  	 string_append(&codigoLimpio, curLine);
+		 	 	     else if (string_contains(ltrim(curLine), "function") || string_contains(ltrim(curLine), "end"))
+					{
+		 	 		 i--;
+					}
+		    	  	 string_append(&codigoLimpio, ltrim(curLine));
 		    	  	 string_append(&codigoLimpio, "\n");
 		    	  	 i++;
+
+		    	  	 printf("%s \n", curLine);
+		    	  	 printf("%d \n", i);
 
 		      }
 
