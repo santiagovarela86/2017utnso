@@ -3504,9 +3504,9 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			string_append(&mensajeAFS, ";");
 
 			enviarMensaje(&skt_filesystem, mensajeAFS);
-			free(archAbrir2);
-			list_remove(lista_File_global, archAbrir1->global_fd);
 
+			list_remove(lista_File_global, archAbrir1->global_fd);
+			free(archAbrir2);
 			string_append(&resultado, "El archivo fue cerrado y eliminado ya que tiene referencias en otros procesos");
 		}
 		else
@@ -3515,10 +3515,10 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
 			string_append(&resultado, "El archivo fue cerrado del proceso, pero no se eliminó dado que tiene referencias en otros procesos");
 		}
-		free(archAbrir1);
+
 		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-
+		free(archAbrir1);
 	}
 	else
 	{
