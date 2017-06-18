@@ -322,11 +322,12 @@ void cerrarUnArchivoBloque(char* pmap, struct stat script)
 	munmap(pmap,script.st_size);
 }
 
-void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size)
+void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
 {
 	bitarray_set_bit(bitmap, idBloque);
-	fputs(buffer, archBloque); //grabo;
-	fseek(archBloque, size, SEEK_SET);
+	string_append(&archBloque->archivoMapeado, buffer);
+
+	cerrarUnArchivoBloque(archBloque->archivoMapeado, archBloque->script);
 }
 
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch)
@@ -527,7 +528,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 		 int unBloque = buscarPrimerBloqueLibre();
 		 if(unBloque != -1)
 		 {
-			char* archBloque = abrirUnArchivoBloque(unBloque);
+			t_mapeoArchivo* archBloque = abrirUnArchivoBloque(unBloque);
 
 			if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
 			{
@@ -565,7 +566,7 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 
 	int idbloqueAGrabar = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
-	  char** archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
+	  t_mapeoArchivo* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
 	  int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
 	  char* bufferaux = string_substring(buffer,0, offsetRelativo); //grabo lo que tengo que grabar en ese bloque
 
@@ -587,7 +588,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 	int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
-	char* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
+	t_mapeoArchivo* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 
 	if(size > metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
 	{

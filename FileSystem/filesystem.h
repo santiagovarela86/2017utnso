@@ -48,7 +48,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch);
 void cerrarUnArchivoBloque(char* pmap, struct stat script);
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque);
-void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size);
+void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size);
 void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
 void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
 void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
