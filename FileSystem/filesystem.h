@@ -27,6 +27,11 @@ typedef struct {
 	t_list* bloquesEscritos;
 }t_metadataArch;
 
+typedef struct {
+	char* archivoMapeado;
+	struct stat script;
+}t_mapeoArchivo;
+
 void * handler_conexion_kernel(void * sock);
 
 void inicializarEstructuras(char * pathConfig);
@@ -39,8 +44,10 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset);
 void crearMetadataSadica(char* montaje);
 void crearBloques(char* montaje, int cantidad);
 int buscarPrimerBloqueLibre();
+t_metadataArch* leerMetadataDeArchivoCreado(char* arch);
+void cerrarUnArchivoBloque(char* pmap, struct stat script);
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
-FILE* abrirUnArchivoBloque(int idBloque);
+t_mapeoArchivo* abrirUnArchivoBloque(int idBloque);
 void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size);
 void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
 void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );

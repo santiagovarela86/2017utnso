@@ -293,17 +293,33 @@ void crear_archivo(char* flag, char* directorio){
 	  free(pathAbsoluto);
 }
 
-FILE* abrirUnArchivoBloque(int idBloque)
+t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 {
+
 	char* pathArchivoBloque = string_new();
 	string_append(&pathArchivoBloque, montaje);
 	string_append(&pathArchivoBloque, "Bloques/");
 	string_append(&pathArchivoBloque, string_itoa(idBloque));
 	string_append(&pathArchivoBloque, ".bin");
 
-	FILE* archBloque = fopen(pathArchivoBloque,"w");
+	int fd_aleer = open(pathArchivoBloque, O_RDWR);
+	struct stat scriptAleer;
+	fstat(fd_aleer, &scriptAleer);
 
-	return archBloque;
+	t_mapeoArchivo* mapeo = malloc(sizeof(t_mapeoArchivo));
+
+	mapeo->archivoMapeado = mmap(0, scriptAleer.st_size, PROT_READ, MAP_SHARED, fd_aleer, 0);
+
+	mapeo->script = scriptAleer;
+
+	//printf("el valor del mmap es %s",pmap);
+
+	return mapeo;
+}
+
+void cerrarUnArchivoBloque(char* pmap, struct stat script)
+{
+	munmap(pmap,script.st_size);
 }
 
 void grabarUnArchivoBloque(FILE* archBloque, int idBloque, char* buffer, int size)
@@ -388,25 +404,20 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 	string_append(&pathAbsoluto, montaje);
 	string_append(&pathAbsoluto, directorioAux);
 
-	char* mensaje = string_new();
-
-		int encontrar_sem(t_archivosFileSystem* archivo) {
-			return string_starts_with(pathAbsoluto, archivo->path);
-		}
-
-		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
+		char* valorLeido = string_new();
 
 		if (offset != -1)
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado(pathAbsoluto);
 
-			int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques);
+			int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques); //numero de bloque donde comienzo a leer
 
 			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
 
-			FILE* archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+			t_mapeoArchivo* archBloqueAleer = malloc(sizeof(t_mapeoArchivo));
+			archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
 
-			if(size > metadataSadica->tamanio_bloques)
+			if(size > metadataSadica->tamanio_bloques) //el tamaño de lo que quiero leer es mayor a un bloque?
 			{
 				int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques;
 				if((size % metadataSadica->tamanio_bloques) != 0)
@@ -417,17 +428,16 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 				{
 					if(cantidadDeBloquesALeer != 1)
 					{
-						char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
-						fseek(archBloqueAleer, metadataSadica->tamanio_bloques, SEEK_SET);
-						string_append(buffer, (char*)valorLeido);
+						valorLeido = string_duplicate(archBloqueAleer->archivoMapeado);
+						string_append(&buffer, valorLeido);
 						idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
-						archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+						archBloqueAleer->archivoMapeado= abrirUnArchivoBloque(idbloqueALeer);
 					}
 					else
 					{
-						char* valorLeido = fgets(pathAbsoluto, metadataSadica->tamanio_bloques, archBuscado->referenciaArchivo);
-						fseek(archBloqueAleer,(size % metadataSadica->tamanio_bloques), SEEK_SET);
-						string_append(buffer, (char*)valorLeido);
+
+						valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
+						string_append(&buffer, valorLeido);
 
 					}
 					cantidadDeBloquesALeer--;
@@ -435,14 +445,17 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 			}
 			else
 			{
-				fseek(archBloqueAleer, size, SEEK_SET);
-				fgets(pathAbsoluto, size, archBuscado->referenciaArchivo );
+
+				valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
 			}
 
+			cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
 		}
-		enviarMensaje(&socketKernel, mensaje);
-		free(pathAbsoluto);
-		free(directorioAux);
+
+		//string_append(&mensaje, valorLeido);
+		enviarMensaje(&socketKernel, "El archivo fue leido con exito");
+		//free(pathAbsoluto);
+		//free(directorioAux);
 		return ;
 
 	} // End if file
@@ -487,7 +500,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 		 int unBloque = buscarPrimerBloqueLibre();
 		 if(unBloque != -1)
 		 {
-			FILE* archBloque = abrirUnArchivoBloque(unBloque);
+			char* archBloque = abrirUnArchivoBloque(unBloque);
 
 			if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
 			{
@@ -525,7 +538,7 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 
 	int idbloqueAGrabar = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
-	  FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
+	  char** archBloqueAGrabar= abrirUnArchivoBloque(idbloqueAGrabar);
 	  int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
 	  char* bufferaux = string_substring(buffer,0, offsetRelativo); //grabo lo que tengo que grabar en ese bloque
 
@@ -547,7 +560,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 	int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
-	FILE* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
+	char* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 
 	if(size > metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
 	{
@@ -601,7 +614,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 
 		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
-		t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
+		t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado(pathAbsoluto);
 		int posicionesParaGuardar = (int)regMetaArchBuscado->bloquesEscritos->elements_count * (int)metadataSadica->tamanio_bloques;
 		if(offset+size < posicionesParaGuardar) //entra todo en los arch/bloques que ya tiene?
 		{

@@ -143,6 +143,8 @@ void crearBloques(char* mnt, int cantidad)
 		string_append(&bloque,string_itoa(i));
 		string_append(&bloque,".bin");
 		FILE * bitmapArchivo = fopen(bloque, "w");
+	    fputs(" ", bitmapArchivo);
+	    fseek(bitmapArchivo, string_length(""), 0);
 		free(bloque);
 		i++;
 	}

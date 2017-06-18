@@ -3563,7 +3563,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 
 
 	//free(archAbrir1);
-	free(regTablaGlobal);
+	//free(regTablaGlobal);
 
 	enviarMensaje(&skt_filesystem, mensajeAFS);
 
@@ -3576,7 +3576,7 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 		printf("Error no se pudo leer \n");
 		exit(errno);
 	}
-	free(mensajeAFS);
+	//free(mensajeAFS);
 	return mensajeAFS;
 	}
 	else
