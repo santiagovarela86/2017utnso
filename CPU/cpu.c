@@ -195,7 +195,7 @@ void* manejo_kernel(void *args) {
 
 	pause();
 
-	//free(pcb);
+	free(pcb);
 
 	shutdown(socketKernel, 0);
 	close(socketKernel);
@@ -1120,7 +1120,8 @@ void cerrar(t_descriptor_archivo descriptor) {
 		} else {
 			printf("Error el archivo no se pudo cerrar \n");
 		}
-		//free(mensajeAKernel);
+		free(mensajeAKernel);
+		free(resulMenCerrar);
 		return;
 }
 
@@ -1205,7 +1206,8 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	//free(mensajeFs);
+	free(mensajeFs);
+	free(resulMenLeer);
 	return;
 
 }
