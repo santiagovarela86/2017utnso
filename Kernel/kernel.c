@@ -1354,9 +1354,10 @@ void * handler_conexion_cpu(void * sock) {
 
 				 fd = atoi(mensajeDesdeCPU[2]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
+			     char * auxCerrar = malloc(MAXBUF);
+			     auxCerrar = string_duplicate(cerrarArchivo(pid_mensaje, fd));
 
-				 char* result = cerrarArchivo(pid_mensaje, fd);
-				 enviarMensaje(socketCliente, result);
+				 enviarMensaje(socketCliente, auxCerrar);
 
 				break;
 
@@ -1366,10 +1367,10 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
+			     char * auxLeer = malloc(MAXBUF);
+			     auxLeer = string_duplicate(cerrarArchivo(pid_mensaje, fd));
 
-				 char* mensajeAPUrtorno= leerArchivo(pid_mensaje, fd, infofile, tamanio);
-				 enviarMensaje(socketCliente, mensajeAPUrtorno);
-
+				 enviarMensaje(socketCliente, auxLeer);
 
 				break;
 
@@ -3529,7 +3530,9 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		string_append(&resultado, "No se encuentra el archivo que se quiere cerrar.");
 	}
 
-	return "hola";
+	char* retorno = malloc(MAXBUF);
+	retorno = string_duplicate(resultado);
+	return retorno;
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
@@ -3537,51 +3540,50 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	{
 	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
 	regTablaGlobal = traducirFDaPath(pid_mensaje, fd);
-	char* mensajeAFS = string_new();
-	string_append(&mensajeAFS, "800");
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, regTablaGlobal->path);
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, string_itoa(tamanio));
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, ((char*)infofile));
-	string_append(&mensajeAFS, ";");
+	char* mensajeFSleer = string_new();
+	string_append(&mensajeFSleer, "800");
+	string_append(&mensajeFSleer, ";");
+	string_append(&mensajeFSleer, regTablaGlobal->path);
+	string_append(&mensajeFSleer, ";");
+	string_append(&mensajeFSleer, string_itoa(tamanio));
+	string_append(&mensajeFSleer, ";");
+	string_append(&mensajeFSleer, ((char*)infofile));
+	string_append(&mensajeFSleer, ";");
 
 	int offset = hayOffsetArch(fd);
 	if( offset != -1)
 	{
 
-		string_append(&mensajeAFS, string_itoa(offset));
-		string_append(&mensajeAFS, ";");
+		string_append(&mensajeFSleer, string_itoa(offset));
+		string_append(&mensajeFSleer, ";");
 
 	}
 	else
 	{
-		string_append(&mensajeAFS, string_itoa(-1));
-		string_append(&mensajeAFS, ";");
+		string_append(&mensajeFSleer, string_itoa(-1));
+		string_append(&mensajeFSleer, ";");
 	}
-
 
 	//free(archAbrir1);
 	//free(regTablaGlobal);
 
-	enviarMensaje(&skt_filesystem, mensajeAFS);
+	enviarMensaje(&skt_filesystem, mensajeFSleer);
 
-	int result = recv(skt_filesystem, mensajeAFS, MAXBUF, 0);
+	int result = recv(skt_filesystem, mensajeFSleer, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("archivo cerrado correctamente");
+		//puts("archivo cerrado correctamente");
 	}
 	else {
 		printf("Error no se pudo leer \n");
 		exit(errno);
 	}
 	//free(mensajeAFS);
-	return mensajeAFS;
+	return mensajeFSleer;
 	}
 	else
 	{
-		return "";
+		return "hubo un error y no se pudo realizar la lectura";
 	}
 
 }

@@ -190,7 +190,7 @@ int validar_archivo(char* directorio){
 
 		return 1;
 	}
-	free(pathAbsoluto);
+	//free(pathAbsoluto);
 
 }
 t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
@@ -271,8 +271,8 @@ void crear_archivo(char* flag, char* directorio){
 		    bitarray_set_bit(bitmap, numeroBloque);
 
 		  list_add(lista_archivos, archNuevo);
-		  free(tamanio);
-		  free(bloques);
+		 // free(tamanio);
+		  //free(bloques);
 
    	  }
    	  else
@@ -290,7 +290,7 @@ void crear_archivo(char* flag, char* directorio){
    		  list_add(lista_archivos, archBuscado);
    	  }
    	  //puts("sale al parecer sin problemas");
-	  free(pathAbsoluto);
+	  //free(pathAbsoluto);
 }
 
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
@@ -353,8 +353,8 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
     fputs(bloques, (FILE*)arch->referenciaArchivo);
     fseek((FILE*)arch->referenciaArchivo,string_length(bloques), SEEK_SET);
 
-	free(tamanio);
-	free(bloques);
+//	free(tamanio);
+	//free(bloques);
 }
 
 void borrarArchivo(char* directorio){
@@ -389,14 +389,15 @@ void borrarArchivo(char* directorio){
 		//puts("2 \n");
 		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
-		free(pathAbsoluto);
-		free(directorioAux);
+		//free(pathAbsoluto);
+		//free(directorioAux);
         //return mensaje;
 
     } // End if file
 
 void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
+	buffer= string_new();
 	char* directorioAux = string_new();
 	directorioAux = strtok(directorio, "\n");
 
@@ -405,7 +406,7 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 	string_append(&pathAbsoluto, directorioAux);
 
 		char* valorLeido = string_new();
-
+		char* textoResult = string_new();
 		if (offset != -1)
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado(pathAbsoluto);
@@ -428,10 +429,11 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 				{
 					if(cantidadDeBloquesALeer != 1)
 					{
+
 						valorLeido = string_duplicate(archBloqueAleer->archivoMapeado);
 						string_append(&buffer, valorLeido);
 						idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
-						archBloqueAleer->archivoMapeado= abrirUnArchivoBloque(idbloqueALeer);
+						archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
 					}
 					else
 					{
@@ -440,20 +442,45 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 						string_append(&buffer, valorLeido);
 
 					}
+					cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
 					cantidadDeBloquesALeer--;
 				}
+				textoResult = "El contenido leído es: ";
+				string_append(&textoResult, buffer);
 			}
 			else
 			{
+				if(string_length(archBloqueAleer->archivoMapeado) < size)
+				{
+					if(string_equals_ignore_case(archBloqueAleer->archivoMapeado,""))
+					{
+						textoResult = "El archivo no contiene datos para ser leídos";
+					}
+					else
+					{
 
-				valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
+						string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
+						valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,string_length(archBloqueAleer->archivoMapeado));
+						string_append(&buffer, valorLeido);
+						strcat(textoResult, valorLeido);
+					}
+				}
+				else
+				{
+					textoResult = "El contenido leído es: ";
+					valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
+					string_append(&buffer, valorLeido);
+					string_append(&textoResult, buffer);
+				}
+
+				cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
+
 			}
 
-			cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
 		}
 
 		//string_append(&mensaje, valorLeido);
-		enviarMensaje(&socketKernel, "El archivo fue leido con exito");
+		enviarMensaje(&socketKernel, textoResult);
 		//free(pathAbsoluto);
 		//free(directorioAux);
 		return ;

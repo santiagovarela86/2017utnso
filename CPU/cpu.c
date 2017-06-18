@@ -195,7 +195,7 @@ void* manejo_kernel(void *args) {
 
 	pause();
 
-	free(pcb);
+	//free(pcb);
 
 	shutdown(socketKernel, 0);
 	close(socketKernel);
@@ -1099,29 +1099,29 @@ void borrar(t_descriptor_archivo descriptor) {
 }
 void cerrar(t_descriptor_archivo descriptor) {
 	puts("Cerrar");
-	puts("");
+		puts("");
 
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "801");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(descriptor));
-	string_append(&mensajeAKernel, ";");
+		char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "801");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(pcb->pid));
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(descriptor));
+		string_append(&mensajeAKernel, ";");
 
-	enviarMensaje(&sktKernel, mensajeAKernel);
+		enviarMensaje(&sktKernel, mensajeAKernel);
 
-	//recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+		//recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+		char* resulMenCerrar = malloc(MAXBUF);
+		int result = recv(sktKernel, resulMenCerrar, MAXBUF, 0);
 
-	int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
-
-	if (result > 0) {
-		printf("%s \n",mensajeAKernel);
-	} else {
-		printf("Error el archivo no se pudo cerrar \n");
-	}
-	free(mensajeAKernel);
-	return;
+		if (result > 0) {
+			printf("%s \n",resulMenCerrar);
+		} else {
+			printf("Error el archivo no se pudo cerrar \n");
+		}
+		//free(mensajeAKernel);
+		return;
 }
 
 void moverCursor(t_descriptor_archivo descriptor_archivo,
@@ -1182,29 +1182,29 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	puts("Leer");
 	puts("");
 
-	char* mensaje = string_new();
-	string_append(&mensaje, "800");
-	string_append(&mensaje, ";");
-	string_append(&mensaje, string_itoa(descriptor_archivo));
-	string_append(&mensaje, ";");
-	string_append(&mensaje, string_itoa(pcb->pid));
-	string_append(&mensaje, ";");
-	string_append(&mensaje, string_itoa(informacion));
-	string_append(&mensaje, ";");
-	string_append(&mensaje, string_itoa(tamanio));
-	string_append(&mensaje, ";");
+	char* mensajeFs = string_new();
+	string_append(&mensajeFs, "800");
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(descriptor_archivo));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(pcb->pid));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(informacion));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(tamanio));
+	string_append(&mensajeFs, ";");
 
-	enviarMensaje(&sktKernel, mensaje);
+	enviarMensaje(&sktKernel, mensajeFs);
 
-	int result = recv(sktKernel, mensaje, MAXBUF, 0);
+	int result =recv(sktKernel, mensajeFs, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("el archivo se leyo correctamente");
-		printf("el contenido es %s", mensaje);
+		puts("El archivo se leyo correctamente\n");
+		printf("%s \n", mensajeFs);
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	free(mensaje);
+	//free(mensajeFs);
 	return;
 
 }
