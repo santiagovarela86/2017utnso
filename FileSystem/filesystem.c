@@ -452,7 +452,7 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 			{
 				if(string_length(archBloqueAleer->archivoMapeado) < size)
 				{
-					if(string_equals_ignore_case(archBloqueAleer->archivoMapeado,""))
+					if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
 					{
 						textoResult = "El archivo no contiene datos para ser leídos";
 					}

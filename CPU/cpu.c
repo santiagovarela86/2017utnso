@@ -1196,11 +1196,12 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 
 	enviarMensaje(&sktKernel, mensajeFs);
 
-	int result =recv(sktKernel, mensajeFs, MAXBUF, 0);
+	char* resulMenLeer = malloc(MAXBUF);
+	int result =recv(sktKernel, resulMenLeer, MAXBUF, 0);
 
 	if (result > 0) {
 		puts("El archivo se leyo correctamente\n");
-		printf("%s \n", mensajeFs);
+		printf("%s \n", resulMenLeer);
 	} else {
 		printf("Error no se pudo leer \n");
 	}

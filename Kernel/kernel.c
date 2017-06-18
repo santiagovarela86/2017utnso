@@ -1368,9 +1368,11 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 			     char * auxLeer = malloc(MAXBUF);
-			     auxLeer = string_duplicate(cerrarArchivo(pid_mensaje, fd));
+
+			     auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
 
 				 enviarMensaje(socketCliente, auxLeer);
+
 
 				break;
 
