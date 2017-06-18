@@ -204,24 +204,26 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 	char* pmap = mmap(0, script.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
 
 	char* tamanio = string_new();
-	tamanio = string_duplicate(pmap);
-	strtok(tamanio, "\n");
-	regMetadataArch->tamanio = atoi((string_substring(tamanio,0,17)));
-
 	char* bloques =  string_new();
 	bloques = string_duplicate(pmap);
 
-	strtok(bloques, "]");
-	strstr(bloques, "[");
+	tamanio = strtok_r(strtok(bloques, "]"), "[",&bloques);
+
+
+	strtok(tamanio, "\n");
+	regMetadataArch->tamanio = atoi((string_substring(tamanio,0,17)));
+
+
 	int cantBloques = substr_count(bloques, ",") + 1; //para saber cuantos bloques debo leer
 
 	char** arrayBloques = string_split(bloques,",");
 
-	int i = -1; //porque los registros empiezan en 0
+	int i = 0; //porque los registros empiezan en 0
 	while( i != cantBloques)
 	{
-		i++;
+
 		list_add(regMetadataArch->bloquesEscritos, (int)arrayBloques[i]);
+		i++;
 	}
 
 	//printf("el valor del mmap es %s",pmap);
