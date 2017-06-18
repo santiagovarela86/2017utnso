@@ -222,7 +222,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 	while( i != cantBloques)
 	{
 
-		list_add(regMetadataArch->bloquesEscritos, (int)arrayBloques[i]);
+		list_add(regMetadataArch->bloquesEscritos, atoi(arrayBloques[i]));
 		i++;
 	}
 
