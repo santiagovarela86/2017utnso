@@ -193,37 +193,41 @@ int validar_archivo(char* directorio){
 	free(pathAbsoluto);
 
 }
-t_metadataArch* leerMetadataDeArchivoCreado(FILE* arch)
+t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 {
 	t_metadataArch* regMetadataArch = malloc(sizeof(t_metadataArch));
 	regMetadataArch->bloquesEscritos = list_create();
 
+	int fd_script = open(arch, O_RDWR);
+	struct stat script;
+	fstat(fd_script, &script);
+	char* pmap = mmap(0, script.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
 
-        char* linea = string_new();
-        char* cfline = string_new();;
-        char** bloques;
-		fgets(linea, sizeof(2048), arch);
+	char* tamanio = string_new();
+	tamanio = string_duplicate(pmap);
+	strtok(tamanio, "\n");
+	regMetadataArch->tamanio = atoi((string_substring(tamanio,0,17)));
 
-		linea = strtok((char *) linea, "\n");
-		cfline = strstr((char *) linea, "=");
-		regMetadataArch->tamanio = atoi(cfline);
+	char* bloques =  string_new();
+	bloques = string_duplicate(pmap);
 
-		fgets(linea, sizeof(2048), arch);
-		linea = strstr((char *) linea, "[");
-		cfline = strtok((char *) linea, "]");
-		int cantBloques = substr_count(cfline, ",") + 1; //para saber cuantos bloques debo leer
-		bloques = string_split((char *) cfline, ",");
+	strtok(bloques, "]");
+	strstr(bloques, "[");
+	int cantBloques = substr_count(bloques, ",") + 1; //para saber cuantos bloques debo leer
 
-		int i = -1; //porque los registros empiezan en 0
-		while(i != cantBloques)
-		{
-			i++;
-			list_add(regMetadataArch->bloquesEscritos, bloques[i]);
+	char** arrayBloques = string_split(bloques,",");
 
-		}
-		free(linea);
-		free(cfline);
+	int i = -1; //porque los registros empiezan en 0
+	while( i != cantBloques)
+	{
+		i++;
+		list_add(regMetadataArch->bloquesEscritos, (int)arrayBloques[i]);
+	}
+
+	//printf("el valor del mmap es %s",pmap);
+	 munmap(pmap,script.st_size);
 	 return regMetadataArch;
+
 }
 
 void crear_archivo(char* flag, char* directorio){
@@ -248,7 +252,7 @@ void crear_archivo(char* flag, char* directorio){
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
-			string_append(&tamanio, "TamanioeArchivo=0\n");
+			string_append(&tamanio, "TamanioDeArchivo=0\n");
 
 			int numeroBloque = buscarPrimerBloqueLibre(); //Por defecto tengo que asignarle un bloque
 			string_append(&bloques, "Bloques=[");
@@ -283,7 +287,7 @@ void crear_archivo(char* flag, char* directorio){
    		  archBuscado->referenciaArchivo = pFileReabrir;
    		  list_add(lista_archivos, archBuscado);
    	  }
-   	  puts("sale al parecer sin problemas");
+   	  //puts("sale al parecer sin problemas");
 	  free(pathAbsoluto);
 }
 
@@ -336,23 +340,23 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 }
 
 void borrarArchivo(char* directorio){
-		puts("2 \n");
+		//puts("2 \n");
 		printf("el valor del directorio es %s \n", directorio);
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
 		string_append(&pathAbsoluto, directorioAux);
-		puts("2 \n");
+		//puts("2 \n");
 		int encontrar_sem(t_archivosFileSystem* archivo) {
 
 			return (int)string_contains(pathAbsoluto, (char*)archivo->path);
 
 		}
-		puts("2 \n");
+		//puts("2 \n");
 		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
-		puts("2 \n");
-		printf("la lista tiene %s", (char*)archDestroy->path);
+		//puts("2 \n");
+		//printf("la lista tiene %s", (char*)archDestroy->path);
 		//printf("la lista tiene %s", (char*)archDestroy->referenciaArchivo);
 		int result = remove((char*)archDestroy->path);
 		if(result == 0)
@@ -364,7 +368,7 @@ void borrarArchivo(char* directorio){
 			puts("El archivo no pudo eliminarse, revise el path");
 
 		}
-		puts("2 \n");
+		//puts("2 \n");
 		fclose((FILE*)archDestroy->referenciaArchivo);
 		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
 		free(pathAbsoluto);
@@ -392,7 +396,7 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 
 		if (offset != -1)
 		{
-			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado((FILE*)archBuscado->referenciaArchivo);
+			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado(pathAbsoluto);
 
 			int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques);
 

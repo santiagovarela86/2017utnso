@@ -330,7 +330,7 @@ void iniciar_programa(int* socket_kernel){
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-	char* respuestaConsola = string_new();
+	char* respuestaConsola =  string_new();
 	string_append(&respuestaConsola, "303");
 	string_append(&respuestaConsola, ";");
 	string_append(&respuestaConsola, pmap_script);
