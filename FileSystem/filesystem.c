@@ -308,7 +308,7 @@ t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 
 	t_mapeoArchivo* mapeo = malloc(sizeof(t_mapeoArchivo));
 
-	mapeo->archivoMapeado = mmap(0, scriptAleer.st_size, PROT_READ, MAP_SHARED, fd_aleer, 0);
+	mapeo->archivoMapeado = mmap(0, scriptAleer.st_size, PROT_WRITE, MAP_SHARED, fd_aleer, 0);
 
 	mapeo->script = scriptAleer;
 
@@ -325,8 +325,8 @@ void cerrarUnArchivoBloque(char* pmap, struct stat script)
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
 {
 	bitarray_set_bit(bitmap, idBloque);
-	string_append(&archBloque->archivoMapeado, buffer);
-
+//	string_append(&archBloque->archivoMapeado, buffer);
+	archBloque->archivoMapeado = "prueba";
 	cerrarUnArchivoBloque(archBloque->archivoMapeado, archBloque->script);
 }
 
@@ -590,7 +590,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 	t_mapeoArchivo* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 
-	if(size > metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
+	if(size < metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
 	{
 		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, size); //si entra, meto todo el bloque
 	}
@@ -660,6 +660,8 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 		  }
 		}
    	 actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
-   	 free(pathAbsoluto);
-   	 free(directorioAux);
+
+   	enviarMensaje(&socketKernel, "Archivo Escrito");
+   	 //free(pathAbsoluto);
+   	 //free(directorioAux);
  }

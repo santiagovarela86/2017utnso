@@ -3181,7 +3181,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
 		regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
 
-		string_append(&mensajeFS, "800");
+		string_append(&mensajeFS, "804");
 		string_append(&mensajeFS, ";");
 		string_append(&mensajeFS, regTablaGlobal->path);
 		string_append(&mensajeFS, ";");
@@ -3212,7 +3212,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		}
 
 
-		free(regTablaGlobal);
+		//free(regTablaGlobal);
 
 		enviarMensaje(&skt_filesystem, mensajeFS);
 
@@ -3225,7 +3225,7 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			printf("Error no se pudo leer \n");
 			exit(errno);
 		}
-		free(mensajeFS);
+		//free(mensajeFS);
 
 	}
 
