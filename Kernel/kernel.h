@@ -85,11 +85,13 @@ typedef struct {
 	int nro_pagina;
 	t_list * alocaciones;
 	int tamanio_disponible;
+	_Bool manoseada;
 } admPaginaHeap;
 
 typedef struct {
 	int size;
 	int direccion;
+	_Bool free;
 } admReservaHeap;
 
 typedef struct {
@@ -119,7 +121,6 @@ typedef struct {
 	int offset;
 }t_offsetArch;
 
-
 typedef struct {
 	int pid;
 	char* sem;
@@ -134,6 +135,11 @@ typedef struct {
 	int cant_liberar;
 	int tama_liberar;
 }t_estadistica;
+
+typedef struct {
+	uint32_t size;
+	_Bool isFree;
+} heapMetadata;
 
 enum exit_codes {
 	FIN_OK = 0,

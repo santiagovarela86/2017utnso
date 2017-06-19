@@ -59,11 +59,6 @@ typedef struct {
 	_Bool isFree;
 } heapMetadata;
 
-typedef struct {
-	int pid;
-	t_list * paginas;
-} elementoListaCodigoProceso;
-
 void* inicializar_consola(void*);
 void* handler_conexion(void *socket_desc);
 void inicializar_estructuras_administrativas(Memoria_Config* config);

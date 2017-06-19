@@ -2058,21 +2058,109 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		return elem->pid == pcb->pid;
 	}
 
+	_Bool hayLugarHeap(admPaginaHeap * elem){
+		return elem->tamanio_disponible >= bytes + sizeof(heapMetadata);
+	}
+
+	/*
 	_Bool hayLugarHeap (admPaginaHeap * elem){
 		return elem->tamanio_disponible >= bytes;
 	}
+	*/
+
+	/*
+	_Bool hayLugarContiguo(admPaginaHeap * elem){
+		int i = 0;
+		_Bool hayLugar = false;
+
+		if (list_size(elem->alocaciones) >= 2){
+			while (i < list_size(elem->alocaciones) - 1 && !hayLugar){
+				admReservaHeap * primeraReserva = list_get(elem->alocaciones, i);
+				admReservaHeap * segundaReserva = list_get(elem->alocaciones, i+1);
+
+				if (primeraReserva->free && segundaReserva->free &&
+						(primeraReserva->size + segundaReserva->size) >= bytes){
+					hayLugar = true;
+				}
+
+				i++;
+			}
+		}
+
+		return hayLugar;
+	}
+	*/
 
 	_Bool hayLugarHeapMismoPID(admPaginaHeap * elem){
 		return hayLugarHeap(elem) && coincideHeapPID(elem);
 	}
+
+	/*
+	_Bool hayLugarHeapMismoPIDYContiguo(admPaginaHeap * elem){
+		return hayLugarHeap(elem) && coincideHeapPID(elem) && hayLugarContiguo(elem);
+	}
+	*/
 
 	//Verifico si todavía no hay paginas de Heap para este proceso
 	if(!(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPID))){
 		//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
 		pedirPaginaHeapNueva(pcb, bytes, socketCPU);
 	}else {
+
+		//SI EXISTEN PAGINAS HEAP PARA EL PROCESO ME FIJO QUE HAYA LUGAR
 		if (list_any_satisfy(lista_paginas_heap, (void *) hayLugarHeapMismoPID)){
-			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO
+			//SI YA EXISTE UNA PAGINA DE HEAP PARA ESTE PROCESO ME TRAIGO LA PRIMERA QUE TENGA ESPACIO SUFICIENTE
+			admPaginaHeap * paginaHeapLibre = list_find(lista_paginas_heap, (void *) hayLugarHeapMismoPID);
+
+			//SI LA PAGINA NO FUE MANOSEADA
+			if (!paginaHeapLibre->manoseada){
+
+				//ENVIO A MEMORIA LA SOLICITUD DE GRABAR EN PAGINA HEAP EXISTENTE
+				printf("Encontre la siguiente pagina de Heap Libre, PID: %d, PAGINA: %d, Bytes Libres: %d\n", paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, paginaHeapLibre->tamanio_disponible);
+				enviarMensaje(&skt_memoria, serializarMensaje(4, 607, paginaHeapLibre->pid, paginaHeapLibre->nro_pagina, bytes));
+
+				char * buffer = malloc(MAXBUF);
+				int result = recv(skt_memoria, buffer, MAXBUF, 0);
+
+				if (result > 0) {
+					char ** respuesta = string_split(buffer, ";");
+
+					if (strcmp(respuesta[0], "608") == 0 || strcmp(respuesta[0], "605") == 0) {
+						int direccion = atoi(respuesta[1]);
+						int newFreeSpace = atoi(respuesta[2]);
+
+						//EDITO LA ENTRADA EXISTENTE
+						paginaHeapLibre->tamanio_disponible = newFreeSpace;
+
+						admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
+				 		reserva->direccion = direccion;
+						reserva->size = bytes;
+						reserva->free = false;
+						list_add(paginaHeapLibre->alocaciones, reserva);
+
+				 		enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
+					}else{
+						printf("Error en el protocolo de mensajes entre procesos\n");
+						exit(errno);
+					}
+				} else {
+					printf("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+					exit(errno);
+				}
+
+			}else{
+				//SI LA PAGINA FUE MANOSEADA
+
+			}
+		}else{
+			//SI NO HAY LUGAR PIDO PAGINA NUEVA
+			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
+		}
+	}
+}
+/*
+		if (list_any_satisfy(lista_paginas_heap, (void *) hayLugarHeapMismoPID)){
+			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO Y EL LUGAR NO ES CONTIGUO
 			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
 			admPaginaHeap * paginaHeapLibre = list_find(lista_paginas_heap, (void *) hayLugarHeapMismoPID);
 
@@ -2096,10 +2184,10 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 					admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
  					reserva->direccion = direccion;
 					reserva->size = bytes;
+					reserva->free = false;
 					list_add(paginaHeapLibre->alocaciones, reserva);
 
  					enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
-
 				}else{
 					printf("Error en el protocolo de mensajes entre procesos\n");
 					exit(errno);
@@ -2109,11 +2197,16 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 				exit(errno);
 			}
 		}else{
-			//TENGO QUE PEDIR UNA PAGINA NUEVA
-			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
+			if (list_any_satisfy(lista_paginas_heap, (void *) hayLugarHeapMismoPIDYContiguo)){
+				//HAGO LO QUE TENGA QUE HACER PARA UNIFICAR LOS DOS BLOQUES DE ESPACIO LIBRE CONTIGUO
+				printf("Unificar los dos bloques\n");
+			}else{
+				//TENGO QUE PEDIR UNA PAGINA NUEVA
+				pedirPaginaHeapNueva(pcb, bytes, socketCPU);
+			}
 		}
 	}
-}
+	*/
 
 void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 	//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
@@ -2133,11 +2226,13 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 			heapElem->pid = pcb->pid;
 			heapElem->nro_pagina = paginaActual;
 			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[2]);
+			heapElem->manoseada = false;
 
 			admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
 			int direccion = atoi(respuestaDeMemoria[1]);
 			reserva->direccion = direccion;
 			reserva->size = bytes;
+			reserva->free = false;
 
 			list_add(heapElem->alocaciones, reserva);
 			list_add(lista_paginas_heap, heapElem);
@@ -2195,10 +2290,12 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
 				admReservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
 				paginaHeapAEditar->tamanio_disponible = paginaHeapAEditar->tamanio_disponible + reserva->size;
+				paginaHeapAEditar->manoseada = true;
+				reserva->free = true;
 
-				list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
+				//list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
 
-				printf("Se remueve el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
+				printf("Se libera el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", paginaHeapAEditar->tamanio_disponible);
 
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
