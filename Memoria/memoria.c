@@ -231,62 +231,9 @@ void eliminarMemoriaHeap(int pid, int direccion){
 
 	heapMetadata * metadataAEliminar = (heapMetadata *) (bloque_memoria + posicionMetadata);
 
-	printf("Antes de eliminar la metadata\n");
-	printf("Metadata Posicion: %d, Metadata Free: %d, Size: %d\n", posicionMetadata, metadataAEliminar->isFree, metadataAEliminar->size);
-
 	metadataAEliminar->isFree = true;
 
-	printf("Después de eliminar la metadata\n");
-	printf("Metadata Posicion: %d, Metadata Free: %d, Size: %d\n", posicionMetadata, metadataAEliminar->isFree, metadataAEliminar->size);
-
-	int indicePaginaHeap = direccion / configuracion->marco_size;
-
-	int indiceADezplazarEnKernel = reordenarPaginaHeap(indicePaginaHeap);
-
-	enviarMensaje(&socketKernel, serializarMensaje(2, 706, indiceADezplazarEnKernel));
-}
-
-int reordenarPaginaHeap(indicePaginaHeap){
-
-	//TOMO LAS REFERENCIAS
-	int direccionActual = indicePaginaHeap * configuracion->marco_size;
-	int direccionBasePagina = direccionActual;
-
-	//ME COPIO TEMPORALMENTE LA PAGINA ENTERA
-	char * buffer = malloc(configuracion->marco_size);
-	memcpy(buffer, &bloque_memoria[direccionBasePagina], configuracion->marco_size);
-
-	//RECORRO BUSCANDO EL METADATA QUE FUE ELIMINADO
-	heapMetadata * metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
-	while (!metadataActual->isFree){
-		direccionActual = direccionActual + sizeof(heapMetadata) + metadataActual->size;
-		metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
-	}
-
-	//DIRECCION DONDE EMPIEZAN LOS METADATA OCUPADOS
-	int direccionMetadataUtil = direccionActual+sizeof(heapMetadata)+metadataActual->size;
-
-	//POSICION EN EL BUFFER
-	int posicionEnBuffer = direccionMetadataUtil % configuracion->marco_size;
-
-	//LONGITUD DE LOS METADATA OCUPADOS
-	int longitudMetadataUtil = configuracion->marco_size - posicionEnBuffer;
-
-	//MUEVO LOS METADATA UTILES A LA DIRECCION DE LA METADATA A ELIMINAR
-	//memmove(&bloque_memoria[direccionActual], &buffer[posicionEnBuffer], longitudMetadataUtil);
-	memcpy(&bloque_memoria[direccionActual], &buffer[posicionEnBuffer], longitudMetadataUtil);
-
-	//RECORRO DESDE DONDE DEJE PARA TOCAR EL ULTIMO FREE
-	metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
-	while (!metadataActual->isFree){
-		direccionActual = direccionActual + sizeof(heapMetadata) + metadataActual->size;
-		metadataActual = (heapMetadata *) (bloque_memoria + direccionActual);
-	}
-
-	//AGRANDO EL ULTIMO FREE
-	metadataActual->size = metadataActual->size + posicionEnBuffer;
-
-	return posicionEnBuffer;
+	enviarMensaje(&socketKernel, serializarMensaje(1, 706));
 }
 
 void iniciarPrograma(int pid, char * codigo_programa) {
@@ -359,7 +306,10 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	printf("Boundary: %d\n", boundary);
 
 	//MIENTRAS LA METADATA ESTE OCUPADA, O NO ESTE OCUPADA PERO NO ME ALCANCE EL ESPACIO Y ADEMAS ME QUEDE ESPACIO PARA LA ULTIMA METADATA
-	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos + sizeof(heapMetadata))) && posicionActual < boundary){
+	while ((metadata->isFree != true ||
+			(metadata->isFree == true &&
+				metadata->size < bytesPedidos + sizeof(heapMetadata))) &&
+					posicionActual < boundary){
 		posicionAnterior = posicionActual;
 		posicionActual = posicionActual + sizeof(heapMetadata) + metadata->size;
 		metadata = (heapMetadata *) (bloque_memoria + posicionActual);
@@ -367,8 +317,9 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 	}
 
 	if (posicionActual == boundary + sizeof(heapMetadata)){
-		printf("Posicion Actual Igual a boundary mas size of heap metadata\n");
-		printf("HACER ALGO CON ESTE CASO BASE\n");
+		printf("Error al intentar reservar memoria Heap\n");
+		printf("Se recorrió todo el bloque sin encontrar lugar para guardar la reserva\n");
+		exit(errno);
 	} else {
 		//SI ME PASE DEL BUFFER
 		if (posicionActual - sizeof(heapMetadata) > boundary) {

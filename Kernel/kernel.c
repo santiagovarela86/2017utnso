@@ -2191,7 +2191,6 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 			char ** respuesta = string_split(buffer, ";");
 
 			if (strcmp(respuesta[0], "706") == 0){
-				int indiceADesplazar = atoi(respuesta[1]);
 
 				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
 				admReservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
@@ -2201,12 +2200,6 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
 				printf("Se remueve el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", paginaHeapAEditar->tamanio_disponible);
-
-				void desplazarReservas(admReservaHeap * elem){
-					elem->direccion = elem->direccion - indiceADesplazar;
-				}
-
-				list_iterate(paginaHeapAEditar->alocaciones, (void *) desplazarReservas);
 
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
 			}else{
