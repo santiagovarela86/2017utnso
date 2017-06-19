@@ -246,9 +246,12 @@ void crear_archivo(char* flag, char* directorio){
    	  {
    		  FILE * pFile;
    		  pFile = fopen (pathAbsoluto,"w"); //por defecto lo crea
+		    fputs(" ", pFile);
+		    fseek(pFile, string_length(""), 0);
+
    		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
    		  archNuevo->referenciaArchivo = pFile;
-
+   		  //fclose(pFile);
    		  archNuevo->path = string_new();
    		  string_append(&archNuevo->path, pathAbsoluto);
 
@@ -261,16 +264,20 @@ void crear_archivo(char* flag, char* directorio){
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
 
+			int archNuevoMap = open(pathAbsoluto, O_RDWR);
+			struct stat scriptMap;
+			fstat(archNuevoMap, &scriptMap);
 
-		    fputs(tamanio, (FILE*)archNuevo->referenciaArchivo);
-		    fseek((FILE*)archNuevo->referenciaArchivo, string_length(tamanio), 0);
-		    fputs(bloques, (FILE*)archNuevo->referenciaArchivo);
-		    fseek((FILE*)archNuevo->referenciaArchivo,string_length(bloques), SEEK_SET);
+			char* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
-
+			int aux =string_length(bloques);
+			memcpy(archMap,bloques,aux);
+		    munmap(archMap,aux);
+		    close(archNuevoMap);
 		    bitarray_set_bit(bitmap, numeroBloque);
 
 		  list_add(lista_archivos, archNuevo);
+
 		 // free(tamanio);
 		  //free(bloques);
 
