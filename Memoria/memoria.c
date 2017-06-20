@@ -660,6 +660,14 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	char * instruccion;
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
+
+	//SI SE CORTA LA INSTRUCCION VOY A LEER LA SEGUNDA PAGINA PARA BUSCAR LO QUE FALTA
+	if (posicionInicioInstruccion + offset > configuracion->marco_size){
+		int resto = offset - (configuracion->marco_size - posicionInicioInstruccion);
+		char * instr2 = solicitar_datos_de_pagina(pid, paginaALeer + 1, 0, resto);
+		string_append(&instruccion, instr2);
+	}
+
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
 	printf("Se envia la instruccion %s\n", instr);
