@@ -2093,6 +2093,8 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		enviarMensaje(socketCPU, serializarMensaje(1, 622));
 	}else{
 
+		incrementarContadorPaginasHeapSolicitadas(pcb->pid);
+
 		_Bool coincideHeapPID(admPaginaHeap * elem){
 			return elem->pid == pcb->pid;
 		}
@@ -2376,6 +2378,8 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
 				printf("Se libera el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", tamanio_disponible);
+
+				incrementarContadorPaginasHeapLiberadas(pcb);
 
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
 			}else{
@@ -3859,26 +3863,26 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	}
 }
 
-void incrementarContadorPaginasHeapSolicitadas(t_pcb* pcb) {
+void incrementarContadorPaginasHeapSolicitadas(int pid) {
 
-	int obtenerEstadisticaDePid(t_estadistica* estadistica){
-		return estadistica->pid == pcb->pid;
+	int obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
 	}
 
-	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePid);
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePID);
 
 	if (estadistica != NULL){
 		estadistica->cant_alocar = estadistica->cant_alocar + 1;
 	}
 }
 
-void incrementarContadorPaginasHeapLiberadas(t_pcb* pcb) {
+void incrementarContadorPaginasHeapLiberadas(int pid) {
 
-	int obtenerEstadisticaDePid(t_estadistica* estadistica){
-		return estadistica->pid == pcb->pid;
+	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
 	}
 
-	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePid);
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) _obtenerEstadisticaDePID);
 
 	if (estadistica != NULL){
 		estadistica->cant_liberar = estadistica->cant_liberar + 1;
