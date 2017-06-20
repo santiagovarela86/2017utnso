@@ -1420,7 +1420,7 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
 				t_pcb * un_pcb = pcbFromPid(pid_msg);
-				finalizarPrograma(pid_msg, FIN_ERROR_EXCEPCION_MEMORIA);
+				finalizarPrograma(pid_msg, FIN_ERROR_SUPERO_MAXIMO_PAGINAS);
 				break;
 
 			case 777:
@@ -1948,7 +1948,7 @@ void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
 
 		switch (operacion) {
 		case 298:
-
+			//No se asigna el estado -1 (espacio insuficiente) dado que no es un PCB todavia
 			rechazoFaltaMemoria(socketConsola);
 			break;
 
