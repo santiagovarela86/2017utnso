@@ -2379,7 +2379,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 				printf("Se libera el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", tamanio_disponible);
 
-				incrementarContadorPaginasHeapLiberadas(pcb);
+				incrementarContadorPaginasHeapLiberadas(pcb->pid);
 
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
 			}else{
