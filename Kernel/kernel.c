@@ -1322,7 +1322,6 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 804: //escribir archivo
 
-
 			     fd = atoi(mensajeDesdeCPU[1]);
 				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
@@ -3616,6 +3615,9 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 				enviarMensaje(&skt_filesystem, mensajeAFS);
 
 				free(mensajeAFS);
+
+				retorno->exitCode = "";
+				retorno->fd = fdNuevo;
 
 			 }
 			 else
