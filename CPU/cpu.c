@@ -1210,7 +1210,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(pcb->pid));
 	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, string_itoa(informacion));
+	string_append(&mensajeFs, ((char*)informacion));
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(tamanio));
 	string_append(&mensajeFs, ";");
@@ -1226,7 +1226,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	//free(mensajeFs);
+	free(mensajeFs);
 	free(resulMenLeer);
 	return;
 
