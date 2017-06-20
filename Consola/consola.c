@@ -244,34 +244,7 @@ void * manejoPrograma(void * args){
 
 		pthread_mutex_lock(&mtx_programa);
 
-		if(atoi(respuesta_kernel[0]) == 103){
-			/*103 es creacion*/
-			programa* program = malloc(sizeof(program));
-			time_t * comienzo = malloc(sizeof(time_t));
-			  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
-			  time(comienzo);
-			   /* Get GMT time */
-
-
-			program->pid = atoi(respuesta_kernel[1]);
-			program->inicio = localtime(comienzo);
-			program->fin = localtime(comienzo);
-			program->duracion = 0;
-			program->mensajes = 0;
-			program->socket_kernel = *socketKernel;
-
-			struct tm* tm_info;
-			tm_info = localtime(comienzo);
-
-			strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
-			printf( "Comienzo: %s\n", bufferHoraCom );
-
-
-			queue_push(cola_programas, program);
-
-		}else if(atoi(respuesta_kernel[0]) == 197){
-			printf("El programa no pudo iniciarse por falta de memoria\n");
-		}else if (atoi(respuesta_kernel[0]) == 575){
+		if (atoi(respuesta_kernel[0]) == 575){
 			printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
 			puts("");
 
@@ -338,6 +311,8 @@ void * manejoPrograma(void * args){
 void * escuchar_Kernel(void * args){
 
 	int * socketKernel = (int *) args;
+	char bufferHoraFin[26];
+	char bufferHoraCom[26];
 
 	while(infoConsola.estado_consola == 1){
 
@@ -345,9 +320,43 @@ void * escuchar_Kernel(void * args){
 
 		if (result > 0){
 
-			mensaje_leido = 0;
-			raise(SIGUSR2);
+			char** respuesta_kernel = string_split(buffer, ";");
 
+			if(atoi(respuesta_kernel[0]) == 103){
+				pthread_t threadPrograma;
+				list_add(infoConsola.threads, &threadPrograma);
+
+				programa* program = malloc(sizeof(program));
+				time_t * comienzo = malloc(sizeof(time_t));
+				  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+				  time(comienzo);
+
+				program->pid = atoi(respuesta_kernel[1]);
+				program->inicio = localtime(comienzo);
+				program->fin = localtime(comienzo);
+				program->duracion = 0;
+				program->mensajes = 0;
+				program->socket_kernel = *socketKernel;
+
+				struct tm* tm_info;
+				tm_info = localtime(comienzo);
+
+				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
+				printf( "Comienzo: %s\n", bufferHoraCom );
+
+
+				queue_push(cola_programas, program);
+
+				creoThread(&threadPrograma, manejoPrograma, socketKernel);
+
+			}else if(atoi(respuesta_kernel[0]) == 197){
+				printf("El programa no pudo iniciarse por falta de memoria\n");
+			}else{
+
+				mensaje_leido = 0;
+				raise(SIGUSR2);
+
+			}
 		}
 	}
 
@@ -358,10 +367,6 @@ void iniciar_programa(int* socket_kernel){
 
 	puts("");
 	puts("Ingrese nombre del programa");
-
-	pthread_t threadPrograma;
-	list_add(infoConsola.threads, &threadPrograma);
-
 
 	char directorio[MAXBUF];
 
@@ -393,8 +398,6 @@ void iniciar_programa(int* socket_kernel){
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
-
-	creoThread(&threadPrograma, manejoPrograma, socket_kernel);
 
 	return;
 }
