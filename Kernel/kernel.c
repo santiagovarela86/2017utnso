@@ -82,8 +82,6 @@ sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
 int longitud_pag;
-t_list* lista_paginas_heap_solicitadas;
-t_list* lista_paginas_heap_liberadas;
 
 int main(int argc, char **argv) {
 
@@ -167,23 +165,10 @@ void inicializarEstructuras(char * pathConfig){
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
-	int w = 0;
 	plan = 0;
-	while(configuracion->sem_ids[w] != NULL){
-		t_globales* sem_aux = malloc(sizeof(t_globales));
-		sem_aux->nombre = string_new();
-		sem_aux->nombre = configuracion->sem_ids[w];
-		sem_aux->valor = atoi(configuracion->sem_init[w]);
-
-		list_add(lista_semaforos, sem_aux);
-		w++;
-	}
 
 	inicializar_variables_globales();
 	inicializar_semaforos();
-
-	lista_paginas_heap_solicitadas = list_create();
-	lista_paginas_heap_liberadas = list_create();
 
 }
 
