@@ -268,8 +268,8 @@ void crear_archivo(char* flag, char* directorio){
 			string_append(&bloques, "Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
-			string_append(&bloques, tamanio);
-			int longitudAGrabar = string_length(bloques);
+			string_append(&tamanio, bloques);
+			int longitudAGrabar = string_length(tamanio);
 			ponerVaciosAllenarEnArchivos(pFile,longitudAGrabar);
 
    		   t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
@@ -372,11 +372,23 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 	}
 
 	string_append(&bloques, "]");
+	string_append(&tamanio, bloques);
 
-    fputs(tamanio, (FILE*)arch->referenciaArchivo);
-    fseek((FILE*)arch->referenciaArchivo, 0, 0);
-    fputs(bloques, (FILE*)arch->referenciaArchivo);
-    fseek((FILE*)arch->referenciaArchivo,string_length(bloques), SEEK_SET);
+	int longitudAGrabar = string_length(tamanio);
+
+	ponerVaciosAllenarEnArchivos((FILE*)arch->referenciaArchivo,string_length(tamanio));
+
+	int archNuevoMap = open(arch->path, O_RDWR);
+	struct stat scriptMap;
+	fstat(archNuevoMap, &scriptMap);
+
+
+	void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
+
+
+	memcpy(archMap,bloques,longitudAGrabar);
+    munmap(archMap,longitudAGrabar);
+    close(archNuevoMap);
 
 //	free(tamanio);
 	//free(bloques);
