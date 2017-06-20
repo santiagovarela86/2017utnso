@@ -1295,7 +1295,7 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 531:
 
-				finDePrograma(socketCliente);
+				finDePrograma(socketCliente, FIN_OK);
 				break;
 
 			case 532:
@@ -2507,6 +2507,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2551,6 +2552,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2590,6 +2592,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2969,7 +2972,7 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 }
 
-void finDePrograma(int * socketCliente) {
+void finDePrograma(int * socketCliente, int codigo) {
 	char message[MAXBUF];
 
 	enviarMensaje(socketCliente, "531;");
@@ -2979,6 +2982,9 @@ void finDePrograma(int * socketCliente) {
 	if (result > 0) {
 		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
 		pcb_deserializado = deserializar_pcb(message);
+
+		//Se asigna estado finalizado al PCB
+		pcb_deserializado->exit_code = codigo;
 
 		int encontrado = 0;
 
