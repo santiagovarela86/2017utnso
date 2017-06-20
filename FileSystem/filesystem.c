@@ -288,7 +288,7 @@ void crear_archivo(char* flag, char* directorio){
 			void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
 
-			memcpy(archMap,bloques,longitudAGrabar);
+			memcpy(archMap,tamanio,longitudAGrabar);
 		    munmap(archMap,longitudAGrabar);
 		    close(archNuevoMap);
 		    bitarray_set_bit(bitmap, numeroBloque);
@@ -348,10 +348,31 @@ void cerrarUnArchivoBloque(char* pmap, struct stat script)
 
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
 {
+	char* pathArchivoBloque = string_new();
+	string_append(&pathArchivoBloque, montaje);
+	string_append(&pathArchivoBloque, "Bloques/");
+	string_append(&pathArchivoBloque, string_itoa(idBloque));
+	string_append(&pathArchivoBloque, ".bin");
+
+	FILE* fbloque = fopen(pathArchivoBloque, "w+");
+
+	ponerVaciosAllenarEnArchivos(fbloque,size);
+
+	int archNuevoMap = open(pathArchivoBloque, O_RDWR);
+	struct stat scriptMap;
+	fstat(archNuevoMap, &scriptMap);
+
+
+	void* archMapBloque = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
+
+
+	memcpy(archMapBloque,buffer,size);
+	munmap(archMapBloque,size);
+	close(archNuevoMap);
+
 	bitarray_set_bit(bitmap, idBloque);
-//	string_append(&archBloque->archivoMapeado, buffer);
-	archBloque->archivoMapeado = "prueba";
-	cerrarUnArchivoBloque(archBloque->archivoMapeado, archBloque->script);
+
+
 }
 
 void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch)
@@ -365,9 +386,13 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 	int i = 0;
 	while(regArchivo->bloquesEscritos->elements_count !=i)
 	{
-		i++;
+
 		string_append(&bloques, string_itoa((int)list_get(regArchivo->bloquesEscritos, i)));
-		string_append(&bloques, ", ");
+		if(regArchivo->bloquesEscritos->elements_count != (i+1))
+		{
+			string_append(&bloques, ",");
+		}
+		i++;
 
 	}
 
@@ -386,7 +411,7 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 	void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
 
-	memcpy(archMap,bloques,longitudAGrabar);
+	memcpy(archMap,tamanio,longitudAGrabar);
     munmap(archMap,longitudAGrabar);
     close(archNuevoMap);
 
@@ -549,6 +574,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 			else
 			{
 				//disco lleno
+				break;
 			}
 			cantBloquesEnBlancoASaltar--;
 		  }
@@ -588,6 +614,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 		else
 		{
 			//disco lleno
+			break;
 		}
       }
  }

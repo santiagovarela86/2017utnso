@@ -3290,10 +3290,10 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
 
 		if (result > 0) {
-			puts("archivo cerrado correctamente");
+			puts("Archivo escrito correctamente  \n");
 		}
 		else {
-			printf("Error no se pudo leer \n");
+			printf("El archivo no se pudo escribir\n");
 			exit(errno);
 		}
 		//free(mensajeFS);
