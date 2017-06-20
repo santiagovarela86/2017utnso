@@ -474,7 +474,7 @@ void* manejo_memoria(void * args) {
 
 void asignar(t_puntero direccion, t_valor_variable valor) {
 	if (pcbHabilitado == true) {
-		printf("Asignar Valor %d en la Direccion %d\n", valor, direccion);
+		//printf("Asignar Valor %d en la Direccion %d\n", valor, direccion);
 		printf("\n");
 
 		if (direccion == -1) {
@@ -1048,7 +1048,7 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, string_itoa(flags.creacion));
 	string_append(&mensajeAKernel, ";");
-
+    //printf("la direccion es %s", direccion);
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
 	char* mensajeDeKernel = string_new();
@@ -1058,12 +1058,14 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		puts("archivo se abrió correctamente");
 		int fdNuevo = atoi(mensajeDeKernel);
 		printf("el file descriptor nuevo es %d \n", fdNuevo);
-		return ((t_descriptor_archivo) fdNuevo);
+		 //identificador_variable = (t_descriptor_archivo)fdNuevo;
 
 	} else {
 		printf("Error al abrir el archivo \n");
-		return ((t_descriptor_archivo) 0);
+	//	 identificador_variable = ((t_descriptor_archivo)0);
 	}
+
+	return 3;
 
 	free(mensajeDeKernel);
 	free(mensajeAKernel);
