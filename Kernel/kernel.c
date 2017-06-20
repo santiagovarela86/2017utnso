@@ -1317,7 +1317,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				 if(string_contains(auxEscribir, "Error"))
 				 {
-					 finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
+					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
 			     }
 				 {
 					 enviarMensaje(socketCliente, "Se escribió correctamente");
@@ -1335,7 +1335,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				 if(string_contains(result->exitCode, "Error"))
 				 {
-					finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
+					finalizarPrograma(pid_mensaje, FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS);
 			     }
 				 else
 				 {
