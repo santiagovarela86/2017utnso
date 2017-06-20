@@ -2664,6 +2664,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
+			analisisMemoryLeaks(temporalN->pid);
+
 			int * sock =  &temporalN->socket_consola;
 
 			char* msjAConsolaXEstadistica = string_new();
@@ -2705,6 +2707,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
+			analisisMemoryLeaks(temporalN->pid);
+
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
 			string_append(&msjAConsolaXEstadistica, "666;");
@@ -2740,6 +2744,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			pthread_mutex_lock(&mtx_terminados);
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
+
+			analisisMemoryLeaks(temporalN->pid);
 
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
