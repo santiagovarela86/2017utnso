@@ -1332,7 +1332,17 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				 char * auxEscribir = malloc(MAXBUF);
+				 auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				 if(string_contains(auxEscribir, "Error"))
+				 {
+					t_pcb * un_pcb = pcbFromPid(pid_mensaje);
+					un_pcb->exit_code = FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS;
+					exit(EXIT_FAILURE);
+			     }
+				 {
+					 enviarMensaje(socketCliente, "Se escribió correctamente");
+				 }
 
 				break;
 
@@ -1341,9 +1351,19 @@ void * handler_conexion_cpu(void * sock) {
 				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 direccion = mensajeDesdeCPU[2];
 				 flag = mensajeDesdeCPU[3];
-				 int fdNuevo = abrirArchivo(pid_mensaje, direccion, flag);
-				// printf("el nuevo fddddd es %d", fdNuevo);
-				enviarMensaje(socketCliente, string_itoa(fdNuevo));
+				 t_abrirArchivo* result = abrirArchivo(pid_mensaje, direccion, flag);
+
+				 if(string_contains(result->exitCode, "Error"))
+				 {
+					t_pcb * un_pcb = pcbFromPid(pid_mensaje);
+					un_pcb->exit_code = FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS;
+					exit(EXIT_FAILURE);
+			     }
+				 else
+				 {
+					enviarMensaje(socketCliente, string_itoa(result->fd));
+				 }
+
 				break;
 
 			case 802:  //de CPU a File system (borrar)
@@ -1373,11 +1393,17 @@ void * handler_conexion_cpu(void * sock) {
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 			     char * auxLeer = malloc(MAXBUF);
 
-			     auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
-
-				 enviarMensaje(socketCliente, auxLeer);
-
-
+			    auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
+			    if(string_contains(auxLeer, "Error de Flag"))
+			    {
+			    	t_pcb * un_pcb = pcbFromPid(pid_mensaje);
+			    	un_pcb->exit_code = FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS;
+					exit(EXIT_FAILURE);
+			    }
+			    else
+			    {
+			   	 enviarMensaje(socketCliente, auxLeer);
+			    }
 				break;
 
 			case 571:
@@ -1596,9 +1622,13 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 	case FIN_ERROR_SUPERO_MAXIMO_PAGINAS:
 		errorLog = "No se pueden asignar mas páginas al proceso";
 		break;
+	case FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS:
+		errorLog = "La instruccion no posee los permisos para crear el archivo";
+		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
 		break;
+
 	}
 	t_log* logCode = log_create("kernelExist.log", "kernel", true, LOG_LEVEL_ERROR );
 	log_error(logCode, errorLog, "EXITCODE");
@@ -3296,7 +3326,7 @@ int hayOffsetArch(int fd){
 
 }
 
-void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
+char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 
 	if(fd == 1 || fd == 0){
 
@@ -3334,63 +3364,77 @@ void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 
 		free(mensaje_conso);
 
+
+
 	}else{
 
 		if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0){
 
-		char* mensajeFS= string_new();
-		t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-		regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
+		t_lista_fileProcesos* listaProceoso = existeEnListaProcesosArchivos(pid_mensaje);
 
-		string_append(&mensajeFS, "804");
-		string_append(&mensajeFS, ";");
-		string_append(&mensajeFS, regTablaGlobal->path);
-		string_append(&mensajeFS, ";");
-		string_append(&mensajeFS, string_itoa(tamanio));
-		string_append(&mensajeFS, ";");
-		string_append(&mensajeFS, ((char*)infofile));
-		string_append(&mensajeFS, ";");
+		t_fileProceso* regArchivo = existeEnElementoTablaArchivoPorFD(listaProceoso->tablaProceso, fd);
 
-		int encontrar_archProceso(t_fileProceso* glo) {
-			if (fd == glo->fileDescriptor)
-				return 1;
-			else
-				return 0;
-		}
-
-		int offset = hayOffsetArch(fd);
-		if( offset != -1)
+		if(string_contains(regArchivo->flags, "w"))
 		{
+			char* mensajeFS= string_new();
+			t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+			regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
 
-			string_append(&mensajeFS, string_itoa(offset));
+			string_append(&mensajeFS, "804");
+			string_append(&mensajeFS, ";");
+			string_append(&mensajeFS, regTablaGlobal->path);
+			string_append(&mensajeFS, ";");
+			string_append(&mensajeFS, string_itoa(tamanio));
+			string_append(&mensajeFS, ";");
+			string_append(&mensajeFS, ((char*)infofile));
 			string_append(&mensajeFS, ";");
 
-		}
+			int encontrar_archProceso(t_fileProceso* glo) {
+				if (fd == glo->fileDescriptor)
+					return 1;
+				else
+					return 0;
+			}
+
+			int offset = hayOffsetArch(fd);
+			if( offset != -1)
+			{
+
+				string_append(&mensajeFS, string_itoa(offset));
+				string_append(&mensajeFS, ";");
+
+			}
+			else
+			{
+				string_append(&mensajeFS, string_itoa(-1));
+				string_append(&mensajeFS, ";");
+			}
+
+
+			//free(regTablaGlobal);
+
+			enviarMensaje(&skt_filesystem, mensajeFS);
+
+			int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
+
+			if (result > 0) {
+				return "Archivo escrito correctamente";
+			}
+			else {
+				printf("El archivo no se pudo escribir\n");
+				exit(errno);
+			}
+			//free(mensajeFS);
+
+	    }
 		else
 		{
-			string_append(&mensajeFS, string_itoa(-1));
-			string_append(&mensajeFS, ";");
+			return "Error";
 		}
-
-
-		//free(regTablaGlobal);
-
-		enviarMensaje(&skt_filesystem, mensajeFS);
-
-		int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
-
-		if (result > 0) {
-			puts("Archivo escrito correctamente  \n");
-		}
-		else {
-			printf("El archivo no se pudo escribir\n");
-			exit(errno);
-		}
-		//free(mensajeFS);
+	  }
 
 	}
-
-	}
+	return "";
 }
 
 
@@ -3466,6 +3510,28 @@ t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGloba
     }
 }
 
+
+t_fileProceso* existeEnElementoTablaArchivoPorFD(t_list* tablaDelProceso, int fd)
+{
+	int encontrar_elementoFileProceso(t_fileProceso* glo){
+		if(fd == glo->fileDescriptor)
+			return 1;
+		else
+			return 0;
+	}
+    if(list_any_satisfy(tablaDelProceso, (void*)encontrar_elementoFileProceso))
+	{
+		t_fileProceso* regTablaProceso = malloc(sizeof(t_fileProceso));
+		regTablaProceso = list_find(tablaDelProceso,(void*) encontrar_elementoFileProceso);
+
+		return regTablaProceso;
+	}
+    else
+    {
+    	return NULL;
+    }
+}
+
 void grabarEnTablaGlobal(int cantidadAperturas, int FdGlobal, char* direccion)
 {
 	t_fileGlobal* archNuevo = malloc(sizeof(t_fileGlobal));
@@ -3502,15 +3568,18 @@ void grabarEnTablaProcesosUnProcesoTabla(t_list* listaProcesoDeLaTablaProesos, i
 	list_add(listaProcesoDeLaTablaProesos,archElemProceso);
 }
 
-int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
+t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 {
+	t_abrirArchivo* retorno = malloc(sizeof(t_abrirArchivo));
 	int fdNuevo;
+
+
 	if((int)lista_File_global->elements_count != 0)
 	{
 		 t_fileGlobal* regTablaGlobal =  existeEnTablaGlobalArchivos(direccion);
 			 if(regTablaGlobal != NULL) //pregunto si lo encontró el archivo en la global
 			 {
-			 regTablaGlobal->cantidadDeAperturas++;
+			   regTablaGlobal->cantidadDeAperturas++;
 
 			  t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
 
@@ -3533,23 +3602,59 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 					fdNuevo = 3;
 					grabarEnTablaProcesos(pid_mensaje, fdNuevo, regTablaGlobal->fdGlobal, flag);
 				}
+				char* mensajeAFS = string_new();
+				string_append(&mensajeAFS, "803");
+				string_append(&mensajeAFS, ";");
+				string_append(&mensajeAFS, flag);
+				string_append(&mensajeAFS, ";");
+				string_append(&mensajeAFS, direccion);
+				string_append(&mensajeAFS, ";");
+
+				enviarMensaje(&skt_filesystem, mensajeAFS);
+
+				free(mensajeAFS);
+
 			 }
 			 else
 			 {
-				grabarEnTablaGlobal(1, lista_File_global->elements_count, direccion);
-
-				t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
-
-				if(regListaProceso != NULL) //Pregunto si hay una lista de archivos para ese proceso
+				if(string_contains(flag, "c"))
 				{
-				  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
-				  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso, fdNuevo, (lista_File_global->elements_count-1),flag);
+					grabarEnTablaGlobal(1, lista_File_global->elements_count, direccion);
+
+					t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
+
+					if(regListaProceso != NULL) //Pregunto si hay una lista de archivos para ese proceso
+					{
+					  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
+					  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso, fdNuevo, (lista_File_global->elements_count-1),flag);
+					}
+					else
+					{
+					 fdNuevo = lista_File_global->elements_count-1;
+					 grabarEnTablaProcesos(pid_mensaje, 3, fdNuevo, flag);
+					}
+
+					char* mensajeAFS = string_new();
+					string_append(&mensajeAFS, "803");
+					string_append(&mensajeAFS, ";");
+					string_append(&mensajeAFS, flag);
+					string_append(&mensajeAFS, ";");
+					string_append(&mensajeAFS, direccion);
+					string_append(&mensajeAFS, ";");
+
+					enviarMensaje(&skt_filesystem, mensajeAFS);
+
+					free(mensajeAFS);
+
+					retorno->exitCode = "";
+					retorno->fd = fdNuevo;
+
 				}
 				else
 				{
-				 fdNuevo = lista_File_global->elements_count-1;
-				 grabarEnTablaProcesos(pid_mensaje, 3, fdNuevo, flag);
+					retorno->exitCode ="Error";
 				}
+
 		     }
 	      }
 		 else
@@ -3557,87 +3662,89 @@ int abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 			fdNuevo = 3;
 			grabarEnTablaGlobal(1, 0,direccion);
 			grabarEnTablaProcesos(pid_mensaje, fdNuevo, 0, flag);
+
+			char* mensajeAFS = string_new();
+			string_append(&mensajeAFS, "803");
+			string_append(&mensajeAFS, ";");
+			string_append(&mensajeAFS, flag);
+			string_append(&mensajeAFS, ";");
+			string_append(&mensajeAFS, direccion);
+			string_append(&mensajeAFS, ";");
+
+			enviarMensaje(&skt_filesystem, mensajeAFS);
+
+			free(mensajeAFS);
+
+			retorno->exitCode = "";
+			retorno->fd = fdNuevo;
 		 }
-
-	char* mensajeAFS = string_new();
-	string_append(&mensajeAFS, "803");
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, flag);
-	string_append(&mensajeAFS, ";");
-	string_append(&mensajeAFS, direccion);
-	string_append(&mensajeAFS, ";");
-
-	enviarMensaje(&skt_filesystem, mensajeAFS);
-
-	free(mensajeAFS);
-	return fdNuevo;
+	return retorno;
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
 	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
 	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
-	if(listaDeArchivosDelProceso != NULL)
-	{
-		int encontrar_archProceso(t_fileProceso* regFileProcess){
-					if(fd == (int)regFileProcess->fileDescriptor)
-						return 1;
-					else
-						return 0;
-				}
 
-			t_fileProceso* archBorrarPro = malloc(sizeof(t_fileProceso));
-			archBorrarPro	= list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-
-			int encontrar_archGobal(t_fileGlobal* regFileGlobal){
-						if(archBorrarPro->global_fd == regFileGlobal->fdGlobal)
+		if(listaDeArchivosDelProceso != NULL)
+		{
+			int encontrar_archProceso(t_fileProceso* regFileProcess){
+						if(fd == (int)regFileProcess->fileDescriptor)
 							return 1;
 						else
 							return 0;
 					}
-			t_fileGlobal* archBorrarGlobal = malloc(sizeof(t_fileGlobal));
-			archBorrarGlobal = list_find(lista_File_global,(void*) encontrar_archGobal);
-			//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
-			if(archBorrarGlobal->cantidadDeAperturas >= 2)
-			{
-				puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
-			}
-			else
-			{
 
-				char* mensajeAFS = string_new();
-				string_append(&mensajeAFS, "802");
-				string_append(&mensajeAFS, ";");
-				string_append(&mensajeAFS, archBorrarGlobal->path);
-				string_append(&mensajeAFS, ";");
+				t_fileProceso* archBorrarPro = malloc(sizeof(t_fileProceso));
+				archBorrarPro	= list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-				enviarMensaje(&skt_filesystem, mensajeAFS);
-
-
-				list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-				free(archBorrarPro);
-
-				list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
-				free(archBorrarGlobal);
-
-				/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
-
-				if (result > 0) {
-					puts("archivo borrado desde el fs");
+				int encontrar_archGobal(t_fileGlobal* regFileGlobal){
+							if(archBorrarPro->global_fd == regFileGlobal->fdGlobal)
+								return 1;
+							else
+								return 0;
+						}
+				t_fileGlobal* archBorrarGlobal = malloc(sizeof(t_fileGlobal));
+				archBorrarGlobal = list_find(lista_File_global,(void*) encontrar_archGobal);
+				//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
+				if(archBorrarGlobal->cantidadDeAperturas >= 2)
+				{
+					puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
 				}
-				else {
-					perror("Error no se pudo borrar\n");
-				}*/
-				free(mensajeAFS);
+				else
+				{
 
-			}
+					char* mensajeAFS = string_new();
+					string_append(&mensajeAFS, "802");
+					string_append(&mensajeAFS, ";");
+					string_append(&mensajeAFS, archBorrarGlobal->path);
+					string_append(&mensajeAFS, ";");
 
-	}
-	else
-	{
-		puts("El archivo a ser eliminado no se encuentra o no fue creado");
-	}
+					enviarMensaje(&skt_filesystem, mensajeAFS);
 
 
+					list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+					free(archBorrarPro);
+
+					list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
+					free(archBorrarGlobal);
+
+					/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+					if (result > 0) {
+						puts("archivo borrado desde el fs");
+					}
+					else {
+						perror("Error no se pudo borrar\n");
+					}*/
+					free(mensajeAFS);
+
+				}
+
+		}
+		else
+		{
+			puts("El archivo a ser eliminado ya fue borrado anteriormente o no fue creado");
+		}
 	return;
 }
 char* cerrarArchivo(int pid_mensaje, int fd)
@@ -3703,50 +3810,61 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 	{
 	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
 	regTablaGlobal = traducirFDaPath(pid_mensaje, fd);
-	char* mensajeFSleer = string_new();
-	string_append(&mensajeFSleer, "800");
-	string_append(&mensajeFSleer, ";");
-	string_append(&mensajeFSleer, regTablaGlobal->path);
-	string_append(&mensajeFSleer, ";");
-	string_append(&mensajeFSleer, string_itoa(tamanio));
-	string_append(&mensajeFSleer, ";");
-	string_append(&mensajeFSleer, ((char*)infofile));
-	string_append(&mensajeFSleer, ";");
 
-	int offset = hayOffsetArch(fd);
-	if( offset != -1)
+	t_lista_fileProcesos* listaProceoso = existeEnListaProcesosArchivos(pid_mensaje);
+
+	t_fileProceso* regArchivo = existeEnElementoTablaArchivoPorFD(listaProceoso->tablaProceso, fd);
+
+	if(string_contains(regArchivo->flags, "r"))
 	{
+		char* mensajeFSleer = string_new();
+			string_append(&mensajeFSleer, "800");
+			string_append(&mensajeFSleer, ";");
+			string_append(&mensajeFSleer, regTablaGlobal->path);
+			string_append(&mensajeFSleer, ";");
+			string_append(&mensajeFSleer, string_itoa(tamanio));
+			string_append(&mensajeFSleer, ";");
+			string_append(&mensajeFSleer, ((char*)infofile));
+			string_append(&mensajeFSleer, ";");
 
-		string_append(&mensajeFSleer, string_itoa(offset));
-		string_append(&mensajeFSleer, ";");
+			int offset = hayOffsetArch(fd);
+			if( offset != -1)
+			{
 
+				string_append(&mensajeFSleer, string_itoa(offset));
+				string_append(&mensajeFSleer, ";");
+
+			}
+			else
+			{
+				string_append(&mensajeFSleer, string_itoa(-1));
+				string_append(&mensajeFSleer, ";");
+			}
+
+			//free(archAbrir1);
+			//free(regTablaGlobal);
+
+			enviarMensaje(&skt_filesystem, mensajeFSleer);
+
+			int result = recv(skt_filesystem, mensajeFSleer, MAXBUF, 0);
+
+			if (result > 0) {
+				//puts("archivo cerrado correctamente");
+			}
+			else {
+				printf("Error no se pudo leer \n");
+				exit(errno);
+			}
+			//free(mensajeAFS);
+			return mensajeFSleer;
+			}
+			else
+			{
+				return "hubo un error y no se pudo realizar la lectura";
+			}
 	}
 	else
 	{
-		string_append(&mensajeFSleer, string_itoa(-1));
-		string_append(&mensajeFSleer, ";");
+		return "Error";
 	}
-
-	//free(archAbrir1);
-	//free(regTablaGlobal);
-
-	enviarMensaje(&skt_filesystem, mensajeFSleer);
-
-	int result = recv(skt_filesystem, mensajeFSleer, MAXBUF, 0);
-
-	if (result > 0) {
-		//puts("archivo cerrado correctamente");
-	}
-	else {
-		printf("Error no se pudo leer \n");
-		exit(errno);
-	}
-	//free(mensajeAFS);
-	return mensajeFSleer;
-	}
-	else
-	{
-		return "hubo un error y no se pudo realizar la lectura";
-	}
-
 }

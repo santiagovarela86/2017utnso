@@ -1039,6 +1039,20 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	puts("Abrir");
 	puts("");
 
+	char* flagEnviar = string_new();
+	if(flags.creacion != 0)
+	{
+		string_append(&flagEnviar,"c");
+	}
+	if(flags.escritura)
+	{
+		string_append(&flagEnviar,"w");
+	}
+	if(flags.lectura)
+	{
+		string_append(&flagEnviar,"r");
+	}
+
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "803");
 	string_append(&mensajeAKernel, ";");
@@ -1046,10 +1060,12 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	string_append(&mensajeAKernel, ";");
 	string_append(&mensajeAKernel, ((char*) (direccion)));
 	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(flags.creacion));
+	string_append(&mensajeAKernel, flagEnviar);
 	string_append(&mensajeAKernel, ";");
     //printf("la direccion es %s", direccion);
 	enviarMensaje(&sktKernel, mensajeAKernel);
+
+	t_descriptor_archivo retorno;
 
 	char* mensajeDeKernel = string_new();
 	int result = recv(sktKernel, mensajeDeKernel, MAXBUF, 0);
@@ -1058,14 +1074,14 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		puts("archivo se abrió correctamente");
 		int fdNuevo = atoi(mensajeDeKernel);
 		printf("el file descriptor nuevo es %d \n", fdNuevo);
-		 //identificador_variable = (t_descriptor_archivo)fdNuevo;
+		 retorno = fdNuevo;
 
 	} else {
 		printf("Error al abrir el archivo \n");
-	//	 identificador_variable = ((t_descriptor_archivo)0);
+		retorno = 0;
 	}
 
-	return 3;
+	return retorno;
 
 	free(mensajeDeKernel);
 	free(mensajeAKernel);
@@ -1169,14 +1185,18 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 
 	//int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-	free(mensajeAKernel);
+	//free(mensajeAKernel);
 
-	/*if (result > 0) {
-	 puts("archivo se escribió correctamente");
-	 }
-	 else {
-	 perror("Error al abrir el archivo \n");
-	 }*/
+	char* resulMenEscribir = malloc(MAXBUF);
+	int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
+
+	if (result > 0) {
+		printf("%s \n",resulMenEscribir);
+	} else {
+		printf("Error el archivo no se pudo escribir \n");
+	}
+	free(mensajeAKernel);
+	free(resulMenEscribir);
 
 	return;
 }

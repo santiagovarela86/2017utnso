@@ -110,6 +110,11 @@ typedef struct {
 } t_fileGlobal;
 
 typedef struct {
+	int fd;
+	char* exitCode;
+} t_abrirArchivo;
+
+typedef struct {
 	char* codigo;
 	int skt;
 }t_nuevo;
@@ -150,7 +155,9 @@ enum exit_codes {
 	FIN_POR_CONSOLA = -7,
 	FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA = -8,
 	FIN_ERROR_SUPERO_MAXIMO_PAGINAS = -9,
+	FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS = -10,
 	FIN_ERROR_SIN_DEFINICION = -20
+
 };
 
 void *hilo_conexiones_cpu(void* args);
@@ -194,13 +201,14 @@ void asignarValorCompartida(char * variable, int valor);
 void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 
 
-void escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
-int abrirArchivo(int pid_mensaje, char* direccion, char* flag);
+char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
+t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 void borrarArchivo(int pid_mensaje, int fd);
 char* cerrarArchivo(int pid_mensaje, int fd);
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd);
 t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal);
+t_fileProceso* existeEnElementoTablaArchivoPorFD(t_list* tablaDelProceso, int fd);
 t_lista_fileProcesos* existeEnListaProcesosArchivos(int pid_mensaje);
 t_fileGlobal* existeEnTablaGlobalArchivos(char* direccion);
 void grabarEnTablaGlobal(int cantidadAperturas, int FdGlobal, char* direccion);
