@@ -43,6 +43,8 @@ InfoConsola infoConsola;
 pthread_t threadKernel;
 pthread_t threadConsola;
 
+pthread_mutex_t mtx_lectura_mensaje;
+
 char buffer[MAXBUF];
 
 int main(int argc , char **argv)
@@ -60,6 +62,8 @@ int main(int argc , char **argv)
 
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
+
+    pthread_mutex_init(&mtx_lectura_mensaje, NULL);
 
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
@@ -210,6 +214,7 @@ void * manejoPrograma(void * args){
 	pthread_mutex_init(&mtx_programa, NULL);
 
 	void machos_pecho_peludo(){
+		pthread_mutex_lock(&mtx_lectura_mensaje);
 		int i = 0;
 
 		while(i < MAXBUF){
@@ -218,6 +223,7 @@ void * manejoPrograma(void * args){
 		}
 
 		pthread_mutex_unlock(&mtx_programa);
+		pthread_mutex_unlock(&mtx_lectura_mensaje);
 	}
 
 	signal(SIGUSR2, machos_pecho_peludo);
