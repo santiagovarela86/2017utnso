@@ -187,8 +187,9 @@ void * hilo_conexiones_kernel(){
 					;
 					pid = atoi(mensajeDelKernel[1]);
 					int paginaExistente = atoi(mensajeDelKernel[2]);
-					int bytesSolicitados = atoi(mensajeDelKernel[3]);
-					usarPaginaHeap(pid, paginaExistente, bytesSolicitados);
+					int direccionAUsar = atoi(mensajeDelKernel[3]);
+					int bytesSolicitados = atoi(mensajeDelKernel[4]);
+					usarPaginaHeap(pid, paginaExistente, direccionAUsar, bytesSolicitados);
 					break;
 
 				case 705:
@@ -227,11 +228,11 @@ void * hilo_conexiones_kernel(){
 }
 
 void eliminarMemoriaHeap(int pid, int direccion){
-	int posicionMetadata = direccion-sizeof(heapMetadata);
+	int posicionMetadata = direccion - sizeof(heapMetadata);
 
-	heapMetadata * metadataAEliminar = (heapMetadata *) (bloque_memoria + posicionMetadata);
+	heapMetadata * metadataALiberar = (heapMetadata *) (bloque_memoria + posicionMetadata);
 
-	metadataAEliminar->isFree = true;
+	metadataALiberar->isFree = true;
 
 	enviarMensaje(&socketKernel, serializarMensaje(1, 706));
 }
@@ -279,13 +280,36 @@ void iniciarPrograma(int pid, char * codigo_programa) {
 	}
 }
 
-void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
+void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedidos){
 	printf("Me pasaron: PID: %d, Pagina: %d, Bytes: %d\n", pid, paginaExistente, bytesPedidos);
 	//BUSCO LA PAGINA EXISTENTE
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
 	printf("USO UNA PAGINA EXISTENTE\n");
 	printf("Marco: %d, Pagina: %d, Pid: %d\n", pagina->nro_marco, pagina->nro_pagina, pagina->pid);
 
+	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + direccion);
+
+	//SI ENTRA JUSTO
+	if (bytesPedidos == metadata->size){
+		metadata->isFree = false;
+	}else{
+		//SI QUEDA ESPACIO LIBRE INCLUYENDO EL QUE OCUPA EL META FREE
+		heapMetadata * metadataNuevo = malloc(sizeof(heapMetadata));
+		metadataNuevo->isFree = true;
+		metadataNuevo->size = metadata->size - bytesPedidos - sizeof(heapMetadata);
+
+		metadata->isFree = false;
+		metadata->size = bytesPedidos;
+
+		memcpy(&bloque_memoria[direccion+sizeof(heapMetadata)+metadata->size], metadataNuevo, sizeof(heapMetadata));
+	}
+
+	printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, bytesPedidos);
+
+	enviarMensaje(&socketKernel, serializarMensaje(1, 608));
+
+}
+	/*
 	//Recupero la Primer Metadata Libre de la Página
 	int posicionActual = obtener_inicio_pagina(pagina);
 	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicionActual);
@@ -335,41 +359,32 @@ void usarPaginaHeap(int pid, int paginaExistente, int bytesPedidos){
 		printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size);
 		enviarMensaje(&socketKernel, serializarMensaje(3, 608, direccion, ultimoMetadata->size));
 	}
-}
+	*/
 
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
-	//VERIFICO QUE EL ESPACIO QUE PIDEN QUEPA EN UNA PAGINA
+
+	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
+	pagina->nro_pagina = paginaActual;
+	pagina->pid = pid;
+
+	int dirInicioPagina = obtener_inicio_pagina(pagina);
 	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
-	if (bytesPedidos <= freeSpace){
-		t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
-		pagina->nro_pagina = paginaActual;
-		pagina->pid = pid;
+	int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
-		int dirInicioPagina = obtener_inicio_pagina(pagina);
+	heapMetadata * meta_used = (heapMetadata *) (bloque_memoria + dirInicioPagina);
+	meta_used->isFree = false;
+	meta_used->size = bytesPedidos;
 
-		heapMetadata * meta_used = (heapMetadata *) (bloque_memoria + dirInicioPagina);
-		meta_used->isFree = false;
-		meta_used->size = bytesPedidos;
+	heapMetadata * meta_free = (heapMetadata *) (bloque_memoria + dirInicioPagina + sizeof(heapMetadata) + bytesPedidos);
+	meta_free->isFree = true;
+	meta_free->size = freeSpace - bytesPedidos;
 
-		heapMetadata * meta_free = (heapMetadata *) (bloque_memoria + dirInicioPagina + sizeof(heapMetadata) + bytesPedidos);
-		meta_free->isFree = true;
-		meta_free->size = freeSpace - bytesPedidos;
+	enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
 
-		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
-
-		//enviarMensaje(&socketKernel, serializarMensaje(5, 605, pagina->pid, pagina->nro_pagina, meta_free->size, direccionFree));
-		enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
-		//printf("Envie mensaje: %s\n", respuestaAKernel);
-
-		contadorPaginasHeap++;
-		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
-				contadorPaginasHeap, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
-		printf("\n");
-	} else {
-		//SI EL PROCESO NO PUEDE RESERVAR MEMORIA DE HEAP DEBE FINALIZAR ABRUPTAMENTE
-		printf("Error al crear Pagina de Heap\n");
-		enviarMensaje(&socketKernel, serializarMensaje(2, 617, pid));
-	}
+	contadorPaginasHeap++;
+	printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+		contadorPaginasHeap, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
+	printf("\n");
 }
 
 void * hilo_conexiones_cpu(){

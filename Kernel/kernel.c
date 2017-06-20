@@ -2052,8 +2052,142 @@ void finalizarProgramaEnMemoria(int pid){
 	free(mensajeAMemoria);
 }
 
+int calcularEspacioLibrePaginaHeap(admPaginaHeap * elem){
+	int result = 0;
+
+	_Bool esMetadataFree(admMetadata * elem){
+		return elem->free == true;
+	}
+
+	t_list * metadatasFree = list_filter(elem->metadatas, (void *) esMetadataFree);
+
+	int i = 0;
+	while (i < list_size(metadatasFree)){
+		admMetadata * meta = list_get(metadatasFree, i);//ME JODE LA VIDA
+		result = result + meta->size;
+		i++;
+	}
+
+	return result;
+}
+
 void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 
+	int capacidadMaxima = longitud_pag - 2 * sizeof(heapMetadata);
+	if (bytes > capacidadMaxima){
+		printf("Error al reservar memoria Heap, excede el tamaño de página, se finaliza programa\n");
+		finalizarPrograma(pcb->pid);
+	}else{
+
+		_Bool coincideHeapPID(admPaginaHeap * elem){
+			return elem->pid == pcb->pid;
+		}
+
+		_Bool tieneLugarBloque(admMetadata * elem){
+			return elem->free && (elem->size == bytes || (elem->size >= bytes + sizeof(heapMetadata)));
+		}
+
+		_Bool hayUnBloqueConEspacio(admPaginaHeap * elem){
+			return list_any_satisfy(elem->metadatas, (void *) tieneLugarBloque);
+		}
+
+		_Bool hayEspacioEnDosBloques(admPaginaHeap * elem){
+			_Bool result = false;
+
+			if (list_size(elem->metadatas) >= 2){
+
+				int i = 0;
+
+				while (i < list_size(elem->metadatas) - 1){
+					admMetadata * elem1 = list_get(elem->metadatas, i);
+					admMetadata * elem2 = list_get(elem->metadatas, i + 1);
+
+					if (elem1->free
+							&& elem2->free
+								&& (elem1->size + elem2->size) > bytes){
+						result = true;
+					}
+
+					i++;
+				}
+			}
+
+			return result;
+		}
+
+		//Verifico si todavía no hay paginas de Heap para este proceso
+		if(!(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPID))){
+			//Si no hay ninguna pagina, creo la primer pagina de Heap para ese Proceso
+			pedirPaginaHeapNueva(pcb, bytes, socketCPU);
+		}else{
+			//Si hay paginas para el proceso, las filtro
+			t_list * paginasHeapProceso = list_filter(lista_paginas_heap, (void *) coincideHeapPID);
+
+			//Y busco si alguna satisface el request con un solo bloque
+			if (list_any_satisfy(paginasHeapProceso, (void *) hayUnBloqueConEspacio)){
+				admPaginaHeap * paginaConLugar = list_find(paginasHeapProceso, (void *) hayUnBloqueConEspacio);
+				admMetadata * metaAUsar = list_find(paginaConLugar->metadatas, (void *) tieneLugarBloque);
+
+				int espacioLibre = calcularEspacioLibrePaginaHeap(paginaConLugar);
+
+				printf("Encontre la siguiente pagina de Heap Libre, PID: %d, PAGINA: %d, Bytes Libres: %d\n", paginaConLugar->pid, paginaConLugar->nro_pagina, espacioLibre);
+				enviarMensaje(&skt_memoria, serializarMensaje(5, 607, paginaConLugar->pid, paginaConLugar->nro_pagina, metaAUsar->direccion, bytes));
+
+				char * buffer = malloc(MAXBUF);
+				int result = recv(skt_memoria, buffer, MAXBUF, 0);
+
+				if (result > 0) {
+					char ** respuesta = string_split(buffer, ";");
+
+					if (strcmp(respuesta[0], "608") == 0){
+
+						//SI ENTRA JUSTO
+						if (metaAUsar->size == bytes){
+							metaAUsar->free = false;
+						}else{
+							//SI QUEDA ESPACIO LIBRE INCLUYENDO EL QUE OCUPA EL META FREE
+							admMetadata * nuevoMetadata = malloc(sizeof(admMetadata));
+							nuevoMetadata->free = true;
+							nuevoMetadata->size = metaAUsar->size - bytes - sizeof(heapMetadata);
+							nuevoMetadata->direccion = metaAUsar->direccion + sizeof(heapMetadata) + bytes;
+
+							metaAUsar->free = false;
+							metaAUsar->size = bytes;
+
+							//LO AGREGO A LA LISTA
+							list_add(paginaConLugar->metadatas, nuevoMetadata);
+
+							_Bool menorAMayorDireccion(admMetadata * elem1, admMetadata * elem2){
+								return elem1->direccion < elem2->direccion;
+							}
+
+							//ORDENO LA LISTA POR DIRECCION
+							list_sort(paginaConLugar->metadatas, (void *) menorAMayorDireccion);
+						}
+
+						enviarMensaje(socketCPU, serializarMensaje(2, 606, metaAUsar->direccion + sizeof(heapMetadata)));
+					} else {
+						printf("Error en el protocolo de mensajes entre procesos\n");
+						exit(errno);
+					}
+				} else {
+					printf("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+					exit(errno);
+				}
+			}else{
+				//SI NO ENCUENTRO NINGUN BLOQUE LIBRE QUE CONTENGA LUGAR
+				//BUSCO SI HAY DOS BLOQUES QUE CONTENGAN LUGAR UNO JUNTO AL OTRO
+				if (list_any_satisfy(paginasHeapProceso, (void *) hayEspacioEnDosBloques)){
+					//UNIFICAR DOS BLOQUES Y ACTUALIZAR TABLAS, DESARROLLAR
+				}else{
+					//Si no puedo alocar en un solo bloque o en dos bloques, pido una pagina nueva
+					pedirPaginaHeapNueva(pcb, bytes, socketCPU);
+				}
+			}
+		}
+	}
+}
+/*
 	_Bool coincideHeapPID(admPaginaHeap * elem){
 		return elem->pid == pcb->pid;
 	}
@@ -2062,44 +2196,9 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		return elem->tamanio_disponible >= bytes + sizeof(heapMetadata);
 	}
 
-	/*
-	_Bool hayLugarHeap (admPaginaHeap * elem){
-		return elem->tamanio_disponible >= bytes;
-	}
-	*/
-
-	/*
-	_Bool hayLugarContiguo(admPaginaHeap * elem){
-		int i = 0;
-		_Bool hayLugar = false;
-
-		if (list_size(elem->alocaciones) >= 2){
-			while (i < list_size(elem->alocaciones) - 1 && !hayLugar){
-				admReservaHeap * primeraReserva = list_get(elem->alocaciones, i);
-				admReservaHeap * segundaReserva = list_get(elem->alocaciones, i+1);
-
-				if (primeraReserva->free && segundaReserva->free &&
-						(primeraReserva->size + segundaReserva->size) >= bytes){
-					hayLugar = true;
-				}
-
-				i++;
-			}
-		}
-
-		return hayLugar;
-	}
-	*/
-
 	_Bool hayLugarHeapMismoPID(admPaginaHeap * elem){
 		return hayLugarHeap(elem) && coincideHeapPID(elem);
 	}
-
-	/*
-	_Bool hayLugarHeapMismoPIDYContiguo(admPaginaHeap * elem){
-		return hayLugarHeap(elem) && coincideHeapPID(elem) && hayLugarContiguo(elem);
-	}
-	*/
 
 	//Verifico si todavía no hay paginas de Heap para este proceso
 	if(!(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPID))){
@@ -2158,7 +2257,48 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		}
 	}
 }
+*/
+
 /*
+_Bool hayLugarHeap (admPaginaHeap * elem){
+	return elem->tamanio_disponible >= bytes;
+}
+*/
+
+/*
+_Bool hayLugarContiguo(admPaginaHeap * elem){
+	int i = 0;
+	_Bool hayLugar = false;
+
+	if (list_size(elem->alocaciones) >= 2){
+		while (i < list_size(elem->alocaciones) - 1 && !hayLugar){
+			admReservaHeap * primeraReserva = list_get(elem->alocaciones, i);
+			admReservaHeap * segundaReserva = list_get(elem->alocaciones, i+1);
+
+			if (primeraReserva->free && segundaReserva->free &&
+					(primeraReserva->size + segundaReserva->size) >= bytes){
+				hayLugar = true;
+			}
+
+			i++;
+		}
+	}
+
+	return hayLugar;
+}
+*/
+
+
+/*
+_Bool hayLugarHeapMismoPIDYContiguo(admPaginaHeap * elem){
+	return hayLugarHeap(elem) && coincideHeapPID(elem) && hayLugarContiguo(elem);
+}
+*/
+/*
+ *
+ *
+ *
+ *
 		if (list_any_satisfy(lista_paginas_heap, (void *) hayLugarHeapMismoPID)){
 			//SI HAY LUGAR EN LAS PAGINAS QUE YA TENGO Y EL LUGAR NO ES CONTIGUO
 			//OBTENGO LA PRIMER PAGINA QUE ENCUENTRO CON ESPACIO SUFICIENTE
@@ -2221,36 +2361,39 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 		char ** respuestaDeMemoria = string_split(buffer, ";");
 
 		if (strcmp(respuestaDeMemoria[0], "605") == 0) {
+
+			int puntero = atoi(respuestaDeMemoria[1]);
+			int freeSpace = atoi(respuestaDeMemoria[2]);
+
 			admPaginaHeap * heapElem = malloc(sizeof(admPaginaHeap));
-			heapElem->alocaciones = list_create();
+			heapElem->metadatas = list_create();
 			heapElem->pid = pcb->pid;
 			heapElem->nro_pagina = paginaActual;
-			heapElem->tamanio_disponible = atoi(respuestaDeMemoria[2]);
-			heapElem->manoseada = false;
 
-			admReservaHeap * reserva = malloc(sizeof(admReservaHeap));
-			int direccion = atoi(respuestaDeMemoria[1]);
-			reserva->direccion = direccion;
-			reserva->size = bytes;
-			reserva->free = false;
+			admMetadata * meta_used = malloc(sizeof(admMetadata));
+			admMetadata * meta_free = malloc(sizeof(admMetadata));
 
-			list_add(heapElem->alocaciones, reserva);
+			meta_used->direccion = puntero - sizeof(heapMetadata);
+			meta_used->free = false;
+			meta_used->size = bytes;
+
+			meta_free->direccion = puntero + bytes;
+			meta_free->free = true;
+			meta_free->size = freeSpace;
+
+			list_add(heapElem->metadatas, meta_used);
+			list_add(heapElem->metadatas, meta_free);
+
+
 			list_add(lista_paginas_heap, heapElem);
 
 			pcb->cantidadPaginas++;
 
-			enviarMensaje(socketCPU, serializarMensaje(2, 606, direccion));
+			enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
+
 		} else {
-			//SI HAY UN ERROR DE RESERVA DE HEAP EL PROCESO DEBE FINALIZAR
-			if (strcmp(respuestaDeMemoria[0], "617") == 0){
-				printf("No hay espacio suficiente para su reserva de heap\n");
-				finalizarPrograma(pcb->pid);
-				//SE NOTIFICA AL CPU
-				enviarMensaje(socketCPU, serializarMensaje(1, 621));
-			} else {
-				printf("Error en el protocolo de mensajes entre procesos\n");
-				exit(errno);
-			}
+			printf("Error en el protocolo de mensajes entre Kernel y Memoria al reserver memoria heap\n");
+			exit(errno);
 		}
 	} else {
 		printf("Error de comunicacion con Memoria durante la reserva de nueva pagina heap\n");
@@ -2263,12 +2406,12 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	printf("Intento eliminar Pagina Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
 	printf("\n");
 
-	_Bool coincideDireccion(admReservaHeap * elem){
-		return elem->direccion == direccion;
+	_Bool coincideDireccion(admMetadata * elem){
+		return elem->direccion == direccion - sizeof(heapMetadata);
 	}
 
 	_Bool coincideHeapPIDyDireccion(admPaginaHeap * elem){
-		return elem->pid == pcb->pid && list_any_satisfy(elem->alocaciones, (void *) coincideDireccion);
+		return elem->pid == pcb->pid && list_any_satisfy(elem->metadatas, (void *) coincideDireccion);
 	}
 
 	//Verifico que exista una pagina que tenga esa direccion y sea para ese proceso
@@ -2288,15 +2431,12 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 			if (strcmp(respuesta[0], "706") == 0){
 
 				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
-				admReservaHeap * reserva = list_find(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
-				paginaHeapAEditar->tamanio_disponible = paginaHeapAEditar->tamanio_disponible + reserva->size;
-				paginaHeapAEditar->manoseada = true;
-				reserva->free = true;
+				list_remove_by_condition(paginaHeapAEditar->metadatas, (void *) coincideDireccion);
 
-				//list_remove_by_condition(paginaHeapAEditar->alocaciones, (void *) coincideDireccion);
+				int tamanio_disponible = calcularEspacioLibrePaginaHeap(paginaHeapAEditar);
 
 				printf("Se libera el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
-				printf("El nuevo espacio libre de la pagina es %d\n", paginaHeapAEditar->tamanio_disponible);
+				printf("El nuevo espacio libre de la pagina es %d\n", tamanio_disponible);
 
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
 			}else{

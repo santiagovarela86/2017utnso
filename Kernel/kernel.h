@@ -83,16 +83,14 @@ typedef struct {
 typedef struct {
 	int pid;
 	int nro_pagina;
-	t_list * alocaciones;
-	int tamanio_disponible;
-	_Bool manoseada;
+	t_list * metadatas;
 } admPaginaHeap;
 
 typedef struct {
-	int size;
 	int direccion;
+	int size;
 	_Bool free;
-} admReservaHeap;
+} admMetadata;
 
 typedef struct {
 	int pid;
