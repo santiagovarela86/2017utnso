@@ -14,6 +14,7 @@
 //605 MEM A KER - PAGINA HEAP NUEVA
 //606 MEM A KER - USAR PAGINA HEAP EXISTENTE
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
+//610 KER A MEM - REORDENAR METADATA
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
 
@@ -191,6 +192,16 @@ void * hilo_conexiones_kernel(){
 					usarPaginaHeap(pid, paginaExistente, direccionAUsar, bytesSolicitados);
 					break;
 
+				case 610:
+					;
+					pid = atoi(mensajeDelKernel[1]);
+					int paginaConDosBloques = atoi(mensajeDelKernel[2]);
+					int direccionMeta1 = atoi(mensajeDelKernel[3]);
+					int direccionMeta2 = atoi(mensajeDelKernel[4]);
+					int bytesAUnir = atoi(mensajeDelKernel[5]);
+					reordenarMetadata(paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir);
+					break;
+
 				case 705:
 					;
 					int pid = atoi(mensajeDelKernel[1]);
@@ -224,6 +235,39 @@ void * hilo_conexiones_kernel(){
 	close(socketKernel);
 
 	return EXIT_SUCCESS;
+}
+
+void reordenarMetadata(paginaConDosBloques, direccionMeta1, direccionMeta2, bytesSolicitados){
+	heapMetadata * meta1 = (heapMetadata *) (bloque_memoria + direccionMeta1);
+	heapMetadata * meta2 = (heapMetadata *) (bloque_memoria + direccionMeta2);
+
+	//SI ENTRA JUSTO
+	if ((meta1->size + meta2->size + sizeof(heapMetadata)) == bytesSolicitados){
+		//TENGO QUE ELIMINAR LA SEGUNDA METADATA Y EDITAR LA PRIMERA
+		meta1->isFree = false;
+		meta1->size = meta1->size + meta2->size + sizeof(heapMetadata);
+
+		//NO SE SI HACE FALTA BORRAR LA METADATA EN MEMORIA YA QUE AL EDITAR EL PRIMER
+		//METADATA CON EL NUEVO ESPACIO LIBRE LUEGO LA APLICACION
+		//ESCRIBIRA ENCIMA DE ESTA METADATA ////VALIDAR QUE SEA COHERENTE
+		//???
+		//free(meta2); //PINCHA
+	}else{
+		//SI QUEDA ESPACIO LIBRE INCLUYENDO EL QUE OCUPA EL META FREE
+		//TENGO QUE EDITAR EL PRIMERO Y EDITAR EL SEGUNDO
+
+		int nuevaDireccionMeta2 = direccionMeta1 + sizeof(heapMetadata) + bytesSolicitados;
+
+		meta2->isFree = true;
+		meta2->size = meta1->size + meta2->size - bytesSolicitados;
+
+		memcpy(&bloque_memoria[nuevaDireccionMeta2], meta2, sizeof(heapMetadata));
+
+		meta1->isFree = false;
+		meta1->size = bytesSolicitados;
+	}
+
+	enviarMensaje(&socketKernel, serializarMensaje(1, 611));
 }
 
 void eliminarMemoriaHeap(int pid, int direccion){
@@ -665,10 +709,12 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 		instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 	}else {
 		//SI SE CORTA LA INSTRUCCION VOY LEO LA PRIMERA PARTE, LUEGO LA SEGUNDA Y DESPUES CONCATENO
-		int izquierda = (posicionInicioInstruccion + offset) % configuracion->marco_size;
-		instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, izquierda);
 		int derecha = offset - (configuracion->marco_size - posicionInicioInstruccion);
 		char * instruccionFaltante = solicitar_datos_de_pagina(pid, paginaALeer + 1, 0, derecha);
+		int izquierda = (offset - derecha);
+		instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, izquierda);
+		//string_append(&instruccion, instruccionFaltante);
+		//string_append(&instruccion, " "); //No deberia hacer falta
 		string_append(&instruccion, instruccionFaltante);
 	}
 

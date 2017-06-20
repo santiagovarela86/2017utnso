@@ -914,11 +914,15 @@ void* manejo_filesystem(void *args) {
 
 	skt_filesystem = socketFS;
 
+	sem_wait(&semaforoFileSystem);
+
 	handShakeSend(&socketFS, "100", "401", "File System");
+
+	sem_wait(&semaforoFileSystem);
 
 	//Cuando se cierre el Kernel, hay que señalizar estos semáforos para que
 	//se cierren los sockets
-	sem_wait(&semaforoFileSystem);
+	//sem_wait(&semaforoFileSystem);
 
 	shutdown(socketFS, 0);
 	close(socketFS);
@@ -938,6 +942,8 @@ void* manejo_memoria(void *args) {
 	skt_memoria = socketMemoria;
 
 	longitud_pag = handShakeSend(&socketMemoria, "100", "201", "Memoria");
+
+	sem_post(&semaforoFileSystem);
 
 	printf("El tamaño de pagina es %d \n", longitud_pag);
 	puts("");
@@ -2084,6 +2090,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		}
 
 		_Bool tieneLugarBloque(admMetadata * elem){
+			//TOMO AMBOS CASOS
 			return elem->free && (elem->size == bytes || (elem->size >= bytes + sizeof(heapMetadata)));
 		}
 
@@ -2102,10 +2109,42 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 					admMetadata * elem1 = list_get(elem->metadatas, i);
 					admMetadata * elem2 = list_get(elem->metadatas, i + 1);
 
-					if (elem1->free
-							&& elem2->free
-								&& (elem1->size + elem2->size) > bytes){
+					//TOMO AMBOS CASOS
+					if ((elem1->free && elem2->free)
+								&& ((elem1->size + elem2->size) >= bytes //En este caso tengo que dejar una metadata libre
+									|| (elem1->size + elem2->size + sizeof(heapMetadata)) == bytes)){ //Se unifican dos metadata recupero el espacio de una si entra justo
 						result = true;
+					}
+
+					i++;
+				}
+			}
+
+			return result;
+		}
+
+		t_list * obtenerMetadatasConsecutivos(admPaginaHeap * pagina){
+			t_list * result = list_create();
+
+			int i = 0;
+
+			if (list_size(pagina->metadatas) >= 2){
+
+				_Bool encontre = false;
+
+				while (i < list_size(pagina->metadatas) - 1
+						&& !encontre){
+					admMetadata * elem1 = list_get(pagina->metadatas, i);
+					admMetadata * elem2 = list_get(pagina->metadatas, i + 1);
+
+					//TOMO AMBOS CASOS
+					if ((elem1->free && elem2->free)
+								&& ((elem1->size + elem2->size) >= bytes //En este caso tengo que dejar una metadata libre
+									|| (elem1->size + elem2->size + sizeof(heapMetadata)) == bytes)){ //Se unifican dos metadata recupero el espacio de una si entra justo
+
+						list_add(result, elem1);
+						list_add(result, elem2);
+						encontre = true;
 					}
 
 					i++;
@@ -2165,7 +2204,8 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 							list_sort(paginaConLugar->metadatas, (void *) menorAMayorDireccion);
 						}
 
-						enviarMensaje(socketCPU, serializarMensaje(2, 606, metaAUsar->direccion + sizeof(heapMetadata)));
+						int puntero = metaAUsar->direccion + sizeof(heapMetadata);
+						enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
 					} else {
 						printf("Error en el protocolo de mensajes entre procesos\n");
 						exit(errno);
@@ -2178,7 +2218,57 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 				//SI NO ENCUENTRO NINGUN BLOQUE LIBRE QUE CONTENGA LUGAR
 				//BUSCO SI HAY DOS BLOQUES QUE CONTENGAN LUGAR UNO JUNTO AL OTRO
 				if (list_any_satisfy(paginasHeapProceso, (void *) hayEspacioEnDosBloques)){
-					//UNIFICAR DOS BLOQUES Y ACTUALIZAR TABLAS, DESARROLLAR
+					//UNIFICAR DOS BLOQUES Y ACTUALIZAR TABLAS
+					admPaginaHeap * paginaConBloquesConsecutivos = list_find(paginasHeapProceso, (void *) hayEspacioEnDosBloques);
+					t_list * metadatasConsecutivas = obtenerMetadatasConsecutivos(paginaConBloquesConsecutivos);
+
+					admMetadata * meta1 = list_get(metadatasConsecutivas, 0);
+					admMetadata * meta2 = list_get(metadatasConsecutivas, 1);
+
+					int espacioLibre = calcularEspacioLibrePaginaHeap(paginaConBloquesConsecutivos);
+
+					printf("Encontre la siguiente pagina de Heap con dos Bloques libres para unificar, PID: %d, PAGINA: %d, Bytes Libres: %d\n", paginaConBloquesConsecutivos->pid, paginaConBloquesConsecutivos->nro_pagina, espacioLibre);
+					enviarMensaje(&skt_memoria, serializarMensaje(6, 610, paginaConBloquesConsecutivos->pid, paginaConBloquesConsecutivos->nro_pagina, meta1->direccion, meta2->direccion, bytes));
+
+					char * buffer = malloc(MAXBUF);
+					int result = recv(skt_memoria, buffer, MAXBUF, 0);
+
+					if (result > 0) {
+						char ** respuesta = string_split(buffer, ";");
+
+						if (strcmp(respuesta[0], "611") == 0){
+							//SI ENTRA JUSTO
+							if ((meta1->size + meta2->size + sizeof(heapMetadata)) == bytes) {
+								//TENGO QUE ELIMINAR LA SEGUNDA METADATA DE LA LISTA DE LA PAGINA Y EDITAR LA PRIMERA
+								meta1->free = false;
+								meta1->size = meta1->size + meta2->size	+ sizeof(heapMetadata);
+
+								_Bool segundaMeta(admMetadata * elem) {
+									return elem->direccion == meta2->direccion;
+								}
+
+								list_remove_by_condition(paginaConBloquesConsecutivos->metadatas, (void *) segundaMeta);
+							} else {
+								//SI QUEDA ESPACIO LIBRE INCLUYENDO EL QUE OCUPA EL META FREE
+								//TENGO QUE EDITAR EL PRIMERO Y EDITAR EL SEGUNDO
+								meta2->direccion = meta1->direccion	+ sizeof(heapMetadata) + bytes;
+								meta2->free = true;
+								meta2->size = meta1->size + meta2->size - bytes;
+
+								meta1->free = false;
+								meta1->size = bytes;
+							}
+						}else{
+							printf("Error en el protocolo de mensajes entre procesos\n");
+							exit(errno);
+						}
+					}else{
+						printf("Error de comunicacion con Memoria durante la reserva de memoria heap existente\n");
+						exit(errno);
+					}
+
+					int puntero = meta1->direccion + sizeof(heapMetadata);
+					enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
 				}else{
 					//Si no puedo alocar en un solo bloque o en dos bloques, pido una pagina nueva
 					pedirPaginaHeapNueva(pcb, bytes, socketCPU);

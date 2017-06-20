@@ -118,6 +118,7 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock);
 void eliminarMemoriaHeap(int pid, int direccion);
 int reordenarPaginaHeap(int indicePaginaHeap);
+void reordenarMetadata(paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir);
 
 #define VARIABLE_EN_CACHE 99
 
