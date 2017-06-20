@@ -1072,7 +1072,7 @@ void * hilo_conexiones_consola(void *args) {
 							break;
 
 						case 399:
-							cerrarConsola(socketConsola);
+							cerrarConsola(socketConsola, FIN_POR_DESCONEXION_CONSOLA);
 							break;
 					}
 
@@ -2623,7 +2623,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 	finalizarProgramaEnMemoria(pidACerrar);
 }
 
-void cerrarConsola(int socketCliente) {
+void cerrarConsola(int socketCliente, int codigo) {
 	// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
 	//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
 
@@ -2645,6 +2645,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2685,6 +2686,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2720,6 +2722,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2826,7 +2829,7 @@ void listar_terminados(){
 		t_pcb* aux = queue_pop(cola_terminados);
 		pthread_mutex_unlock(&mtx_terminados);
 
-		printf("Programa: %d \n", aux->pid);
+		printf("Programa: %d Codigo: %d \n", aux->pid, aux->exit_code);
 
 		pthread_mutex_lock(&mtx_terminados);
 		queue_push(cola_terminados, aux);

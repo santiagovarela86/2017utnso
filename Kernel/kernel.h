@@ -184,7 +184,7 @@ void multiprogramar();
 
 void iniciarPrograma(char * codigo, int socket, int pid);
 void finalizarPrograma(int pidACerrar, int codigo);
-void cerrarConsola(int socketCliente);
+void cerrarConsola(int socketCliente, int codigo);
 
 void finDeQuantum(int * socketCliente);
 void finDePrograma(int * socketCliente, int codigo);
