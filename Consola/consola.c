@@ -43,6 +43,10 @@ InfoConsola infoConsola;
 pthread_t threadKernel;
 pthread_t threadConsola;
 
+pthread_mutex_t mtx_lectura_mensaje;
+
+char buffer[MAXBUF];
+int mensaje_leido;
 
 int main(int argc , char **argv)
 {
@@ -59,6 +63,9 @@ int main(int argc , char **argv)
 
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
+
+    pthread_mutex_init(&mtx_lectura_mensaje, NULL);
+    mensaje_leido = 0;
 
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
@@ -155,15 +162,6 @@ void * handlerKernel(void * args){
 	return EXIT_SUCCESS;
 }
 
-void * manejoPrograma(void * args){
-
-	int * socketKernel = (int *) args;
-
-	printf("Se creo el hilo para manejar programa \n");
-
-	return 0;
-}
-
 void terminar_proceso(int* socket_kernel){
 
 	puts(" ");
@@ -207,10 +205,137 @@ void limpiar_mensajes(){
 	return;
 }
 
-void * escuchar_Kernel(void * args){
-	char buffer[MAXBUF];
+void * manejoPrograma(void * args){
+
+	int * socketKernel = (int *) args;
+	char buffer_local[MAXBUF];
 	char bufferHoraFin[26];
 	char bufferHoraCom[26];
+	char** respuesta_kernel;
+
+	pthread_mutex_t mtx_programa;
+	pthread_mutex_init(&mtx_programa, NULL);
+
+	void machos_pecho_peludo(){
+		pthread_mutex_lock(&mtx_lectura_mensaje);
+
+		if(mensaje_leido == 0){
+
+			int i = 0;
+
+			while(i < MAXBUF){
+				buffer_local[i] = buffer[i];
+				i++;
+			}
+
+			respuesta_kernel = string_split(buffer_local, ";");
+			mensaje_leido = 1;
+		}
+
+		pthread_mutex_unlock(&mtx_programa);
+		pthread_mutex_unlock(&mtx_lectura_mensaje);
+	}
+
+	signal(SIGUSR2, machos_pecho_peludo);
+
+	pthread_mutex_lock(&mtx_programa);
+
+	while(1){
+
+		pthread_mutex_lock(&mtx_programa);
+
+		if(atoi(respuesta_kernel[0]) == 103){
+			/*103 es creacion*/
+			programa* program = malloc(sizeof(program));
+			time_t * comienzo = malloc(sizeof(time_t));
+			  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+			  time(comienzo);
+			   /* Get GMT time */
+
+
+			program->pid = atoi(respuesta_kernel[1]);
+			program->inicio = localtime(comienzo);
+			program->fin = localtime(comienzo);
+			program->duracion = 0;
+			program->mensajes = 0;
+			program->socket_kernel = *socketKernel;
+
+			struct tm* tm_info;
+			tm_info = localtime(comienzo);
+
+			strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
+			printf( "Comienzo: %s\n", bufferHoraCom );
+
+
+			queue_push(cola_programas, program);
+
+		}else if(atoi(respuesta_kernel[0]) == 197){
+			printf("El programa no pudo iniciarse por falta de memoria\n");
+		}else if (atoi(respuesta_kernel[0]) == 575){
+			printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
+			puts("");
+
+		}else if (atoi(respuesta_kernel[0]) == 666){
+			/*666 es muerte*/
+			programa* p = malloc(sizeof(programa));
+		//TODO
+			int pid = atoi(respuesta_kernel[1]);
+			int encontrado = 0;
+			int fin = queue_size(cola_programas);
+
+
+						while(fin > 0 && encontrado == 0){
+							//pthread_mutex_lock(&mtx_bloqueados);
+							p = queue_pop(cola_programas);
+							//pthread_mutex_unlock(&mtx_bloqueados);
+							time_t * final = malloc(sizeof(time_t));
+							if(p->pid == pid){
+								encontrado = 1;
+								//time(final);
+								p->fin =localtime(final);
+								p->duracion = difftime(p->fin, p->inicio);
+
+								struct tm* tm_infoF;
+								tm_infoF = localtime(final);
+								//tm_infoF = localtime(&final);
+								time(final);
+
+								strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
+
+								printf( "Final: %s\n", bufferHoraFin );
+							}
+
+							//pthread_mutex_lock(&mtx_bloqueados);
+							queue_push(cola_programas, p);
+							//pthread_mutex_unlock(&mtx_bloqueados);
+
+							fin--;
+						}
+
+				       // char output[128];
+				        //strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
+
+
+			printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+			printf("Su hora de inicio fue:\n");
+			printf(" %s\n", bufferHoraCom);
+
+
+			printf("Su hora finalizacion fue: \n");
+			printf( " %s\n", bufferHoraFin );
+
+
+		  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
+		  printf( "ó: %f s\n", p->duracion );
+
+		}
+
+	}
+
+	return 0;
+}
+
+void * escuchar_Kernel(void * args){
 
 	int * socketKernel = (int *) args;
 
@@ -219,96 +344,10 @@ void * escuchar_Kernel(void * args){
 		int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
 
 		if (result > 0){
-			char** respuesta_kernel = string_split(buffer, ";");
 
-			if(atoi(respuesta_kernel[0]) == 103){
-				/*103 es creacion*/
-				programa* program = malloc(sizeof(program));
-				time_t * comienzo = malloc(sizeof(time_t));
-				  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
-				  time(comienzo);
-				   /* Get GMT time */
+			mensaje_leido = 0;
+			raise(SIGUSR2);
 
-
-				program->pid = atoi(respuesta_kernel[1]);
-				program->inicio = localtime(comienzo);
-				program->fin = localtime(comienzo);
-				program->duracion = 0;
-				program->mensajes = 0;
-				program->socket_kernel = *socketKernel;
-
-				struct tm* tm_info;
-				tm_info = localtime(comienzo);
-
-				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
-				printf( "Comienzo: %s\n", bufferHoraCom );
-
-
-				queue_push(cola_programas, program);
-
-			}else if(atoi(respuesta_kernel[0]) == 197){
-				printf("El programa no pudo iniciarse por falta de memoria\n");
-			}else if (atoi(respuesta_kernel[0]) == 575){
-				printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
-				puts("");
-
-			}else if (atoi(respuesta_kernel[0]) == 666){
-				/*666 es muerte*/
-				programa* p = malloc(sizeof(programa));
-			//TODO
-				int pid = atoi(respuesta_kernel[1]);
-				int encontrado = 0;
-				int fin = queue_size(cola_programas);
-
-
-							while(fin > 0 && encontrado == 0){
-								//pthread_mutex_lock(&mtx_bloqueados);
-								p = queue_pop(cola_programas);
-								//pthread_mutex_unlock(&mtx_bloqueados);
-								time_t * final = malloc(sizeof(time_t));
-								if(p->pid == pid){
-									encontrado = 1;
-									//time(final);
-									p->fin =localtime(final);
-									p->duracion = difftime(p->fin, p->inicio);
-
-									struct tm* tm_infoF;
-									tm_infoF = localtime(final);
-									//tm_infoF = localtime(&final);
-									time(final);
-
-									strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
-
-									printf( "Final: %s\n", bufferHoraFin );
-								}
-
-								//pthread_mutex_lock(&mtx_bloqueados);
-								queue_push(cola_programas, p);
-								//pthread_mutex_unlock(&mtx_bloqueados);
-
-								fin--;
-							}
-
-					       // char output[128];
-					        //strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
-
-
-				printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
-				printf("Su hora de inicio fue:\n");
-				printf(" %s\n", bufferHoraCom);
-
-				//char outputF[128];
-				//strftime(outputF,128,"%d/%m/%y %H:%M:%S",p->fin);
-				printf("Su hora finalizacion fue: \n");
-				printf( " %s\n", bufferHoraFin );
-
-
-			  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
-			  printf( "ó: %f s\n", p->duracion );
-
-			}
-
-			//free(respuesta_kernel);
 		}
 	}
 
