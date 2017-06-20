@@ -245,6 +245,38 @@ void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios)
     fputs(espacios, pFile);
     fseek(pFile, string_length(espacios), 0);
 }
+
+void cerrarUnArchivoBloque(char* pmap, struct stat script)
+{
+	munmap(pmap,script.st_size);
+}
+
+void actualizarBitmap(int numeroBloque)
+{
+	char* directorio = string_new();
+	directorio = string_substring(montaje,0,string_length(montaje));
+
+	string_append(&directorio,"Metadata/Bitmap.bin");
+	FILE * bitmapArchivo = fopen(directorio, "w+");
+
+	bitarray_set_bit(bitmap, numeroBloque);
+
+	ponerVaciosAllenarEnArchivos(bitmapArchivo,string_length(bitmap->bitarray));
+
+	int archNuevoMap = open(directorio, O_RDWR);
+	struct stat scriptMap;
+	fstat(archNuevoMap, &scriptMap);
+
+	void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
+
+
+
+	int longitudAGrabar = string_length(bitmap->bitarray);
+
+	memcpy(archMap,bitmap->bitarray,longitudAGrabar);
+    munmap(archMap,longitudAGrabar);
+}
+
 void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
@@ -291,7 +323,10 @@ void crear_archivo(char* flag, char* directorio){
 			memcpy(archMap,tamanio,longitudAGrabar);
 		    munmap(archMap,longitudAGrabar);
 		    close(archNuevoMap);
-		    bitarray_set_bit(bitmap, numeroBloque);
+
+		    actualizarBitmap(numeroBloque);
+
+
 
 		  list_add(lista_archivos, archNuevo);
 
@@ -341,10 +376,6 @@ t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 	return mapeo;
 }
 
-void cerrarUnArchivoBloque(char* pmap, struct stat script)
-{
-	munmap(pmap,script.st_size);
-}
 
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
 {
@@ -370,7 +401,7 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffe
 	munmap(archMapBloque,size);
 	close(archNuevoMap);
 
-	bitarray_set_bit(bitmap, idBloque);
+	actualizarBitmap(idBloque);
 
 
 }
@@ -569,7 +600,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 			{
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloqueEnBlanco);
-				bitarray_set_bit(bitmap, unBloqueEnBlanco);
+				actualizarBitmap(unBloqueEnBlanco);
 			}
 			else
 			{

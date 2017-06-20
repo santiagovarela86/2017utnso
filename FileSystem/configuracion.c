@@ -111,16 +111,16 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	directorio = string_substring(mnt,0,string_length(mnt));
 
 	string_append(&directorio,"Metadata/Bitmap.bin");
-	FILE * bitmapArchivo = fopen(directorio, "w");
+	FILE * bitmapArchivo = fopen(directorio, "w+");
 
 
 	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
 
     fputs((char*)bitmap->bitarray, bitmapArchivo);
 
-    //fseek((FILE*)bitmapArchivo, string_length((char*)bitmap->bitarray), 0);
+    fseek((FILE*)bitmapArchivo, string_length((char*)bitmap->bitarray), 0);
 
-	fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
+	//fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
 	//lfseek(bitmapArchivo,tamanio_bitmap, SEEK_SET);
 
 	/*int fd_script = open(pathAbsolutoBitmap, O_RDWR);
@@ -132,6 +132,8 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 
 	return bitmap;
 }
+
+
 void crearBloques(char* mnt, int cantidad)
 {
 	int i = 1;
@@ -145,7 +147,7 @@ void crearBloques(char* mnt, int cantidad)
 		FILE * bitmapArchivo = fopen(bloque, "w");
 	    fputs(" ", bitmapArchivo);
 	    fseek(bitmapArchivo, string_length(""), 0);
-		free(bloque);
+		//free(bloque);
 		i++;
 	}
 }
