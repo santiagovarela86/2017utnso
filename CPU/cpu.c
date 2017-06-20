@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 	pthread_t thread_id_kernel;
 	pthread_t thread_id_memoria;
 
-	signal(SIGINT, manejador_signal);
+	signal(SIGUSR1, manejador_signal);
 
 	configuracion = leerConfiguracion(argv[1]);
 	imprimirConfiguracion(configuracion);
@@ -235,7 +235,7 @@ char * solicitoInstruccion(t_pcb* pcb) {
 
 void manejador_signal(){
 	puts("");
-	puts("A mi no me matas Gato");
+	puts("Se intercepto una señal");
 
 	char* mensajeAKernel = string_new();
 

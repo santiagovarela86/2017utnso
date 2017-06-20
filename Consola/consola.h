@@ -39,6 +39,6 @@ void * handlerKernel(void * args);
 void * escuchar_Kernel(void * args);
 void inicializarEstado(InfoConsola * infoConsola);
 void destruirEstado(InfoConsola * infoConsola);
-
+void * manejoPrograma(void * args);
 
 #endif /* CONSOLA_H_ */
