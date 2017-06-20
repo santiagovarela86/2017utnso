@@ -209,7 +209,7 @@ void * manejoPrograma(void * args){
 	pthread_mutex_t mtx_programa;
 	pthread_mutex_init(&mtx_programa, NULL);
 
-	void cacher_signal(){
+	void machos_pecho_peludo(){
 		int i = 0;
 
 		while(i < MAXBUF){
@@ -220,11 +220,12 @@ void * manejoPrograma(void * args){
 		pthread_mutex_unlock(&mtx_programa);
 	}
 
-	signal(SIGUSR2, cacher_signal);
+	signal(SIGUSR2, machos_pecho_peludo);
 
 	pthread_mutex_lock(&mtx_programa);
 
 	while(1){
+
 		pthread_mutex_lock(&mtx_programa);
 
 		char** respuesta_kernel = string_split(buffer_local, ";");
