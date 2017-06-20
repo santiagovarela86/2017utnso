@@ -1068,7 +1068,7 @@ void * hilo_conexiones_consola(void *args) {
 						case 398:
 							; //https://goo.gl/y7nI85
 							int pidACerrar = atoi(respuesta_a_kernel[1]);
-							finalizarPrograma(pidACerrar);
+							finalizarPrograma(pidACerrar, FIN_POR_CONSOLA);
 							break;
 
 						case 399:
@@ -1420,8 +1420,7 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
 				t_pcb * un_pcb = pcbFromPid(pid_msg);
-				un_pcb->exit_code = FIN_ERROR_EXCEPCION_MEMORIA;
-				finalizarPrograma(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_EXCEPCION_MEMORIA);
 				break;
 
 			case 777:
@@ -1436,8 +1435,7 @@ void * handler_conexion_cpu(void * sock) {
 			case 778:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				un_pcb = pcbFromPid(pid_msg);
-				un_pcb->exit_code = FIN_ERROR_SIN_DEFINICION;
-				finalizarPrograma(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_SIN_DEFINICION);
 				break;
 
 		}
@@ -2080,7 +2078,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 	int capacidadMaxima = longitud_pag - 2 * sizeof(heapMetadata);
 	if (bytes > capacidadMaxima){
 		printf("Error al reservar memoria Heap, excede el tamaño de página, se finaliza programa\n");
-		finalizarPrograma(pcb->pid);
+		finalizarPrograma(pcb->pid, FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA);
 		//SE NOTIFICA AL CPU
 		enviarMensaje(socketCPU, serializarMensaje(1, 622));
 	}else{
@@ -2380,7 +2378,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 		}
 	}else{
 		printf("Se intento eliminar memoria en heap no reservada previamente\n");
-		finalizarPrograma(pcb->pid);
+		finalizarPrograma(pcb->pid, FIN_ERROR_EXCEPCION_MEMORIA);
 		//SE NOTIFICA AL CPU
 		enviarMensaje(socketCliente, serializarMensaje(1, 622));
 	}
@@ -2487,7 +2485,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 	}
 }
 
-void finalizarPrograma(int pidACerrar) {
+void finalizarPrograma(int pidACerrar, int codigo) {
 	t_pcb * temporalN;
 
 	int encontre = 0;

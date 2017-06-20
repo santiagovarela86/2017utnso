@@ -183,7 +183,7 @@ t_pcb * deserializar_pcb(char * mensajeRecibido);
 void multiprogramar();
 
 void iniciarPrograma(char * codigo, int socket, int pid);
-void finalizarPrograma(int pidACerrar);
+void finalizarPrograma(int pidACerrar, int codigo);
 void cerrarConsola(int socketCliente);
 
 void finDeQuantum(int * socketCliente);
