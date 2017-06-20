@@ -43,6 +43,7 @@ InfoConsola infoConsola;
 pthread_t threadKernel;
 pthread_t threadConsola;
 
+char buffer[MAXBUF];
 
 int main(int argc , char **argv)
 {
@@ -159,7 +160,20 @@ void * manejoPrograma(void * args){
 
 	int * socketKernel = (int *) args;
 
-	printf("Se creo el hilo para manejar programa \n");
+	pthread_mutex_t mtx_programa;
+	pthread_mutex_init(&mtx_programa, NULL);
+
+	void cacher_signal(){
+		pthread_mutex_unlock(&mtx_programa);
+	}
+
+	signal(SIGUSR2, cacher_signal);
+
+	while(1){
+		pthread_mutex_lock(&mtx_programa);
+
+		printf("Se creo el hilo para manejar programa \n");
+	}
 
 	return 0;
 }
@@ -208,7 +222,7 @@ void limpiar_mensajes(){
 }
 
 void * escuchar_Kernel(void * args){
-	char buffer[MAXBUF];
+
 	char bufferHoraFin[26];
 	char bufferHoraCom[26];
 
@@ -219,6 +233,9 @@ void * escuchar_Kernel(void * args){
 		int result = recv(*socketKernel, buffer, sizeof(buffer), 0);
 
 		if (result > 0){
+
+			raise(SIGUSR2);
+
 			char** respuesta_kernel = string_split(buffer, ";");
 
 			if(atoi(respuesta_kernel[0]) == 103){
