@@ -75,13 +75,15 @@ int skt_memoria;
 int skt_filesystem;
 int plan;
 t_list * offsetArch;
-t_list * lista_paginas_heap;;
+t_list * lista_paginas_heap;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
 int longitud_pag;
+t_list* lista_paginas_heap_solicitadas;
+t_list* lista_paginas_heap_liberadas;
 
 int main(int argc, char **argv) {
 
@@ -177,21 +179,12 @@ void inicializarEstructuras(char * pathConfig){
 		w++;
 	}
 
-	w = 0;
-
-	while(configuracion->shared_vars[w] != NULL){
-		t_globales* global_aux = malloc(sizeof(t_globales));
-		global_aux->nombre = string_new();
-		global_aux->nombre = configuracion->shared_vars[w];
-		global_aux->valor = 0;
-
-		list_add(lista_variables_globales, global_aux);
-		w++;
-	}
-
-	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
+
+	lista_paginas_heap_solicitadas = list_create();
+	lista_paginas_heap_liberadas = list_create();
+
 }
 
 void liberarEstructuras(){
@@ -871,15 +864,16 @@ void listarCola(t_queue * cola){
 
 }
 
-
 void inicializar_variables_globales(){
 	lista_variables_globales = list_create();
 	int i = 0;
-	while (configuracion->shared_vars[i] != NULL){
-		t_var_global* var_global = malloc(sizeof(t_var_global));
-		var_global->id = configuracion->shared_vars[i];
-		var_global->valor = 0;
-		list_add(lista_variables_globales, var_global);
+	while(configuracion->shared_vars[i] != NULL){
+		t_globales* global_aux = malloc(sizeof(t_globales));
+		global_aux->nombre = string_new();
+		global_aux->nombre = configuracion->shared_vars[i];
+		global_aux->valor = 0;
+
+		list_add(lista_variables_globales, global_aux);
 		i++;
 	}
 }
@@ -888,10 +882,12 @@ void inicializar_semaforos(){
 	lista_semaforos = list_create();
 	int i = 0;
 	while(configuracion->sem_ids[i] != NULL){
-		t_semaforo* semaforo = malloc(sizeof(t_semaforo));
-		semaforo->id = configuracion->sem_ids[i];
-		semaforo->valor = atoi(configuracion->sem_init[i]);
-		list_add(lista_semaforos, semaforo);
+		t_globales* sem_aux = malloc(sizeof(t_globales));
+		sem_aux->nombre = string_new();
+		sem_aux->nombre = configuracion->sem_ids[i];
+		sem_aux->valor = atoi(configuracion->sem_init[i]);
+
+		list_add(lista_semaforos, sem_aux);
 		i++;
 	}
 }
