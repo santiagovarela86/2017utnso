@@ -190,11 +190,11 @@ t_pcb * deserializar_pcb(char * mensajeRecibido);
 void multiprogramar();
 
 void iniciarPrograma(char * codigo, int socket, int pid);
-void finalizarPrograma(int pidACerrar);
-void cerrarConsola(int socketCliente);
+void finalizarPrograma(int pidACerrar, int codigo);
+void cerrarConsola(int socketCliente, int codigo);
 
 void finDeQuantum(int * socketCliente);
-void finDePrograma(int * socketCliente);
+void finDePrograma(int * socketCliente, int codigo);
 void waitSemaforo(int * socketCliente, char * semaforo_buscado);
 void signalSemaforo(int * socketCliente, char * otro_semaforo_buscado);
 void asignarValorCompartida(char * variable, int valor);

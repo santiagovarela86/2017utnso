@@ -75,13 +75,15 @@ int skt_memoria;
 int skt_filesystem;
 int plan;
 t_list * offsetArch;
-t_list * lista_paginas_heap;;
+t_list * lista_paginas_heap;
 sem_t semaforoMemoria;
 sem_t semaforoFileSystem;
 sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
 int longitud_pag;
+t_list* lista_paginas_heap_solicitadas;
+t_list* lista_paginas_heap_liberadas;
 
 int main(int argc, char **argv) {
 
@@ -177,21 +179,12 @@ void inicializarEstructuras(char * pathConfig){
 		w++;
 	}
 
-	w = 0;
-
-	while(configuracion->shared_vars[w] != NULL){
-		t_globales* global_aux = malloc(sizeof(t_globales));
-		global_aux->nombre = string_new();
-		global_aux->nombre = configuracion->shared_vars[w];
-		global_aux->valor = 0;
-
-		list_add(lista_variables_globales, global_aux);
-		w++;
-	}
-
-	//inicializacion de variables globales y semaforos
 	inicializar_variables_globales();
 	inicializar_semaforos();
+
+	lista_paginas_heap_solicitadas = list_create();
+	lista_paginas_heap_liberadas = list_create();
+
 }
 
 void liberarEstructuras(){
@@ -871,15 +864,16 @@ void listarCola(t_queue * cola){
 
 }
 
-
 void inicializar_variables_globales(){
 	lista_variables_globales = list_create();
 	int i = 0;
-	while (configuracion->shared_vars[i] != NULL){
-		t_var_global* var_global = malloc(sizeof(t_var_global));
-		var_global->id = configuracion->shared_vars[i];
-		var_global->valor = 0;
-		list_add(lista_variables_globales, var_global);
+	while(configuracion->shared_vars[i] != NULL){
+		t_globales* global_aux = malloc(sizeof(t_globales));
+		global_aux->nombre = string_new();
+		global_aux->nombre = configuracion->shared_vars[i];
+		global_aux->valor = 0;
+
+		list_add(lista_variables_globales, global_aux);
 		i++;
 	}
 }
@@ -888,10 +882,12 @@ void inicializar_semaforos(){
 	lista_semaforos = list_create();
 	int i = 0;
 	while(configuracion->sem_ids[i] != NULL){
-		t_semaforo* semaforo = malloc(sizeof(t_semaforo));
-		semaforo->id = configuracion->sem_ids[i];
-		semaforo->valor = atoi(configuracion->sem_init[i]);
-		list_add(lista_semaforos, semaforo);
+		t_globales* sem_aux = malloc(sizeof(t_globales));
+		sem_aux->nombre = string_new();
+		sem_aux->nombre = configuracion->sem_ids[i];
+		sem_aux->valor = atoi(configuracion->sem_init[i]);
+
+		list_add(lista_semaforos, sem_aux);
 		i++;
 	}
 }
@@ -1068,11 +1064,11 @@ void * hilo_conexiones_consola(void *args) {
 						case 398:
 							; //https://goo.gl/y7nI85
 							int pidACerrar = atoi(respuesta_a_kernel[1]);
-							finalizarPrograma(pidACerrar);
+							finalizarPrograma(pidACerrar, FIN_POR_CONSOLA);
 							break;
 
 						case 399:
-							cerrarConsola(socketConsola);
+							cerrarConsola(socketConsola, FIN_POR_DESCONEXION_CONSOLA);
 							break;
 					}
 
@@ -1295,7 +1291,7 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 531:
 
-				finDePrograma(socketCliente);
+				finDePrograma(socketCliente, FIN_OK);
 				break;
 
 			case 532:
@@ -1446,8 +1442,7 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
 				t_pcb * un_pcb = pcbFromPid(pid_msg);
-				un_pcb->exit_code = FIN_ERROR_EXCEPCION_MEMORIA;
-				finalizarPrograma(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_SUPERO_MAXIMO_PAGINAS);
 				break;
 
 			case 777:
@@ -1462,8 +1457,7 @@ void * handler_conexion_cpu(void * sock) {
 			case 778:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				un_pcb = pcbFromPid(pid_msg);
-				un_pcb->exit_code = FIN_ERROR_SIN_DEFINICION;
-				finalizarPrograma(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_SIN_DEFINICION);
 				break;
 
 		}
@@ -1980,7 +1974,7 @@ void envioProgramaAMemoria(t_pcb * new_pcb, t_nuevo * nue){
 
 		switch (operacion) {
 		case 298:
-
+			//No se asigna el estado -1 (espacio insuficiente) dado que no es un PCB todavia
 			rechazoFaltaMemoria(socketConsola);
 			break;
 
@@ -2110,7 +2104,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 	int capacidadMaxima = longitud_pag - 2 * sizeof(heapMetadata);
 	if (bytes > capacidadMaxima){
 		printf("Error al reservar memoria Heap, excede el tamaño de página, se finaliza programa\n");
-		finalizarPrograma(pcb->pid);
+		finalizarPrograma(pcb->pid, FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA);
 		//SE NOTIFICA AL CPU
 		enviarMensaje(socketCPU, serializarMensaje(1, 622));
 	}else{
@@ -2410,7 +2404,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 		}
 	}else{
 		printf("Se intento eliminar memoria en heap no reservada previamente\n");
-		finalizarPrograma(pcb->pid);
+		finalizarPrograma(pcb->pid, FIN_ERROR_EXCEPCION_MEMORIA);
 		//SE NOTIFICA AL CPU
 		enviarMensaje(socketCliente, serializarMensaje(1, 622));
 	}
@@ -2517,7 +2511,7 @@ void iniciarPrograma(char * codigo, int socketCliente, int pid) {
 	}
 }
 
-void finalizarPrograma(int pidACerrar) {
+void finalizarPrograma(int pidACerrar, int codigo) {
 	t_pcb * temporalN;
 
 	int encontre = 0;
@@ -2539,6 +2533,7 @@ void finalizarPrograma(int pidACerrar) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2583,6 +2578,7 @@ void finalizarPrograma(int pidACerrar) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2622,6 +2618,7 @@ void finalizarPrograma(int pidACerrar) {
 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2652,7 +2649,7 @@ void finalizarPrograma(int pidACerrar) {
 	finalizarProgramaEnMemoria(pidACerrar);
 }
 
-void cerrarConsola(int socketCliente) {
+void cerrarConsola(int socketCliente, int codigo) {
 	// Buscar en las colas de listos, bloqueadosa y en ejecucion a todos los programas
 	//cuyo socket_consola sea igual al que envio este mensaje y matarlos.
 
@@ -2674,6 +2671,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2714,6 +2712,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2749,6 +2748,7 @@ void cerrarConsola(int socketCliente) {
 
 		if (temporalN->socket_consola == socketCliente) {
 			pthread_mutex_lock(&mtx_terminados);
+			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
 			int * sock =  &temporalN->socket_consola;
@@ -2855,7 +2855,7 @@ void listar_terminados(){
 		t_pcb* aux = queue_pop(cola_terminados);
 		pthread_mutex_unlock(&mtx_terminados);
 
-		printf("Programa: %d \n", aux->pid);
+		printf("Programa: %d Codigo: %d \n", aux->pid, aux->exit_code);
 
 		pthread_mutex_lock(&mtx_terminados);
 		queue_push(cola_terminados, aux);
@@ -3001,7 +3001,7 @@ void bloqueoDePrograma(int pid_a_buscar){
 
 }
 
-void finDePrograma(int * socketCliente) {
+void finDePrograma(int * socketCliente, int codigo) {
 	char message[MAXBUF];
 
 	enviarMensaje(socketCliente, "531;");
@@ -3011,6 +3011,9 @@ void finDePrograma(int * socketCliente) {
 	if (result > 0) {
 		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
 		pcb_deserializado = deserializar_pcb(message);
+
+		//Se asigna estado finalizado al PCB
+		pcb_deserializado->exit_code = codigo;
 
 		int encontrado = 0;
 
