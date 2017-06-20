@@ -3858,3 +3858,30 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 		return "Error";
 	}
 }
+
+void incrementarContadorPaginasHeapSolicitadas(t_pcb* pcb) {
+
+	int obtenerEstadisticaDePid(t_estadistica* estadistica){
+		return estadistica->pid == pcb->pid;
+	}
+
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePid);
+
+	if (estadistica != NULL){
+		estadistica->cant_alocar = estadistica->cant_alocar + 1;
+	}
+}
+
+void incrementarContadorPaginasHeapLiberadas(t_pcb* pcb) {
+
+	int obtenerEstadisticaDePid(t_estadistica* estadistica){
+		return estadistica->pid == pcb->pid;
+	}
+
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePid);
+
+	if (estadistica != NULL){
+		estadistica->cant_liberar = estadistica->cant_liberar + 1;
+	}
+}
+

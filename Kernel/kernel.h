@@ -241,6 +241,8 @@ char* serializar_codigo_por_instrucciones(char* codigo);
 void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU);
 void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente);
 void detener_pcb(int* skt);
+void incrementarContadorPaginasHeapSolicitadas(t_pcb* pcb);
+void incrementarContadorPaginasHeapLiberadas(t_pcb* pcb);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
