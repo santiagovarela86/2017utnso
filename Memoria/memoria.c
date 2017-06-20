@@ -16,7 +16,6 @@
 //601 CPU A MEM - SOLICITAR POSICION DE VARIABLE
 //612 KER A MEM - ENVIO DE CANT MAXIMA DE PAGINAS DE STACK POR PROCESO
 //616 KER A MEM - FINALIZAR PROGRAMA
-//617 MEM A KER - FINALIZAR PROGRAMA POR ERROR DE HEAP
 
 #include <pthread.h>
 #include "configuracion.h"
@@ -309,57 +308,6 @@ void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedido
 	enviarMensaje(&socketKernel, serializarMensaje(1, 608));
 
 }
-	/*
-	//Recupero la Primer Metadata Libre de la Página
-	int posicionActual = obtener_inicio_pagina(pagina);
-	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + posicionActual);
-	printf("Metadata Posicion: %d, Free: %d, Size %d\n", posicionActual, metadata->isFree, metadata->size);
-
-	int posicionAnterior = posicionActual;
-	//BOUNDARY = POSICION DONDE IRIA LA ULTIMA METADATA QUE INDICA EL ESPACIO LIBRE
-	int boundary = posicionActual + configuracion->marco_size - sizeof(heapMetadata);
-	//int boundary = posicionActual + configuracion->marco_size;
-	printf("Boundary: %d\n", boundary);
-
-	//MIENTRAS LA METADATA ESTE OCUPADA, O NO ESTE OCUPADA PERO NO ME ALCANCE EL ESPACIO
-	while ((metadata->isFree != true || (metadata->isFree == true && metadata->size < bytesPedidos)) && posicionActual < boundary){
-		posicionAnterior = posicionActual;
-		posicionActual = posicionActual + sizeof(heapMetadata) + metadata->size;
-		metadata = (heapMetadata *) (bloque_memoria + posicionActual);
-		printf("Posicion: %d, Metadata Free: %d, Size %d\n", posicionActual, metadata->isFree, metadata->size);
-	}
-
-	//SI LLEGUE AL FINAL DEL BLOQUE SIN ENCONTRAR UNA METADATA O SI ME PASE DEL BUFFER
-	if (posicionActual >= boundary + sizeof(heapMetadata)) {
-		printf("Error al intentar reservar memoria Heap\n");
-		printf("Se recorrió todo el bloque sin encontrar lugar para guardar la reserva\n");
-		exit(errno);
-	} else {
-		//CREO EL ULTIMO METADATA
-		heapMetadata * ultimoMetadata = (heapMetadata *) (bloque_memoria + posicionActual + sizeof(heapMetadata) + bytesPedidos);
-		ultimoMetadata->isFree = true;
-
-		//SI ESTE NO VA A SER EL ULTIMO METADATA DE LA PAGINA
-		if (metadata->size - bytesPedidos != 0) { ultimoMetadata->size = metadata->size - bytesPedidos - sizeof(heapMetadata);
-		} else {
-			//SI ES EL ULTIMO METADATA POSIBLE
-			ultimoMetadata->size = 0;
-		}
-
-		printf("METADATA NUEVO: %d, Metadata Free: %d, Size %d\n", posicionActual, ultimoMetadata->isFree, ultimoMetadata->size);
-
-		//EDITO EL ACTUAL
-		metadata->isFree = false;
-		metadata->size = bytesPedidos;
-		printf("METADATA MODIFICADA: %d, Metadata Free: %d, Size %d\n", posicionAnterior, metadata->isFree, metadata->size);
-
-		//LA DIRECCION DEL ESPACIO QUE ACABO DE CREAR
-		int direccion = posicionActual + sizeof(heapMetadata);
-
-		printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, ultimoMetadata->size);
-		enviarMensaje(&socketKernel, serializarMensaje(3, 608, direccion, ultimoMetadata->size));
-	}
-	*/
 
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
@@ -640,27 +588,8 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 
 void asignarVariable(char** mensajeDesdeCPU, int sock){
 
-	//int pid = atoi(mensajeDesdeCPU[1]);
 	int direccion = atoi(mensajeDesdeCPU[1]);
 	int valor = atoi(mensajeDesdeCPU[2]);
-
-	/*
-
-	//Valor en Cache
-	if (direccion == VARIABLE_EN_CACHE){
-		valorEnCache = true;
-		int pid = atoi(mensajeDesdeCPU[2]);
-		int nro_pagina = atoi(mensajeDesdeCPU[3]);
-		int offset = atoi(mensajeDesdeCPU[4]);
-		valor = atoi(mensajeDesdeCPU[5]);
-		pagina = buscar_pagina_para_consulta(pid, nro_pagina);
-		int inicio = obtener_inicio_pagina(pagina);
-		direccion = inicio + offset;
-	} else {
-		valor = atoi(mensajeDesdeCPU[2]);
-	}
-
-	*/
 
 	grabar_valor(direccion, valor);
 
@@ -668,17 +597,6 @@ void asignarVariable(char** mensajeDesdeCPU, int sock){
 			printf("\n");
 			enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
 
-	/*
-	if (valorEnCache){
-		printf("Se asigno el valor %d en Cache \n", valor);
-		printf("\n");
-		enviarMensaje(&sock, serializarMensaje(2, VARIABLE_EN_CACHE, valor));
-	} else {
-		printf("Se asigno el valor %d en Memoria \n", valor);
-		printf("\n");
-		enviarMensaje(&sock, serializarMensaje(2, direccion, valor));
-	}
-	*/
 }
 
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
@@ -744,8 +662,8 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
-	//printf("Se envia la instruccion %s\n", instr);
-	//printf("Longitud Instruccion: %d\n", strlen(instr));
+	printf("Se envia la instruccion %s\n", instr);
+	printf("Longitud Instruccion: %d\n", strlen(instr));
 	//printf("\n");
 
 	enviarMensaje(socketCliente, instr);
@@ -1528,21 +1446,6 @@ int obtener_offset_pagina(t_pagina_invertida* pagina){
 
 	return pagina->offset;
 
-	/*
-
-	int inicio = obtener_inicio_pagina(pagina);
-
-	int offset = 0;
-
-	char* bloque_asignado = string_substring(bloque_memoria, inicio, configuracion->marco_size);
-
-	int longitud_datos_bloque_asignado = string_length(bloque_asignado);
-
-	offset = longitud_datos_bloque_asignado;
-
-	return offset;
-
-	*/
 }
 
 int obtener_inicio_pagina(t_pagina_invertida* pagina){
@@ -1554,21 +1457,6 @@ bool pagina_llena(t_pagina_invertida* pagina){
 
 	return configuracion->marco_size == pagina->offset;
 
-	/*
-
-	bool pagina_llena = false;
-
-	int inicio = obtener_inicio_pagina(pagina);
-
-	char* bloque_asignado = string_substring(bloque_memoria, inicio, configuracion->marco_size);
-	int longitud_datos_bloque_asignado = string_length(bloque_asignado);
-
-	if (longitud_datos_bloque_asignado == configuracion ->marco_size)
-		pagina_llena = true;
-
-	return pagina_llena;
-
-	*/
 }
 
 t_entrada_cache * crear_entrada_cache(int indice, int pid, int nro_pagina, char * contenido_pagina){
@@ -1698,13 +1586,6 @@ void grabar_valor_en_cache(int direccion, char * buffer){
 	printf("NRO MARCO: %d\n", direccion / configuracion->marco_size);
 
 	t_pagina_invertida * pagina = list_get(tabla_paginas, direccion / configuracion->marco_size);
-
-	/*
-	char* contenido = string_substring(bloque_memoria, obtener_inicio_pagina(pagina), configuracion->marco_size);
-
-	string_append(&contenido, valor);
-
-	*/
 
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pagina->pid, pagina->nro_pagina);
 
