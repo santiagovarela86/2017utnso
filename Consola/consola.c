@@ -42,7 +42,7 @@ InfoConsola infoConsola;
 
 pthread_t threadKernel;
 pthread_t threadConsola;
-pthread_t threadPrograma;
+
 
 int main(int argc , char **argv)
 {
@@ -75,15 +75,12 @@ int main(int argc , char **argv)
 
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
-    list_add(infoConsola.threads, &threadPrograma);
 
     creoThread(&threadConsola, handlerConsola, &socketKernel);
     creoThread(&threadKernel, handlerKernel, &socketKernel);
-    creoThread(&threadPrograma, manejoPrograma, &socketKernel);
 
 	pthread_join(threadConsola, NULL);
 	pthread_join(threadKernel, NULL);
-	pthread_join(threadPrograma, NULL);
 
 	destruirEstado(&infoConsola);
 	free(configuracion);
@@ -159,6 +156,11 @@ void * handlerKernel(void * args){
 }
 
 void * manejoPrograma(void * args){
+
+	int * socketKernel = (int *) args;
+
+	printf("Se creo el hilo para manejar programa \n");
+
 	return 0;
 }
 
@@ -318,6 +320,10 @@ void iniciar_programa(int* socket_kernel){
 	puts("");
 	puts("Ingrese nombre del programa");
 
+	pthread_t threadPrograma;
+	list_add(infoConsola.threads, &threadPrograma);
+
+
 	char directorio[MAXBUF];
 
 	scanf("%s", directorio);
@@ -348,6 +354,8 @@ void iniciar_programa(int* socket_kernel){
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
+
+	creoThread(&threadPrograma, manejoPrograma, socket_kernel);
 
 	return;
 }
