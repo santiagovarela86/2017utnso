@@ -3909,5 +3909,8 @@ void analisisMemoryLeaks(int pid){
 		printf("El programa con PID %d finalizo con Memory Leaks \n", pid);
 		printf("Realizando %d alocar y %d liberar \n", estadistica_pid->cant_alocar, estadistica_pid->cant_liberar);
 	}
+	else {
+		printf("El programa con PID %d finalizo sin Memory Leaks \n", pid);
+	}
 }
 
