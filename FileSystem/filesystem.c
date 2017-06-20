@@ -231,7 +231,20 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 	 return regMetadataArch;
 
 }
+void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios)
+{
+	char * espacios =string_new();
 
+	int i = 0;
+
+	for(i=0; i < cantidadEspacios; i++)
+	{
+		string_append(&espacios," ");
+	}
+
+    fputs(espacios, pFile);
+    fseek(pFile, string_length(espacios), 0);
+}
 void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
@@ -244,16 +257,8 @@ void crear_archivo(char* flag, char* directorio){
 
    	  if (result == 1)
    	  {
-   		  FILE * pFile;
-   		  pFile = fopen (pathAbsoluto,"w"); //por defecto lo crea
-		    fputs(" ", pFile);
-		    fseek(pFile, string_length(""), 0);
-
-   		  t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
-   		  archNuevo->referenciaArchivo = pFile;
-   		  //fclose(pFile);
-   		  archNuevo->path = string_new();
-   		  string_append(&archNuevo->path, pathAbsoluto);
+   		    FILE * pFile;
+   		    pFile = fopen (pathAbsoluto,"w+"); //por defecto lo crea
 
 			char* tamanio = string_new();
 			char* bloques = string_new();
@@ -263,16 +268,28 @@ void crear_archivo(char* flag, char* directorio){
 			string_append(&bloques, "Bloques=[");
 			string_append(&bloques, string_itoa(numeroBloque));
 			string_append(&bloques, "]");
+			string_append(&bloques, tamanio);
+			int longitudAGrabar = string_length(bloques);
+			ponerVaciosAllenarEnArchivos(pFile,longitudAGrabar);
+
+   		   t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
+   		   archNuevo->referenciaArchivo = pFile;
+   		   archNuevo->path = string_new();
+
+   		  // fclose(pFile);
+   		    string_append(&archNuevo->path, pathAbsoluto);
+
 
 			int archNuevoMap = open(pathAbsoluto, O_RDWR);
 			struct stat scriptMap;
 			fstat(archNuevoMap, &scriptMap);
 
-			char* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
-			int aux =string_length(bloques);
-			memcpy(archMap,bloques,aux);
-		    munmap(archMap,aux);
+			void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
+
+
+			memcpy(archMap,bloques,longitudAGrabar);
+		    munmap(archMap,longitudAGrabar);
 		    close(archNuevoMap);
 		    bitarray_set_bit(bitmap, numeroBloque);
 

@@ -43,6 +43,7 @@ InfoConsola infoConsola;
 pthread_t threadKernel;
 pthread_t threadConsola;
 
+
 int main(int argc , char **argv)
 {
 
@@ -152,6 +153,15 @@ void * handlerKernel(void * args){
 
 	pthread_join(threadEscuchaKernel, NULL);
 	return EXIT_SUCCESS;
+}
+
+void * manejoPrograma(void * args){
+
+	int * socketKernel = (int *) args;
+
+	printf("Se creo el hilo para manejar programa \n");
+
+	return 0;
 }
 
 void terminar_proceso(int* socket_kernel){
@@ -310,6 +320,10 @@ void iniciar_programa(int* socket_kernel){
 	puts("");
 	puts("Ingrese nombre del programa");
 
+	pthread_t threadPrograma;
+	list_add(infoConsola.threads, &threadPrograma);
+
+
 	char directorio[MAXBUF];
 
 	scanf("%s", directorio);
@@ -340,6 +354,8 @@ void iniciar_programa(int* socket_kernel){
 
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
+
+	creoThread(&threadPrograma, manejoPrograma, socket_kernel);
 
 	return;
 }
