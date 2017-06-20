@@ -243,6 +243,7 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente);
 void detener_pcb(int* skt);
 void incrementarContadorPaginasHeapSolicitadas(int pid);
 void incrementarContadorPaginasHeapLiberadas(int pid);
+void analisisMemoryLeaks(t_estadistica* estadistica_pid);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 

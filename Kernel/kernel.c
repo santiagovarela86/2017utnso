@@ -2510,6 +2510,10 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		return pcb->pid == pidACerrar;
 	}
 
+	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pidACerrar;
+	}
+
 	//busco pid en cola listos
 	while (encontre == 0 && largoCola != 0) {
 
@@ -2633,6 +2637,10 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 
 		}
 	}
+
+	t_estadistica* estadistica_pid = list_find(lista_estadistica, (void*) _obtenerEstadisticaDePID);
+
+	//analisisMemoryLeaks(estadistica_pid);
 
 	finalizarProgramaEnMemoria(pidACerrar);
 }
@@ -3887,5 +3895,9 @@ void incrementarContadorPaginasHeapLiberadas(int pid) {
 	if (estadistica != NULL){
 		estadistica->cant_liberar = estadistica->cant_liberar + 1;
 	}
+}
+
+void analisisMemoryLeaks(t_estadistica* estadistica_pid){
+
 }
 
