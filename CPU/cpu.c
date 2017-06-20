@@ -1053,17 +1053,17 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		string_append(&flagEnviar,"r");
 	}
 
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "803");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, ((char*) (direccion)));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, flagEnviar);
-	string_append(&mensajeAKernel, ";");
+	char* mensajeKernel = string_new();
+	string_append(&mensajeKernel, "803");
+	string_append(&mensajeKernel, ";");
+	string_append(&mensajeKernel, string_itoa(pcb->pid));
+	string_append(&mensajeKernel, ";");
+	string_append(&mensajeKernel, ((char*) (direccion)));
+	string_append(&mensajeKernel, ";");
+	string_append(&mensajeKernel, flagEnviar);
+	string_append(&mensajeKernel, ";");
     //printf("la direccion es %s", direccion);
-	enviarMensaje(&sktKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeKernel);
 
 	t_descriptor_archivo retorno;
 
@@ -1081,10 +1081,8 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		retorno = 0;
 	}
 
-	return retorno;
-
-	free(mensajeDeKernel);
-	free(mensajeAKernel);
+	//free(mensajeDeKernel);
+	//free(mensajeAKernel);
 }
 
 void borrar(t_descriptor_archivo descriptor) {
@@ -1138,7 +1136,7 @@ void cerrar(t_descriptor_archivo descriptor) {
 		} else {
 			printf("Error el archivo no se pudo cerrar \n");
 		}
-		free(mensajeAKernel);
+		//free(mensajeAKernel);
 		free(resulMenCerrar);
 		return;
 }
@@ -1159,7 +1157,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo,
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	free(mensajeAKernel);
+	//free(mensajeAKernel);
 
 	puts("Cursor movido en el archivo");
 
@@ -1169,19 +1167,19 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	puts("Escribir");
 	puts("");
 
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "804");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(descriptor_archivo));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(pcb->pid));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, ((char*) informacion));
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(tamanio));
-	string_append(&mensajeAKernel, ";");
+	char* mensajeFsKernel = string_new();
+	string_append(&mensajeFsKernel, "804");
+	string_append(&mensajeFsKernel, ";");
+	string_append(&mensajeFsKernel, string_itoa(descriptor_archivo));
+	string_append(&mensajeFsKernel, ";");
+	string_append(&mensajeFsKernel, string_itoa(pcb->pid));
+	string_append(&mensajeFsKernel, ";");
+	string_append(&mensajeFsKernel, ((char*) informacion));
+	string_append(&mensajeFsKernel, ";");
+	string_append(&mensajeFsKernel, string_itoa(tamanio));
+	string_append(&mensajeFsKernel, ";");
 
-	enviarMensaje(&sktKernel, mensajeAKernel);
+	enviarMensaje(&sktKernel, mensajeFsKernel);
 
 	//int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
@@ -1195,7 +1193,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
 	}
-	free(mensajeAKernel);
+	//free(mensajeFsKernel);
 	free(resulMenEscribir);
 
 	return;
@@ -1228,7 +1226,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	free(mensajeFs);
+	//free(mensajeFs);
 	free(resulMenLeer);
 	return;
 

@@ -1327,16 +1327,16 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 char * auxEscribir = malloc(MAXBUF);
-				 auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+				 char * auxEscribir = string_new();
+				 auxEscribir =  string_duplicate( escribirArchivo(pid_mensaje, fd, infofile, tamanio));
+
 				 if(string_contains(auxEscribir, "Error"))
 				 {
-					t_pcb * un_pcb = pcbFromPid(pid_mensaje);
-					un_pcb->exit_code = FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS;
-					exit(EXIT_FAILURE);
+					 finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
 			     }
 				 {
 					 enviarMensaje(socketCliente, "Se escribió correctamente");
+
 				 }
 
 				break;
@@ -1350,13 +1350,12 @@ void * handler_conexion_cpu(void * sock) {
 
 				 if(string_contains(result->exitCode, "Error"))
 				 {
-					t_pcb * un_pcb = pcbFromPid(pid_mensaje);
-					un_pcb->exit_code = FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS;
-					exit(EXIT_FAILURE);
+					finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
 			     }
 				 else
 				 {
 					enviarMensaje(socketCliente, string_itoa(result->fd));
+
 				 }
 
 				break;
@@ -1373,7 +1372,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				 fd = atoi(mensajeDesdeCPU[2]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
-			     char * auxCerrar = malloc(MAXBUF);
+			     char * auxCerrar =string_new();
 			     auxCerrar = string_duplicate(cerrarArchivo(pid_mensaje, fd));
 
 				 enviarMensaje(socketCliente, auxCerrar);
@@ -1386,14 +1385,12 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
-			     char * auxLeer = malloc(MAXBUF);
+			     char * auxLeer = string_new();
 
 			    auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
-			    if(string_contains(auxLeer, "Error de Flag"))
+			    if(string_contains(auxLeer, "Error"))
 			    {
-			    	t_pcb * un_pcb = pcbFromPid(pid_mensaje);
-			    	un_pcb->exit_code = FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS;
-					exit(EXIT_FAILURE);
+			    	finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
 			    }
 			    else
 			    {
@@ -3366,7 +3363,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 
 		free(mensaje_conso);
 
-
+		return "";
 
 	}else{
 
@@ -3432,11 +3429,12 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		else
 		{
 			return "Error";
+
 		}
 	  }
 
 	}
-	return "";
+
 }
 
 
@@ -3687,7 +3685,7 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 }
 void borrarArchivo(int pid_mensaje, int fd)
 {
-	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(listaDeArchivosDelProceso));
+	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(t_lista_fileProcesos));
 	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
 
 		if(listaDeArchivosDelProceso != NULL)
