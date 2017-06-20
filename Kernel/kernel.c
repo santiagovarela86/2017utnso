@@ -2510,10 +2510,6 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		return pcb->pid == pidACerrar;
 	}
 
-	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
-		return estadistica->pid == pidACerrar;
-	}
-
 	//busco pid en cola listos
 	while (encontre == 0 && largoCola != 0) {
 
@@ -2638,9 +2634,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		}
 	}
 
-	t_estadistica* estadistica_pid = list_find(lista_estadistica, (void*) _obtenerEstadisticaDePID);
-
-	//analisisMemoryLeaks(estadistica_pid);
+	analisisMemoryLeaks(pidACerrar);
 
 	finalizarProgramaEnMemoria(pidACerrar);
 }
@@ -3008,9 +3002,6 @@ void finDePrograma(int * socketCliente, int codigo) {
 		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
 		pcb_deserializado = deserializar_pcb(message);
 
-		//Se asigna estado finalizado al PCB
-		pcb_deserializado->exit_code = codigo;
-
 		int encontrado = 0;
 
 		int size = queue_size(cola_ejecucion);
@@ -3033,7 +3024,9 @@ void finDePrograma(int * socketCliente, int codigo) {
 				pcb_deserializado->program_counter;
 
 				pthread_mutex_lock(&mtx_terminados);
+				pcb_a_cambiar->exit_code = codigo;
 				queue_push(cola_terminados, pcb_a_cambiar);
+				analisisMemoryLeaks(pcb_deserializado->pid);
 				finalizarProgramaEnMemoria(pcb_deserializado->pid);
 
 				int * sock =  &pcb_a_cambiar->socket_consola;
@@ -3081,7 +3074,6 @@ void finDePrograma(int * socketCliente, int codigo) {
 
 				c++;
 			}
-
 		}
 	} else {
 		printf("Error de comunicacion de fin de programa con el CPU\n");
@@ -3897,7 +3889,19 @@ void incrementarContadorPaginasHeapLiberadas(int pid) {
 	}
 }
 
-void analisisMemoryLeaks(t_estadistica* estadistica_pid){
+void analisisMemoryLeaks(int pid){
 
+	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
+	}
+
+	t_estadistica* estadistica_pid = list_find(lista_estadistica, (void*) _obtenerEstadisticaDePID);
+
+	int resultado = estadistica_pid->cant_alocar - estadistica_pid->cant_liberar;
+
+	if (resultado != 0) {
+		printf("El programa con PID %d finalizo con Memory Leaks \n", pid);
+		printf("Realizando %d alocar y %d liberar \n", estadistica_pid->cant_alocar, estadistica_pid->cant_liberar);
+	}
 }
 
