@@ -46,6 +46,7 @@ pthread_t threadConsola;
 pthread_mutex_t mtx_lectura_mensaje;
 
 char buffer[MAXBUF];
+int mensaje_leido;
 
 int main(int argc , char **argv)
 {
@@ -64,6 +65,7 @@ int main(int argc , char **argv)
     imprimirConfiguracion(configuracion);
 
     pthread_mutex_init(&mtx_lectura_mensaje, NULL);
+    mensaje_leido = 0;
 
 	int socketKernel;
 	struct sockaddr_in direccionKernel;
@@ -209,17 +211,25 @@ void * manejoPrograma(void * args){
 	char buffer_local[MAXBUF];
 	char bufferHoraFin[26];
 	char bufferHoraCom[26];
+	char** respuesta_kernel;
 
 	pthread_mutex_t mtx_programa;
 	pthread_mutex_init(&mtx_programa, NULL);
 
 	void machos_pecho_peludo(){
 		pthread_mutex_lock(&mtx_lectura_mensaje);
-		int i = 0;
 
-		while(i < MAXBUF){
-			buffer_local[i] = buffer[i];
-			i++;
+		if(mensaje_leido == 0){
+
+			int i = 0;
+
+			while(i < MAXBUF){
+				buffer_local[i] = buffer[i];
+				i++;
+			}
+
+			respuesta_kernel = string_split(buffer_local, ";");
+			mensaje_leido = 1;
 		}
 
 		pthread_mutex_unlock(&mtx_programa);
@@ -233,8 +243,6 @@ void * manejoPrograma(void * args){
 	while(1){
 
 		pthread_mutex_lock(&mtx_programa);
-
-		char** respuesta_kernel = string_split(buffer_local, ";");
 
 		if(atoi(respuesta_kernel[0]) == 103){
 			/*103 es creacion*/
@@ -337,6 +345,7 @@ void * escuchar_Kernel(void * args){
 
 		if (result > 0){
 
+			mensaje_leido = 0;
 			raise(SIGUSR2);
 
 		}
