@@ -43,6 +43,7 @@ void borrarArchivo(char* directorio);
 void guardar_datos(char* directorio, int size, char* buffer, int offset);
 void crearMetadataSadica(char* montaje);
 void crearBloques(char* montaje, int cantidad);
+void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios);
 int buscarPrimerBloqueLibre();
 t_metadataArch* leerMetadataDeArchivoCreado(char* arch);
 void cerrarUnArchivoBloque(char* pmap, struct stat script);
