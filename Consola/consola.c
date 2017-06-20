@@ -42,6 +42,7 @@ InfoConsola infoConsola;
 
 pthread_t threadKernel;
 pthread_t threadConsola;
+pthread_t threadPrograma;
 
 int main(int argc , char **argv)
 {
@@ -74,12 +75,15 @@ int main(int argc , char **argv)
 
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
+    list_add(infoConsola.threads, &threadPrograma);
 
     creoThread(&threadConsola, handlerConsola, &socketKernel);
     creoThread(&threadKernel, handlerKernel, &socketKernel);
+    creoThread(&threadPrograma, manejoPrograma, &socketKernel);
 
 	pthread_join(threadConsola, NULL);
 	pthread_join(threadKernel, NULL);
+	pthread_join(threadPrograma, NULL);
 
 	destruirEstado(&infoConsola);
 	free(configuracion);
@@ -152,6 +156,10 @@ void * handlerKernel(void * args){
 
 	pthread_join(threadEscuchaKernel, NULL);
 	return EXIT_SUCCESS;
+}
+
+void * manejoPrograma(void * args){
+	return 0;
 }
 
 void terminar_proceso(int* socket_kernel){
