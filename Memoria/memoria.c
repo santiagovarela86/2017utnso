@@ -659,13 +659,17 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 
 	char * instruccion;
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
-	instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
 
-	//SI SE CORTA LA INSTRUCCION VOY A LEER LA SEGUNDA PAGINA PARA BUSCAR LO QUE FALTA
-	if (posicionInicioInstruccion + offset > configuracion->marco_size){
-		int resto = offset - (configuracion->marco_size - posicionInicioInstruccion);
-		char * instr2 = solicitar_datos_de_pagina(pid, paginaALeer + 1, 0, resto);
-		string_append(&instruccion, instr2);
+	//SI EL CODIGO ESTA ENTERO EN LA PAGINA
+	if (posicionInicioInstruccion + offset <= configuracion->marco_size){
+		instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, offset);
+	}else {
+		//SI SE CORTA LA INSTRUCCION VOY LEO LA PRIMERA PARTE, LUEGO LA SEGUNDA Y DESPUES CONCATENO
+		int izquierda = (posicionInicioInstruccion + offset) % configuracion->marco_size;
+		instruccion = solicitar_datos_de_pagina(pid, paginaALeer, posicionInicioInstruccion, izquierda);
+		int derecha = offset - (configuracion->marco_size - posicionInicioInstruccion);
+		char * instruccionFaltante = solicitar_datos_de_pagina(pid, paginaALeer + 1, 0, derecha);
+		string_append(&instruccion, instruccionFaltante);
 	}
 
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
