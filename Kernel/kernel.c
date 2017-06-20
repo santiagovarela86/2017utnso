@@ -82,8 +82,6 @@ sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
 int longitud_pag;
-t_list* lista_paginas_heap_solicitadas;
-t_list* lista_paginas_heap_liberadas;
 
 int main(int argc, char **argv) {
 
@@ -167,23 +165,10 @@ void inicializarEstructuras(char * pathConfig){
 
 	grado_multiprogramacion = configuracion->grado_multiprogramacion;
 
-	int w = 0;
 	plan = 0;
-	while(configuracion->sem_ids[w] != NULL){
-		t_globales* sem_aux = malloc(sizeof(t_globales));
-		sem_aux->nombre = string_new();
-		sem_aux->nombre = configuracion->sem_ids[w];
-		sem_aux->valor = atoi(configuracion->sem_init[w]);
-
-		list_add(lista_semaforos, sem_aux);
-		w++;
-	}
 
 	inicializar_variables_globales();
 	inicializar_semaforos();
-
-	lista_paginas_heap_solicitadas = list_create();
-	lista_paginas_heap_liberadas = list_create();
 
 }
 
@@ -2105,6 +2090,8 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 		enviarMensaje(socketCPU, serializarMensaje(1, 622));
 	}else{
 
+		incrementarContadorPaginasHeapSolicitadas(pcb->pid);
+
 		_Bool coincideHeapPID(admPaginaHeap * elem){
 			return elem->pid == pcb->pid;
 		}
@@ -2389,6 +2376,8 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 				printf("Se libera el elemento de heap en la Direccion: %d, PID: %d\n", direccion, pcb->pid);
 				printf("El nuevo espacio libre de la pagina es %d\n", tamanio_disponible);
 
+				incrementarContadorPaginasHeapLiberadas(pcb->pid);
+
 				enviarMensaje(socketCliente, serializarMensaje(1, 710));
 			}else{
 				printf("Error de protocolo al liberar memoria de heap\n");
@@ -2642,6 +2631,8 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		}
 	}
 
+	analisisMemoryLeaks(pidACerrar);
+
 	finalizarProgramaEnMemoria(pidACerrar);
 }
 
@@ -2669,6 +2660,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			pthread_mutex_lock(&mtx_terminados);
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
+
+			analisisMemoryLeaks(temporalN->pid);
 
 			int * sock =  &temporalN->socket_consola;
 
@@ -2711,6 +2704,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
 
+			analisisMemoryLeaks(temporalN->pid);
+
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
 			string_append(&msjAConsolaXEstadistica, "666;");
@@ -2746,6 +2741,8 @@ void cerrarConsola(int socketCliente, int codigo) {
 			pthread_mutex_lock(&mtx_terminados);
 			temporalN->exit_code = codigo;
 			queue_push(cola_terminados, temporalN);
+
+			analisisMemoryLeaks(temporalN->pid);
 
 			int * sock =  &temporalN->socket_consola;
 			char* msjAConsolaXEstadistica = string_new();
@@ -3008,9 +3005,6 @@ void finDePrograma(int * socketCliente, int codigo) {
 		t_pcb* pcb_deserializado = malloc(sizeof(t_pcb));
 		pcb_deserializado = deserializar_pcb(message);
 
-		//Se asigna estado finalizado al PCB
-		pcb_deserializado->exit_code = codigo;
-
 		int encontrado = 0;
 
 		int size = queue_size(cola_ejecucion);
@@ -3033,7 +3027,9 @@ void finDePrograma(int * socketCliente, int codigo) {
 				pcb_deserializado->program_counter;
 
 				pthread_mutex_lock(&mtx_terminados);
+				pcb_a_cambiar->exit_code = codigo;
 				queue_push(cola_terminados, pcb_a_cambiar);
+				analisisMemoryLeaks(pcb_deserializado->pid);
 				finalizarProgramaEnMemoria(pcb_deserializado->pid);
 
 				int * sock =  &pcb_a_cambiar->socket_consola;
@@ -3081,7 +3077,6 @@ void finDePrograma(int * socketCliente, int codigo) {
 
 				c++;
 			}
-
 		}
 	} else {
 		printf("Error de comunicacion de fin de programa con el CPU\n");
@@ -3871,3 +3866,49 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 		return "Error";
 	}
 }
+
+void incrementarContadorPaginasHeapSolicitadas(int pid) {
+
+	int obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
+	}
+
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) obtenerEstadisticaDePID);
+
+	if (estadistica != NULL){
+		estadistica->cant_alocar = estadistica->cant_alocar + 1;
+	}
+}
+
+void incrementarContadorPaginasHeapLiberadas(int pid) {
+
+	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
+	}
+
+	t_estadistica* estadistica = list_find(lista_estadistica,(void*) _obtenerEstadisticaDePID);
+
+	if (estadistica != NULL){
+		estadistica->cant_liberar = estadistica->cant_liberar + 1;
+	}
+}
+
+void analisisMemoryLeaks(int pid){
+
+	int _obtenerEstadisticaDePID(t_estadistica* estadistica){
+		return estadistica->pid == pid;
+	}
+
+	t_estadistica* estadistica_pid = list_find(lista_estadistica, (void*) _obtenerEstadisticaDePID);
+
+	int resultado = estadistica_pid->cant_alocar - estadistica_pid->cant_liberar;
+
+	if (resultado != 0) {
+		printf("El programa con PID %d finalizo con Memory Leaks \n", pid);
+		printf("Realizando %d alocar y %d liberar \n", estadistica_pid->cant_alocar, estadistica_pid->cant_liberar);
+	}
+	else {
+		printf("El programa con PID %d finalizo sin Memory Leaks \n", pid);
+	}
+}
+
