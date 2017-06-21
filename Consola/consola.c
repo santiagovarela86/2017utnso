@@ -48,6 +48,7 @@ pthread_mutex_t mtx_lectura_mensaje;
 char buffer[MAXBUF];
 int mensaje_leido;
 int socketKernel;
+int mensaje_procesado;
 
 int main(int argc , char **argv)
 {
@@ -66,7 +67,9 @@ int main(int argc , char **argv)
     imprimirConfiguracion(configuracion);
 
     pthread_mutex_init(&mtx_lectura_mensaje, NULL);
+
     mensaje_leido = 0;
+    mensaje_procesado = 0;
 
 	struct sockaddr_in direccionKernel;
 	list_add(infoConsola.sockets, &socketKernel);
@@ -253,6 +256,8 @@ void * manejoPrograma(void * args){
 			printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
 			puts("");
 
+			mensaje_procesado = 1;
+
 		}else if (atoi(respuesta_kernel[0]) == 666){
 			/*666 es muerte*/
 			programa* p = malloc(sizeof(programa));
@@ -302,14 +307,13 @@ void * manejoPrograma(void * args){
 			printf("Su hora de inicio fue:\n");
 			printf(" %s\n", bufferHoraCom);
 
-
 			printf("Su hora finalizacion fue: \n");
 			printf( " %s\n", bufferHoraFin );
 
+			printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
+			printf( "ó: %f s\n", p->duracion );
 
-		  printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
-		  printf( "ó: %f s\n", p->duracion );
-
+			mensaje_procesado = 1;
 		}
 
 	}
@@ -363,7 +367,13 @@ void * escuchar_Kernel(void * args){
 			}else{
 
 				mensaje_leido = 0;
+				mensaje_procesado = 0;
+
 				raise(SIGUSR2);
+
+				while(mensaje_procesado == 0){
+
+				}
 
 			}
 		}
