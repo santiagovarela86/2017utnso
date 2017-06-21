@@ -223,7 +223,11 @@ void * manejoPrograma(void * args){
 	pthread_mutex_init(&mtx_programa, NULL);
 
 	void machos_pecho_peludo(){
+		printf("entro al manejador el programa %d \n", pid_local);
 		pthread_mutex_lock(&mtx_lectura_mensaje);
+
+		printf("se recibio el msj %s \n", buffer);
+
 
 		if(mensaje_leido == 0){
 
@@ -342,7 +346,7 @@ void * escuchar_Kernel(void * args){
 
 				programa* program = malloc(sizeof(program));
 				time_t * comienzo = malloc(sizeof(time_t));
-				  printf("Comenzó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+				  printf("Se acepto el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
 				  time(comienzo);
 
 				program->pid = atoi(respuesta_kernel[1]);
