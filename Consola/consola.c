@@ -47,6 +47,7 @@ pthread_mutex_t mtx_lectura_mensaje;
 
 char buffer[MAXBUF];
 int mensaje_leido;
+int socketKernel;
 
 int main(int argc , char **argv)
 {
@@ -67,7 +68,6 @@ int main(int argc , char **argv)
     pthread_mutex_init(&mtx_lectura_mensaje, NULL);
     mensaje_leido = 0;
 
-	int socketKernel;
 	struct sockaddr_in direccionKernel;
 	list_add(infoConsola.sockets, &socketKernel);
 
@@ -207,7 +207,9 @@ void limpiar_mensajes(){
 
 void * manejoPrograma(void * args){
 
-	int * socketKernel = (int *) args;
+	int * aux = (int *) args;
+	int pid_local = *aux;
+
 	char buffer_local[MAXBUF];
 	char bufferHoraFin[26];
 	char bufferHoraCom[26];
@@ -229,6 +231,9 @@ void * manejoPrograma(void * args){
 			}
 
 			respuesta_kernel = string_split(buffer_local, ";");
+
+
+
 			mensaje_leido = 1;
 		}
 
@@ -347,7 +352,7 @@ void * escuchar_Kernel(void * args){
 
 				queue_push(cola_programas, program);
 
-				creoThread(&threadPrograma, manejoPrograma, socketKernel);
+				creoThread(&threadPrograma, manejoPrograma, &(program->pid));
 
 			}else if(atoi(respuesta_kernel[0]) == 197){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
