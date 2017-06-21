@@ -232,12 +232,12 @@ void * manejoPrograma(void * args){
 
 			respuesta_kernel = string_split(buffer_local, ";");
 
-
-
-			mensaje_leido = 1;
+			if(pid_local == atoi(respuesta_kernel[1])){
+				mensaje_leido = 1;
+				pthread_mutex_unlock(&mtx_programa);
+			}
 		}
 
-		pthread_mutex_unlock(&mtx_programa);
 		pthread_mutex_unlock(&mtx_lectura_mensaje);
 	}
 
@@ -261,38 +261,42 @@ void * manejoPrograma(void * args){
 			int encontrado = 0;
 			int fin = queue_size(cola_programas);
 
+			while(fin > 0 && encontrado == 0){
 
-						while(fin > 0 && encontrado == 0){
-							//pthread_mutex_lock(&mtx_bloqueados);
-							p = queue_pop(cola_programas);
-							//pthread_mutex_unlock(&mtx_bloqueados);
-							time_t * final = malloc(sizeof(time_t));
-							if(p->pid == pid){
-								encontrado = 1;
-								//time(final);
-								p->fin =localtime(final);
-								p->duracion = difftime(p->fin, p->inicio);
+				//pthread_mutex_lock(&mtx_bloqueados);
+				p = queue_pop(cola_programas);
+				//pthread_mutex_unlock(&mtx_bloqueados);
 
-								struct tm* tm_infoF;
-								tm_infoF = localtime(final);
-								//tm_infoF = localtime(&final);
-								time(final);
+				time_t * final = malloc(sizeof(time_t));
+				if(p->pid == pid){
+					encontrado = 1;
+					//time(final);
+					p->fin =localtime(final);
+					p->duracion = difftime(p->fin, p->inicio);
 
-								strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
+					struct tm* tm_infoF;
 
-								printf( "Final: %s\n", bufferHoraFin );
-							}
+					tm_infoF = localtime(final);
+					//tm_infoF = localtime(&final);
+					time(final);
 
-							//pthread_mutex_lock(&mtx_bloqueados);
-							queue_push(cola_programas, p);
-							//pthread_mutex_unlock(&mtx_bloqueados);
+					strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
 
-							fin--;
-						}
+					printf( "Final: %s\n", bufferHoraFin );
 
-				       // char output[128];
-				        //strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
+				}
 
+				//pthread_mutex_lock(&mtx_bloqueados);
+				queue_push(cola_programas, p);
+				//pthread_mutex_unlock(&mtx_bloqueados);
+
+
+				fin--;
+
+			}
+
+			// char output[128];
+			//strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
 
 			printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
 			printf("Su hora de inicio fue:\n");
