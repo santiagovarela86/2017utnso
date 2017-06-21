@@ -334,7 +334,7 @@ void crear_archivo(char* flag, char* directorio){
 		  //free(bloques);
 
    	  }
-   	  else
+   	/*  else
    	  {
 
 			int encontrar_Arch(t_archivosFileSystem* archivo) {
@@ -349,7 +349,7 @@ void crear_archivo(char* flag, char* directorio){
    		  list_add(lista_archivos, archBuscado);
    	  }
    	  //puts("sale al parecer sin problemas");
-	  //free(pathAbsoluto);
+	  //free(pathAbsoluto);*/
 }
 
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)

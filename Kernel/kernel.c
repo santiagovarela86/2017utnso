@@ -3607,7 +3607,6 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 				enviarMensaje(&skt_filesystem, mensajeAFS);
 
-				free(mensajeAFS);
 
 				retorno->exitCode = "";
 				retorno->fd = fdNuevo;
@@ -3641,8 +3640,6 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 					string_append(&mensajeAFS, ";");
 
 					enviarMensaje(&skt_filesystem, mensajeAFS);
-
-					free(mensajeAFS);
 
 					retorno->exitCode = "";
 					retorno->fd = fdNuevo;
