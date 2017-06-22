@@ -1087,9 +1087,9 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		printf("Error al abrir el archivo \n");
 		retorno = 0;
 	}
-
-	//free(mensajeDeKernel);
-	//free(mensajeAKernel);
+	return retorno;
+	free(mensajeKernel);
+	free(mensajeDeKernel);
 }
 
 void borrar(t_descriptor_archivo descriptor) {
@@ -1121,7 +1121,7 @@ void borrar(t_descriptor_archivo descriptor) {
 	}
 	//free(mensajeAKernel);
 	free(resulMenBorrar);
-	return;
+	free(mensajeAKernel);
 	return;
 }
 void cerrar(t_descriptor_archivo descriptor) {
@@ -1171,7 +1171,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo,
 	//free(mensajeAKernel);
 
 	puts("Cursor movido en el archivo");
-
+	
 	return;
 }
 void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio) {
@@ -1204,9 +1204,9 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
 	}
-	//free(mensajeFsKernel);
+	
 	free(resulMenEscribir);
-
+	free(mensajeFsKernel);
 	return;
 }
 
@@ -1237,8 +1237,9 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	free(mensajeFs);
+	
 	free(resulMenLeer);
+	free(mensajeFs);
 	return;
 
 }
