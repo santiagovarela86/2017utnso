@@ -1349,7 +1349,9 @@ void * handler_conexion_cpu(void * sock) {
 
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
-				 borrarArchivo(pid_mensaje, fd);
+				 char* resulBorrar = string_duplicate(borrarArchivo(pid_mensaje, fd));
+
+				 enviarMensaje(socketCliente, resulBorrar);
 
 				break;
 
@@ -3675,7 +3677,7 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 		 }
 	return retorno;
 }
-void borrarArchivo(int pid_mensaje, int fd)
+char* borrarArchivo(int pid_mensaje, int fd)
 {
 	t_lista_fileProcesos* listaDeArchivosDelProceso = malloc(sizeof(t_lista_fileProcesos));
 	listaDeArchivosDelProceso = existeEnListaProcesosArchivos(pid_mensaje);
@@ -3703,7 +3705,7 @@ void borrarArchivo(int pid_mensaje, int fd)
 				//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
 				if(archBorrarGlobal->cantidadDeAperturas >= 2)
 				{
-					puts("El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero");
+					return "El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero";
 				}
 				else
 				{
@@ -3738,9 +3740,9 @@ void borrarArchivo(int pid_mensaje, int fd)
 		}
 		else
 		{
-			puts("El archivo a ser eliminado ya fue borrado anteriormente o no fue creado");
+			return "El archivo a ser eliminado ya fue borrado anteriormente o no fue creado";
 		}
-	return;
+	return "El archivo fue eliminado";
 }
 char* cerrarArchivo(int pid_mensaje, int fd)
 {

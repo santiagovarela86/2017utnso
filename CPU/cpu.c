@@ -127,8 +127,12 @@ void* manejo_kernel(void *args) {
 			pcb->quantum--;
 			pcb->program_counter++;
 
-			printf("El program counter es: %d\n", pcb->program_counter);
-			printf("\n");
+			if(pcb->indiceCodigo->elements_count != pcb->program_counter)
+			{
+				printf("El program counter es: %d\n", pcb->program_counter);
+				printf("\n");
+			}
+
 
 			pthread_mutex_unlock(&mutex_instrucciones);
 		}
@@ -900,7 +904,10 @@ void finalizar(void) {
 
 	puts("FIN DEL PROGRAMA");
 	puts("");
-
+	puts("******************************");
+	puts("");
+	puts("");
+	puts("");
 	return;
 }
 
@@ -1071,9 +1078,9 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	int result = recv(sktKernel, mensajeDeKernel, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("archivo se abrió correctamente");
+		puts("El Archivo se abrió correctamente");
 		int fdNuevo = atoi(mensajeDeKernel);
-		printf("el file descriptor nuevo es %d \n", fdNuevo);
+		printf("El file descriptor es %d \n", fdNuevo);
 		 retorno = fdNuevo;
 
 	} else {
@@ -1103,14 +1110,18 @@ void borrar(t_descriptor_archivo descriptor) {
 
 	//int result =recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
-	free(mensajeAKernel);
+	//recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+	char* resulMenBorrar = malloc(MAXBUF);
+	int result = recv(sktKernel, resulMenBorrar, MAXBUF, 0);
 
-	/*if (result > 0){
-	 puts("archivo borrado correctamente");
-	 } else {
-	 perror("Error al abrir el archivo \n");
-	 }*/
-
+	if (result > 0) {
+		printf("%s \n",resulMenBorrar);
+	} else {
+		printf("Error no se pudo borrar el archivo \n");
+	}
+	//free(mensajeAKernel);
+	free(resulMenBorrar);
+	return;
 	return;
 }
 void cerrar(t_descriptor_archivo descriptor) {
