@@ -1128,15 +1128,15 @@ void cerrar(t_descriptor_archivo descriptor) {
 	puts("Cerrar");
 		puts("");
 
-		char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "801");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(descriptor));
-		string_append(&mensajeAKernel, ";");
+		char* mensajeCerrar= string_new();
+		string_append(&mensajeCerrar, "801");
+		string_append(&mensajeCerrar, ";");
+		string_append(&mensajeCerrar, string_itoa(pcb->pid));
+		string_append(&mensajeCerrar, ";");
+		string_append(&mensajeCerrar, string_itoa(descriptor));
+		string_append(&mensajeCerrar, ";");
 
-		enviarMensaje(&sktKernel, mensajeAKernel);
+		enviarMensaje(&sktKernel, mensajeCerrar);
 
 		//recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 		char* resulMenCerrar = malloc(MAXBUF);
@@ -1148,7 +1148,7 @@ void cerrar(t_descriptor_archivo descriptor) {
 			printf("Error el archivo no se pudo cerrar \n");
 		}
 		//free(mensajeAKernel);
-		free(resulMenCerrar);
+		//free(mensajeCerrar);
 		return;
 }
 

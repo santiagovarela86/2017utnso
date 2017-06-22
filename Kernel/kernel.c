@@ -1358,7 +1358,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				 fd = atoi(mensajeDesdeCPU[2]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
-			     char * auxCerrar = string_duplicate(cerrarArchivo(pid_mensaje, fd));
+			     char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
 
 				 enviarMensaje(socketCliente, auxCerrar);
 
@@ -3579,14 +3579,18 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 					t_fileProceso* regTablaProceso = existeEnElementoTablaArchivo(regListaProceso->tablaProceso, regTablaGlobal->fdGlobal);
 
 					if(regTablaProceso != NULL) //pregunto si existe una referencia a ese archivo en la tabla de procesos, en la lista de ese proceso
-					{
-						fdNuevo = regTablaProceso->fileDescriptor;
+						{
+							if(regTablaProceso->flags == flag)
+							{
+							 fdNuevo = regTablaProceso->fileDescriptor;
+							}
+							else
+							{
+								  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
+										  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
+							}
 					}
-					else
-					{
-					  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
-					  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
-					}
+
 				}
 				else
 				{
@@ -3761,19 +3765,19 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
 		//printf("el valor a borrar es %d en global \n", archAbrir1->global_fd);
 		//printf("el valor a borrar es %d en FD \n", archAbrir1->fileDescriptor);
-		if(archAbrir2->cantidadDeAperturas >= 1)
+		if(archAbrir2->cantidadDeAperturas <= 1)
 		{
-			char* mensajeAFS = string_new();
-			string_append(&mensajeAFS, "802");
-			string_append(&mensajeAFS, ";");
-			string_append(&mensajeAFS, archAbrir2->path);
-			string_append(&mensajeAFS, ";");
+			char* mensajeCerrarRetorno = string_new();
+			string_append(&mensajeCerrarRetorno, "802");
+			string_append(&mensajeCerrarRetorno, ";");
+			string_append(&mensajeCerrarRetorno, archAbrir2->path);
+			string_append(&mensajeCerrarRetorno, ";");
 
-			enviarMensaje(&skt_filesystem, mensajeAFS);
+			enviarMensaje(&skt_filesystem, mensajeCerrarRetorno);
 
 			list_remove(lista_File_global, archAbrir1->global_fd);
 			free(archAbrir2);
-			string_append(&resultado, "El archivo fue cerrado y eliminado ya que tiene referencias en otros procesos");
+			string_append(&resultado, "El archivo fue cerrado y eliminado ya que no tiene referencias en otros procesos");
 		}
 		else
 		{
@@ -3791,9 +3795,7 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		string_append(&resultado, "No se encuentra el archivo que se quiere cerrar.");
 	}
 
-	char* retorno = malloc(MAXBUF);
-	retorno = string_duplicate(resultado);
-	return retorno;
+	return resultado;
 }
 char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
