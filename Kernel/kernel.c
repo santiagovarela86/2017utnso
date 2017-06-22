@@ -1306,21 +1306,21 @@ void * handler_conexion_cpu(void * sock) {
 
 
 			case 804: //escribir archivo
-
+				;
 			     fd = atoi(mensajeDesdeCPU[1]);
 				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 char * auxEscribir = string_duplicate( escribirArchivo(pid_mensaje, fd, infofile, tamanio));
+				 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
 				 if(string_contains(auxEscribir, "Error"))
 				 {
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-			         }
+			     }
+				 else
 				 {
 					 enviarMensaje(socketCliente, auxEscribir);
-
 				 }
 
 				break;
@@ -3356,8 +3356,6 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 
 		free(mensaje_conso);
 
-		return "";
-
 	}else{
 
 		if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0){
@@ -3416,7 +3414,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 				printf("El archivo no se pudo escribir\n");
 				exit(errno);
 			}
-			//free(mensajeFS);
+			free(mensajeFS);
 
 	    }
 		else
@@ -3427,7 +3425,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 	  }
 
 	}
-
+	return "Mensaje impreso por consola";
 }
 
 

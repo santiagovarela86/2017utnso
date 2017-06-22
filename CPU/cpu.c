@@ -1196,16 +1196,16 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 
 	//free(mensajeAKernel);
 
-	char* resulMenEscribir = malloc(MAXBUF);
-	int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
+	//char* resulMenEscribir = malloc(MAXBUF);
+	int result = recv(sktKernel, mensajeFsKernel, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("%s \n",resulMenEscribir);
+		printf("%s \n",mensajeFsKernel);
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
 	}
 	
-	free(resulMenEscribir);
+	//free(resulMenEscribir);
 	free(mensajeFsKernel);
 	return;
 }

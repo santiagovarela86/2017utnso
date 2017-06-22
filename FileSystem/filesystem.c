@@ -757,5 +757,5 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 
    	enviarMensaje(&socketKernel, "Archivo Escrito");
    	 //free(pathAbsoluto);
-   	 //free(directorioAux);
+   	 free(directorioAux);
  }
