@@ -1312,13 +1312,12 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 char * auxEscribir = string_new();
-				 auxEscribir =  string_duplicate( escribirArchivo(pid_mensaje, fd, infofile, tamanio));
+				 char * auxEscribir = string_duplicate( escribirArchivo(pid_mensaje, fd, infofile, tamanio));
 
 				 if(string_contains(auxEscribir, "Error"))
 				 {
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-			     }
+			         }
 				 {
 					 enviarMensaje(socketCliente, "Se escribió correctamente");
 
@@ -1359,8 +1358,7 @@ void * handler_conexion_cpu(void * sock) {
 
 				 fd = atoi(mensajeDesdeCPU[2]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
-			     char * auxCerrar =string_new();
-			     auxCerrar = string_duplicate(cerrarArchivo(pid_mensaje, fd));
+			     char * auxCerrar = string_duplicate(cerrarArchivo(pid_mensaje, fd));
 
 				 enviarMensaje(socketCliente, auxCerrar);
 
@@ -1372,9 +1370,7 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
-			     char * auxLeer = string_new();
-
-			    auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
+			     char * auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
 			    if(string_contains(auxLeer, "Error"))
 			    {
 			    	finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
@@ -3670,7 +3666,7 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 			enviarMensaje(&skt_filesystem, mensajeAFS);
 
-			free(mensajeAFS);
+			//free(mensajeAFS);
 
 			retorno->exitCode = "";
 			retorno->fd = fdNuevo;
