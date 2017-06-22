@@ -1319,7 +1319,7 @@ void * handler_conexion_cpu(void * sock) {
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
 			         }
 				 {
-					 enviarMensaje(socketCliente, "Se escribió correctamente");
+					 enviarMensaje(socketCliente, auxEscribir);
 
 				 }
 
