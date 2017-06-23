@@ -262,7 +262,7 @@ void * manejoPrograma(void * args){
 				if(p->pid == pid){
 					encontrado = 1;
 
-					sleep(5);
+					//sleep(5); // Sleep para probar el calculo del tiempo
 
 					time_t tiempo = time(0);
 					struct tm * morfeo = localtime(&tiempo);
