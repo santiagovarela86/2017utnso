@@ -28,6 +28,11 @@ typedef struct InfoConsola {
 	t_list * sockets;
 } InfoConsola ;
 
+typedef struct{
+	pthread_mutex_t mtx_programa;
+	int pid_programa;
+} hilo_programa;
+
 void iniciar_programa(int* socket_kernel);
 void terminar_proceso(int* socket_kernel);
 void desconectar_consola(int* socket_kernel);
