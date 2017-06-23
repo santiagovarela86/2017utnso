@@ -1321,7 +1321,7 @@ void * handler_conexion_cpu(void * sock) {
 			     }
 				 else
 				 {
-					// enviarMensaje(socketCliente, auxEscribir);
+					 enviarMensaje(socketCliente, auxEscribir);
 				 }
 
 				break;
@@ -3405,17 +3405,18 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			//free(regTablaGlobal);
 
 			enviarMensaje(&skt_filesystem, mensajeFS);
-
+			return "Archivo escrito correctamente";
+			/*
 			int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
 
 			if (result > 0) {
-				return "Archivo escrito correctamente";
+
 			}
 			else {
 				printf("El archivo no se pudo escribir\n");
 				exit(errno);
-			}
-			free(mensajeFS);
+			}*/
+			//free(mensajeFS);
 
 	    }
 		else

@@ -375,6 +375,13 @@ t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 
 	return mapeo;
 }
+void concatenernaVacios(char* buffer, int size)
+{
+	while(string_length(buffer) != size)
+	{
+		string_append(&buffer, " ");
+	}
+}
 
 
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
@@ -396,7 +403,10 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffe
 
 	void* archMapBloque = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
-
+	if(string_length(buffer)> size)
+	{
+		concatenernaVacios(buffer,size);
+	}
 	memcpy(archMapBloque,buffer,size);
 	munmap(archMapBloque,size);
 	close(archNuevoMap);
@@ -686,7 +696,8 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 	if(size < metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
 	{
-		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, size); //si entra, meto todo el bloque
+		int sizeFinal =size + (offset - (idbloqueALeer * metadataSadica->tamanio_bloques));
+		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, sizeFinal); //si entra, meto todo el bloque
 	}
 	else
 	{//sino entra todo en un bloque, pregunto en cuantos bloques entra el buffer.
@@ -755,7 +766,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 		}
    	 actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
 
-   	enviarMensaje(&socketKernel, "Archivo Escrito");
+   	//enviarMensaje(&socketKernel, "Archivo Escrito");
    	 //free(pathAbsoluto);
    	 //free(directorioAux);
  }
