@@ -46,12 +46,10 @@ pthread_t threadConsola;
 
 t_list* lista_semaforos;
 
-
-pthread_mutex_t mtx_lectura_mensaje;
 sem_t sem_procesamiento_mensaje;
 
 char buffer[MAXBUF];
-int mensaje_leido;
+
 int socketKernel;
 
 int main(int argc , char **argv)
@@ -71,10 +69,8 @@ int main(int argc , char **argv)
     imprimirConfiguracion(configuracion);
 
     lista_semaforos = list_create();
-    pthread_mutex_init(&mtx_lectura_mensaje, NULL);
-    sem_init(&sem_procesamiento_mensaje, 0, 0);
 
-    mensaje_leido = 0;
+    sem_init(&sem_procesamiento_mensaje, 0, 0);
 
 	struct sockaddr_in direccionKernel;
 	list_add(infoConsola.sockets, &socketKernel);
