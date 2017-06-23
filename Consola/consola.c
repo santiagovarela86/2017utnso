@@ -249,57 +249,40 @@ void * manejoPrograma(void * args){
 		}else if (atoi(respuesta_kernel[0]) == 666){
 			/*666 es muerte*/
 			programa* p = malloc(sizeof(programa));
-		//TODO
+
 			int pid = atoi(respuesta_kernel[1]);
 			int encontrado = 0;
 			int fin = queue_size(cola_programas);
 
 			while(fin > 0 && encontrado == 0){
 
-				//pthread_mutex_lock(&mtx_bloqueados);
-				p = queue_pop(cola_programas);
-				//pthread_mutex_unlock(&mtx_bloqueados);
 
-				time_t * final = malloc(sizeof(time_t));
+				p = queue_pop(cola_programas);
+
 				if(p->pid == pid){
 					encontrado = 1;
-					//time(final);
-					p->fin =localtime(final);
-					p->duracion = difftime(p->fin, p->inicio);
 
-					struct tm* tm_infoF;
+					sleep(5);
 
-					tm_infoF = localtime(final);
-					//tm_infoF = localtime(&final);
-					time(final);
+					time_t tiempo = time(0);
+					struct tm * morfeo = localtime(&tiempo);
 
-					strftime(bufferHoraFin, 26, "%Y-%m-%d %H:%M:%S", localtime(final));
+					p->fin = morfeo->tm_hour * 10000 + morfeo->tm_min * 100 + morfeo->tm_sec;
 
-					printf( "Final: %s\n", bufferHoraFin );
+					p->duracion = p->fin - p->inicio;
+
+					printf("La hora de inicio fue H: %d, M: %d, S: %d \n", (p->inicio / 10000), ((p->inicio % 10000) / 100), (p->inicio % 100));
+					printf("La hora de finalizacion fue H: %d, M: %d, S: %d \n", (p->fin / 10000), ((p->fin % 10000) / 100), (p->fin % 100));
+					printf("La duracion fue H: %d, M: %d, S: %d \n", (p->duracion / 10000), ((p->duracion % 10000) / 100), (p->duracion % 100));
 
 				}
 
-				//pthread_mutex_lock(&mtx_bloqueados);
 				queue_push(cola_programas, p);
-				//pthread_mutex_unlock(&mtx_bloqueados);
-
 
 				fin--;
 
 			}
 
-			// char output[128];
-			//strftime(output,128,"%d/%m/%y %H:%M:%S",p->inicio);
-
-			printf("Finalizó el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
-			printf("Su hora de inicio fue:\n");
-			printf(" %s\n", bufferHoraCom);
-
-			printf("Su hora finalizacion fue: \n");
-			printf( " %s\n", bufferHoraFin );
-
-			printf( "Número de segundos transcurridos desde el comienzo del programa: %f s\n", difftime(p->fin, p->inicio) );
-			printf( "ó: %f s\n", p->duracion );
 
 			sem_post(&sem_procesamiento_mensaje);
 		}
@@ -329,23 +312,17 @@ void * escuchar_Kernel(void * args){
 				list_add(infoConsola.threads, &threadPrograma);
 
 				programa* program = malloc(sizeof(program));
-				time_t * comienzo = malloc(sizeof(time_t));
-				  printf("Se acepto el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
-				  time(comienzo);
+
+				printf("Se acepto el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
+
+				time_t tiempo = time(0);
+				struct tm * morfeo = localtime(&tiempo);
 
 				program->pid = atoi(respuesta_kernel[1]);
-				program->inicio = localtime(comienzo);
-				program->fin = localtime(comienzo);
+				program->inicio = morfeo->tm_hour * 10000 + morfeo->tm_min * 100 + morfeo->tm_sec;
 				program->duracion = 0;
 				program->mensajes = 0;
 				program->socket_kernel = *socketKernel;
-
-				struct tm* tm_info;
-				tm_info = localtime(comienzo);
-
-				strftime(bufferHoraCom, 26, "%Y-%m-%d %H:%M:%S", program->inicio);
-				printf( "Comienzo: %s\n", bufferHoraCom );
-
 
 				queue_push(cola_programas, program);
 
