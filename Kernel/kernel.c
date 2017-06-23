@@ -3587,8 +3587,13 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 							else
 							{
 								  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
-										  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
+								  grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
 							}
+					}
+					else
+					{
+						  fdNuevo = (regListaProceso->tablaProceso->elements_count + 3);
+						   grabarEnTablaProcesosUnProcesoTabla(regListaProceso->tablaProceso,fdNuevo, regTablaGlobal->fdGlobal,flag);
 					}
 
 				}
