@@ -44,6 +44,9 @@ InfoConsola infoConsola;
 pthread_t threadKernel;
 pthread_t threadConsola;
 
+t_list* lista_semaforos;
+
+
 pthread_mutex_t mtx_lectura_mensaje;
 sem_t sem_procesamiento_mensaje;
 
@@ -67,6 +70,7 @@ int main(int argc , char **argv)
 	configuracion = leerConfiguracion(argv[1]);
     imprimirConfiguracion(configuracion);
 
+    lista_semaforos = list_create();
     pthread_mutex_init(&mtx_lectura_mensaje, NULL);
     sem_init(&sem_procesamiento_mensaje, 0, 0);
 
@@ -219,43 +223,26 @@ void * manejoPrograma(void * args){
 	char bufferHoraCom[26];
 	char** respuesta_kernel;
 
-	pthread_mutex_t mtx_programa;
-	pthread_mutex_init(&mtx_programa, NULL);
-
-	void machos_pecho_peludo(){
-		printf("entro al manejador el programa %d \n", pid_local);
-		pthread_mutex_lock(&mtx_lectura_mensaje);
-
-		printf("se recibio el msj %s \n", buffer);
-
-
-		if(mensaje_leido == 0){
-
-			int i = 0;
-
-			while(i < MAXBUF){
-				buffer_local[i] = buffer[i];
-				i++;
-			}
-
-			respuesta_kernel = string_split(buffer_local, ";");
-
-			if(pid_local == atoi(respuesta_kernel[1])){
-				mensaje_leido = 1;
-				pthread_mutex_unlock(&mtx_programa);
-			}
-		}
-
-		pthread_mutex_unlock(&mtx_lectura_mensaje);
+	int encontrar_pid(hilo_programa* popeye){
+		return (popeye->pid_programa == pid_local);
 	}
 
-	signal(SIGUSR2, machos_pecho_peludo);
+	hilo_programa* est_program = (hilo_programa* ) list_find(lista_semaforos, (void *) encontrar_pid);
 
-	pthread_mutex_lock(&mtx_programa);
+	pthread_mutex_lock(&(est_program->mtx_programa));
 
 	while(1){
 
-		pthread_mutex_lock(&mtx_programa);
+		pthread_mutex_lock(&(est_program->mtx_programa));
+
+		int i = 0;
+
+		while(i < MAXBUF){
+			buffer_local[i] = buffer[i];
+			i++;
+		}
+
+		respuesta_kernel = string_split(buffer_local, ";");
 
 		if (atoi(respuesta_kernel[0]) == 575){
 			printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
@@ -331,6 +318,7 @@ void * escuchar_Kernel(void * args){
 	int * socketKernel = (int *) args;
 	char bufferHoraFin[26];
 	char bufferHoraCom[26];
+	int pid_recibido;
 
 	while(infoConsola.estado_consola == 1){
 
@@ -365,15 +353,26 @@ void * escuchar_Kernel(void * args){
 
 				queue_push(cola_programas, program);
 
+				hilo_programa* est_program = malloc(sizeof(hilo_programa));
+				est_program->pid_programa = program->pid;
+				pthread_mutex_init(&(est_program->mtx_programa), NULL);
+				list_add(lista_semaforos, est_program);
+
 				creoThread(&threadPrograma, manejoPrograma, &(program->pid));
 
 			}else if(atoi(respuesta_kernel[0]) == 197){
 				printf("El programa no pudo iniciarse por falta de memoria\n");
 			}else{
 
-				mensaje_leido = 0;
+				pid_recibido = atoi(respuesta_kernel[1]);
 
-				raise(SIGUSR2);
+				int encontrar_pid(hilo_programa* popeye){
+					return (popeye->pid_programa == pid_recibido);
+				}
+
+				hilo_programa* est_program = (hilo_programa* ) list_find(lista_semaforos, (void *) encontrar_pid);
+
+				pthread_mutex_unlock(&(est_program->mtx_programa));
 
 				sem_wait(&sem_procesamiento_mensaje);
 			}
