@@ -1316,11 +1316,12 @@ void * handler_conexion_cpu(void * sock) {
 
 				 if(string_contains(auxEscribir, "Error"))
 				 {
+					 puts("No se puede escribir el archivo debido a sus permisos");
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
 			     }
 				 else
 				 {
-					 enviarMensaje(socketCliente, auxEscribir);
+					// enviarMensaje(socketCliente, auxEscribir);
 				 }
 
 				break;

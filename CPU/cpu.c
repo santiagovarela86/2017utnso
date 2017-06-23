@@ -127,7 +127,7 @@ void* manejo_kernel(void *args) {
 			pcb->quantum--;
 			pcb->program_counter++;
 
-			if(pcb->indiceCodigo->elements_count != pcb->program_counter)
+			if(!string_contains(instruccion, "end"))
 			{
 				printf("El program counter es: %d\n", pcb->program_counter);
 				printf("\n");
@@ -1087,9 +1087,10 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		printf("Error al abrir el archivo \n");
 		retorno = 0;
 	}
-	return retorno;
+
 	free(mensajeKernel);
 	free(mensajeDeKernel);
+	return retorno;
 }
 
 void borrar(t_descriptor_archivo descriptor) {
@@ -1178,35 +1179,35 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	puts("Escribir");
 	puts("");
 
-	char* mensajeFsKernel = string_new();
-	string_append(&mensajeFsKernel, "804");
-	string_append(&mensajeFsKernel, ";");
-	string_append(&mensajeFsKernel, string_itoa(descriptor_archivo));
-	string_append(&mensajeFsKernel, ";");
-	string_append(&mensajeFsKernel, string_itoa(pcb->pid));
-	string_append(&mensajeFsKernel, ";");
-	string_append(&mensajeFsKernel, ((char*) informacion));
-	string_append(&mensajeFsKernel, ";");
-	string_append(&mensajeFsKernel, string_itoa(tamanio));
-	string_append(&mensajeFsKernel, ";");
+	char* mensajeFs = string_new();
+	string_append(&mensajeFs, "804");
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(descriptor_archivo));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(pcb->pid));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs,  string_itoa((int)informacion));
+	string_append(&mensajeFs, ";");
+	string_append(&mensajeFs, string_itoa(tamanio));
+	string_append(&mensajeFs, ";");
 
-	enviarMensaje(&sktKernel, mensajeFsKernel);
+	enviarMensaje(&sktKernel, mensajeFs);
 
 	//int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
 	//free(mensajeAKernel);
 
 	//char* resulMenEscribir = malloc(MAXBUF);
-	int result = recv(sktKernel, mensajeFsKernel, MAXBUF, 0);
+	/*int result = recv(sktKernel, mensajeFs, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("%s \n",mensajeFsKernel);
+		printf("%s \n",mensajeFs);
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
-	}
+	}*/
 	
 	//free(resulMenEscribir);
-	free(mensajeFsKernel);
+	//free(mensajeFs);
 	return;
 }
 
@@ -1221,7 +1222,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(pcb->pid));
 	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, ((char*)informacion));
+	string_append(&mensajeFs, string_itoa(informacion));
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(tamanio));
 	string_append(&mensajeFs, ";");
