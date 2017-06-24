@@ -215,8 +215,6 @@ void * manejoPrograma(void * args){
 	int pid_local = *aux;
 
 	char buffer_local[MAXBUF];
-	char bufferHoraFin[26];
-	char bufferHoraCom[26];
 	char** respuesta_kernel;
 
 	int encontrar_pid(hilo_programa* popeye){
@@ -262,7 +260,7 @@ void * manejoPrograma(void * args){
 				if(p->pid == pid){
 					encontrado = 1;
 
-					//sleep(5); // Sleep para probar el calculo del tiempo
+					sleep(3); // Sleep para probar el calculo del tiempo
 
 					time_t tiempo = time(0);
 					struct tm * morfeo = localtime(&tiempo);
@@ -425,19 +423,4 @@ void socketDestroyer(void * socket){
 void destruirEstado(InfoConsola * infoConsola){
 	list_destroy(infoConsola->threads);
 	list_destroy_and_destroy_elements(infoConsola->sockets, socketDestroyer);
-}
-
-unsigned char *cGetDate() {
-     time_t hora;
-     struct tm *tiempo;
-     char *fecha;
-
-     hora = time(NULL);
-     tiempo = localtime(&hora);
-
-     fecha = (char *)malloc(sizeof(char)*SIZE_FECHA);
-     if (fecha==NULL) {perror ("No hay memoria"); return "";}
-
-     sprintf (fecha,"%02d/%02d/%4d",tiempo->tm_mday, tiempo->tm_mon+1, tiempo->tm_year+1900);
-     return fecha;
 }
