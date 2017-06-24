@@ -378,9 +378,11 @@ t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 char* concatenernaVacios(char* buffer, int size)
 {
 	char* new = string_new();
-	while(string_length(buffer) != size)
+	int len = string_length(buffer);
+	while( len != size)
 	{
 		string_append(&new, " ");
+		len++;
 	}
 	string_append(&new, buffer);
 	return new;
@@ -395,7 +397,7 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffe
 	string_append(&pathArchivoBloque, string_itoa(idBloque));
 	string_append(&pathArchivoBloque, ".bin");
 
-	FILE* fbloque = fopen(pathArchivoBloque, "w");
+	FILE* fbloque = fopen(pathArchivoBloque, "w+");
 
 	ponerVaciosAllenarEnArchivos(fbloque,size);
 
@@ -406,7 +408,7 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffe
 
 	void* archMapBloque = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
-	if(string_length(buffer)> size)
+	if(string_length(buffer) < size)
 	{
 		char * newBuffer = concatenernaVacios(buffer,size);
 		memcpy(archMapBloque, newBuffer, size);
@@ -693,18 +695,20 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
 {
 	int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques); //me da el bloque al que quiero escribir (sin resto)
-	if(offset % ((int)metadataSadica->tamanio_bloques)) //pregunto si tiene resto
+	if(offset > ((int)metadataSadica->tamanio_bloques))
 	{
-		  bloquePosicion++; //si lo tiene significa que graba en el siguiente bloque.
+		if(offset % ((int)metadataSadica->tamanio_bloques)) //pregunto si tiene resto
+		{
+			  bloquePosicion++; //si lo tiene significa que graba en el siguiente bloque.
+		}
 	}
-
 	int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero grabar
 
 	t_mapeoArchivo* archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
 
 	if(size < metadataSadica->tamanio_bloques)  //pregunto si todo el buffer entra en un bloque
 	{
-		int sizeFinal = (idbloqueALeer * metadataSadica->tamanio_bloques) - (offset + size);
+		int sizeFinal = (offset + size);
 		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, sizeFinal); //si entra, meto todo el bloque
 	}
 	else

@@ -3301,7 +3301,7 @@ int hayOffsetArch(int fd){
 		{
 			return 0;
 		}
-
+	}
 		 if(list_any_satisfy(offsetArch, (void*)encontrar_offset))
 		 {
 				t_offsetArch* regOffset = malloc(sizeof(t_offsetArch));
@@ -3311,11 +3311,9 @@ int hayOffsetArch(int fd){
 		 }
 		 else
 		 {
-			 return -1;
+			 return 0;
 		 }
-	}
 
-	return 0;
 
 }
 
@@ -3388,18 +3386,9 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			}
 
 			int offset = hayOffsetArch(fd);
-			if( offset != -1)
-			{
 
-				string_append(&mensajeFS, string_itoa(offset));
-				string_append(&mensajeFS, ";");
-
-			}
-			else
-			{
-				string_append(&mensajeFS, string_itoa(-1));
-				string_append(&mensajeFS, ";");
-			}
+			string_append(&mensajeFS, string_itoa(offset));
+			string_append(&mensajeFS, ";");
 
 
 			//free(regTablaGlobal);
@@ -3828,18 +3817,11 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 			string_append(&mensajeFSleer, ";");
 
 			int offset = hayOffsetArch(fd);
-			if( offset != -1)
-			{
 
-				string_append(&mensajeFSleer, string_itoa(offset));
-				string_append(&mensajeFSleer, ";");
+			string_append(&mensajeFSleer, string_itoa(offset));
+			string_append(&mensajeFSleer, ";");
 
-			}
-			else
-			{
-				string_append(&mensajeFSleer, string_itoa(-1));
-				string_append(&mensajeFSleer, ";");
-			}
+
 
 			//free(archAbrir1);
 			//free(regTablaGlobal);
