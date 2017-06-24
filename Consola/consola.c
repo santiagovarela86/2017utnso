@@ -81,9 +81,6 @@ int main(int argc , char **argv)
 	conectarSocket(&socketKernel, &direccionKernel);
 	puts("Conectado al Kernel\n");
 
-    //pthread_t threadConsola;
-    //pthread_t threadKernel;
-
     list_add(infoConsola.threads, &threadConsola);
     list_add(infoConsola.threads, &threadKernel);
 
@@ -195,9 +192,6 @@ void desconectar_consola(int* socket_kernel){
 
 	enviarMensaje(socket_kernel, message);
 
-	//exit(-1);
-	//PUSE ESTO CON LA ESPERANZA DE QUE EL MAIN
-	//LLEGUE AL PTHREAD_JOIN Y LIBERE LOS RECURSOS
 	pthread_kill(threadConsola, SIGTERM);
 	pthread_kill(threadKernel, SIGTERM);
 
@@ -246,7 +240,7 @@ void * manejoPrograma(void * args){
 
 		}else if (atoi(respuesta_kernel[0]) == 666){
 			/*666 es muerte*/
-			programa* p = malloc(sizeof(programa));
+			programa* p;
 
 			int pid = atoi(respuesta_kernel[1]);
 			int encontrado = 0;
@@ -254,19 +248,17 @@ void * manejoPrograma(void * args){
 
 			while(fin > 0 && encontrado == 0){
 
-
 				p = queue_pop(cola_programas);
 
 				if(p->pid == pid){
 					encontrado = 1;
 
-					sleep(3); // Sleep para probar el calculo del tiempo
+					// sleep(3); // Sleep para probar el calculo del tiempo
 
 					time_t tiempo = time(0);
-					struct tm * morfeo = localtime(&tiempo);
+					struct tm * morfeo = localtime(&tiempo); //TODO Aqui rompe al ejecutar un segundo programa
 
 					p->fin = morfeo->tm_hour * 10000 + morfeo->tm_min * 100 + morfeo->tm_sec;
-
 					p->duracion = p->fin - p->inicio;
 
 					printf("La hora de inicio fue H: %d, M: %d, S: %d \n", (p->inicio / 10000), ((p->inicio % 10000) / 100), (p->inicio % 100));
@@ -293,8 +285,6 @@ void * manejoPrograma(void * args){
 void * escuchar_Kernel(void * args){
 
 	int * socketKernel = (int *) args;
-	char bufferHoraFin[26];
-	char bufferHoraCom[26];
 	int pid_recibido;
 
 	while(infoConsola.estado_consola == 1){
@@ -346,6 +336,7 @@ void * escuchar_Kernel(void * args){
 				pthread_mutex_unlock(&(est_program->mtx_programa));
 
 				sem_wait(&sem_procesamiento_mensaje);
+
 			}
 		}
 	}
