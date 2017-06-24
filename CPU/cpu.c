@@ -1201,7 +1201,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("%s \n",mensajeFs);
+		printf("%s \n",resulMenEscribir);
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
 	}
