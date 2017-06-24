@@ -116,9 +116,9 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 
 	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
 
-    fputs((char*)bitmap->bitarray, bitmapArchivo);
+    fputs(" ", bitmapArchivo);
 
-    fseek((FILE*)bitmapArchivo, string_length((char*)bitmap->bitarray), 0);
+    fseek((FILE*)bitmapArchivo, string_length(" "), 0);
 
 	//fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
 	//lfseek(bitmapArchivo,tamanio_bitmap, SEEK_SET);
@@ -134,7 +134,7 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 }
 
 
-void crearBloques(char* mnt, int cantidad)
+void crearBloques(char* mnt, int cantidad, int tamanio)
 {
 	int i = 1;
 	while(i != cantidad+1)
@@ -145,8 +145,7 @@ void crearBloques(char* mnt, int cantidad)
 		string_append(&bloque,string_itoa(i));
 		string_append(&bloque,".bin");
 		FILE * bitmapArchivo = fopen(bloque, "w");
-	    fputs(" ", bitmapArchivo);
-	    fseek(bitmapArchivo, string_length(""), 0);
+		ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
 		//free(bloque);
 		i++;
 	}
