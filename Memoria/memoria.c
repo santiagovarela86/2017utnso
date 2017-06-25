@@ -146,6 +146,8 @@ void liberarEstructuras(){
 
 	sem_destroy(&semaforoKernel);
 
+	log_destroy(logger_memoria);
+
 	shutdown(socketMemoria, 0);
 	close(socketMemoria);
 }
