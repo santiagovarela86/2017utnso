@@ -1312,17 +1312,26 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
-
-				 if(string_contains(auxEscribir, "Error"))
+				 if(string_length(infofile) < tamanio)
 				 {
-					 puts("No se puede escribir el archivo debido a sus permisos");
-					 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-			     }
+					 puts("El la longitud a escribir supera el tamaño del buffer");
+					 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
+				 }
 				 else
 				 {
-					 enviarMensaje(socketCliente, auxEscribir);
+					 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+
+					 if(string_contains(auxEscribir, "Error"))
+					 {
+						 puts("No se puede escribir el archivo debido a sus permisos");
+						 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+				     }
+					 else
+					 {
+						 enviarMensaje(socketCliente, auxEscribir);
+					 }
 				 }
+
 
 				break;
 
@@ -1371,7 +1380,7 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
-			     char * auxLeer = string_duplicate(leerArchivo(pid_mensaje, fd, infofile, tamanio));
+			     char * auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
 			    if(string_contains(auxLeer, "Error"))
 			    {
 			    	finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
@@ -3394,17 +3403,18 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 			//free(regTablaGlobal);
 
 			enviarMensaje(&skt_filesystem, mensajeFS);
-			return "Archivo escrito correctamente";
-			/*
-			int result = recv(skt_filesystem, mensajeFS, MAXBUF, 0);
+
+			char* resulMenEscribir = malloc(MAXBUF);
+			int result = recv(skt_filesystem, resulMenEscribir, MAXBUF, 0);
 
 			if (result > 0) {
-
+				return resulMenEscribir;
+			} else {
+				printf("Error el archivo no se pudo escribir \n");
 			}
-			else {
-				printf("El archivo no se pudo escribir\n");
-				exit(errno);
-			}*/
+
+			free(resulMenEscribir);
+
 			//free(mensajeFS);
 
 	    }
@@ -3804,51 +3814,47 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 
 	t_fileProceso* regArchivo = existeEnElementoTablaArchivoPorFD(listaProceoso->tablaProceso, fd);
 
-	if(string_contains(regArchivo->flags, "r"))
-	{
-		char* mensajeFSleer = string_new();
-			string_append(&mensajeFSleer, "800");
-			string_append(&mensajeFSleer, ";");
-			string_append(&mensajeFSleer, regTablaGlobal->path);
-			string_append(&mensajeFSleer, ";");
-			string_append(&mensajeFSleer, string_itoa(tamanio));
-			string_append(&mensajeFSleer, ";");
-			string_append(&mensajeFSleer, ((char*)infofile));
-			string_append(&mensajeFSleer, ";");
+		if(string_contains(regArchivo->flags, "r"))
+		{
+			char* mensajeFSleer = string_new();
+				string_append(&mensajeFSleer, "800");
+				string_append(&mensajeFSleer, ";");
+				string_append(&mensajeFSleer, regTablaGlobal->path);
+				string_append(&mensajeFSleer, ";");
+				string_append(&mensajeFSleer, string_itoa(tamanio));
+				string_append(&mensajeFSleer, ";");
+				string_append(&mensajeFSleer, ((char*)infofile));
+				string_append(&mensajeFSleer, ";");
 
-			int offset = hayOffsetArch(fd);
+				int offset = hayOffsetArch(fd);
 
-			string_append(&mensajeFSleer, string_itoa(offset));
-			string_append(&mensajeFSleer, ";");
+				string_append(&mensajeFSleer, string_itoa(offset));
+				string_append(&mensajeFSleer, ";");
 
+				//free(archAbrir1);
+				//free(regTablaGlobal);
 
+				enviarMensaje(&skt_filesystem, mensajeFSleer);
 
-			//free(archAbrir1);
-			//free(regTablaGlobal);
+				char* resulMenLeer = malloc(MAXBUF);
+				int result = recv(skt_filesystem, resulMenLeer, MAXBUF, 0);
 
-			enviarMensaje(&skt_filesystem, mensajeFSleer);
+				if (result > 0) {
+					return resulMenLeer;
+				} else {
+					printf("Error el archivo no se pudo leer \n");
+				}
 
-			int result = recv(skt_filesystem, mensajeFSleer, MAXBUF, 0);
+				free(resulMenLeer);
+				//free(mensajeAFS);
+				//return mensajeFSleer;
 
-			if (result > 0) {
-				//puts("archivo cerrado correctamente");
-			}
-			else {
-				printf("Error no se pudo leer \n");
-				exit(errno);
-			}
-			//free(mensajeAFS);
-			return mensajeFSleer;
-			}
-			else
-			{
-				return "hubo un error y no se pudo realizar la lectura";
-			}
-	}
-	else
-	{
-		return "Error";
-	}
+		}
+		else
+		{
+			return "Error";
+		}
+     }
 }
 
 void incrementarContadorPaginasHeapSolicitadas(int pid) {

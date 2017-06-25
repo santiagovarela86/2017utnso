@@ -1155,7 +1155,7 @@ void cerrar(t_descriptor_archivo descriptor) {
 
 void moverCursor(t_descriptor_archivo descriptor_archivo,
 		t_valor_variable posicion) {
-	puts("Mover Cursor");
+	/*puts("Mover Cursor");
 	puts("");
 
 	char* mensajeAKernel = string_new();
@@ -1171,7 +1171,7 @@ void moverCursor(t_descriptor_archivo descriptor_archivo,
 
 	//free(mensajeAKernel);
 
-	puts("Cursor movido en el archivo");
+	puts("Cursor movido en el archivo");*/
 	
 	return;
 }
@@ -1235,12 +1235,13 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	if (result > 0) {
 		puts("El archivo se leyo correctamente\n");
 		printf("%s \n", resulMenLeer);
+		printf("su contenido es %s \n", resulMenLeer);
 	} else {
 		printf("Error no se pudo leer \n");
 	}
 	
 	free(resulMenLeer);
-	free(mensajeFs);
+	//free(mensajeFs);
 	return;
 
 }
