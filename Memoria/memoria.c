@@ -55,12 +55,16 @@ sem_t semaforoKernel;
 //CONTADOR CABEZA
 int contadorPaginasHeap = 0;
 
+t_log* logger_memoria;
+
 int main(int argc, char **argv) {
 
 	if (argc != 2) {
 		printf("Error. Parametros incorrectos.\n");
 		return EXIT_FAILURE;
 	}
+
+	t_log* logger_memoria = log_create("memoria_log_interno.log", "memoria_log_interno",true, LOG_LEVEL_INFO);
 
 	char * pathConfig = argv[1];
 	inicializarEstructuras(pathConfig);
