@@ -1234,12 +1234,12 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 
 	if (result > 0) {
 		puts("El archivo se leyo correctamente\n");
-		printf("%s \n", resulMenLeer);
+		//printf("%s \n", resulMenLeer);
 		printf("su contenido es %s \n", resulMenLeer);
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	
+	informacion = atoi(resulMenLeer);
 	free(resulMenLeer);
 	//free(mensajeFs);
 	return;

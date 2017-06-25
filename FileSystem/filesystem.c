@@ -115,15 +115,17 @@ void * hilo_conexiones_kernel(void * args){
 	socketKernel = accept(socketFileSystem, (struct sockaddr *) &direccionKernel, &length);
 
 	if (socketKernel > 0) {
-		printf("%s:%d conectado\n", inet_ntoa(direccionKernel.sin_addr), ntohs(direccionKernel.sin_port));
+		//printf("%s:%d conectado\n", inet_ntoa(direccionKernel.sin_addr), ntohs(direccionKernel.sin_port));
 		handShakeListen(&socketKernel, "100", "401", "499", "Kernel");
 		char message[MAXBUF];
 
 		int result = recv(socketKernel, message, sizeof(message), 0);
-
+		puts("****************************** \n");
+		puts("Este proceso no tiene consola \n");
+		puts("****************************** \n");
 		while (result > 0) {
 
-			printf("%s", message);
+			//printf("%s", message);
 
 			char**mensajeAFileSystem = string_split(message, ";");
 			int codigo = atoi(mensajeAFileSystem[0]);
@@ -138,7 +140,7 @@ void * hilo_conexiones_kernel(void * args){
 			    break;
 
 				case 802:
-					puts("2 \n");
+					//puts("2 \n");
 					borrarArchivo(mensajeAFileSystem[1]);
 				break;
 
@@ -187,8 +189,38 @@ int validar_archivo(char* directorio){
 	}
 	else
 	{
+		int fd_script = open(directorio, O_RDWR);
+		if(fd_script != -1)
+		{
+			struct stat script;
+			fstat(fd_script, &script);
+			char* pmap = mmap(0, script.st_size, PROT_WRITE, MAP_SHARED, fd_script, 0);
 
-		return 1;
+			if(string_contains(pmap, "Tamanio"))
+			{
+		   		 munmap(pmap,script.st_size);
+			   	 close(fd_script);
+			   	 //FILE * freabierto = fopen(directorio, "w");
+		   		 t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
+		   		   archNuevo->referenciaArchivo = &fd_script;
+		   		   archNuevo->path = string_new();
+		   		    string_append(&archNuevo->path, directorio);
+
+		  		  list_add(lista_archivos, archNuevo);
+
+				return 2;
+			}
+			else
+			{
+				return 1;
+			}
+
+		}
+
+		else
+		{
+			return 1;
+		}
 	}
 	//free(pathAbsoluto);
 
@@ -228,6 +260,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 
 	//printf("el valor del mmap es %s",pmap);
 	 munmap(pmap,script.st_size);
+	 close(fd_script);
 	 return regMetadataArch;
 
 }
@@ -257,24 +290,13 @@ void actualizarBitmap(int numeroBloque)
 	directorio = string_substring(montaje,0,string_length(montaje));
 
 	string_append(&directorio,"Metadata/Bitmap.bin");
+	remove(directorio);
 	FILE * bitmapArchivo = fopen(directorio, "w+");
 
 	bitarray_set_bit(bitmap, numeroBloque);
 
-	ponerVaciosAllenarEnArchivos(bitmapArchivo,string_length(bitmap->bitarray));
-
-	int archNuevoMap = open(directorio, O_RDWR);
-	struct stat scriptMap;
-	fstat(archNuevoMap, &scriptMap);
-
-	void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
-
-
-
-	int longitudAGrabar = string_length(bitmap->bitarray);
-
-	memcpy(archMap,bitmap->bitarray,longitudAGrabar);
-    munmap(archMap,longitudAGrabar);
+    fputs(bitmap->bitarray, bitmapArchivo);
+    fseek(bitmapArchivo, string_length(bitmap->bitarray),0);
 }
 
 void crear_archivo(char* flag, char* directorio){
@@ -285,7 +307,7 @@ void crear_archivo(char* flag, char* directorio){
 	  string_append(&pathAbsoluto, montaje);
 	  string_append(&pathAbsoluto, directorioAux);
 
-   	  int result = validar_archivo(directorioAux);
+   	  int result = validar_archivo(pathAbsoluto);
 
    	  if (result == 1)
    	  {
@@ -426,7 +448,7 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffe
 
 }
 
-void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch)
+void actualizarArchivoCreado(t_metadataArch* regArchivo, char* path)
 {
 	char* tamanio = string_new();
 	char* bloques = string_new();
@@ -452,9 +474,10 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 
 	int longitudAGrabar = string_length(tamanio);
 
-	ponerVaciosAllenarEnArchivos((FILE*)arch->referenciaArchivo,string_length(tamanio));
+	FILE* fileActualizar = fopen(path, "w");
+	ponerVaciosAllenarEnArchivos((FILE*)fileActualizar,string_length(tamanio));
 
-	int archNuevoMap = open(arch->path, O_RDWR);
+	int archNuevoMap = open(path, O_RDWR);
 	struct stat scriptMap;
 	fstat(archNuevoMap, &scriptMap);
 
@@ -472,36 +495,62 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* a
 
 void borrarArchivo(char* directorio){
 		//puts("2 \n");
-		printf("el valor del directorio es %s \n", directorio);
+		//printf("el valor del directorio es %s \n", directorio);
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
 		string_append(&pathAbsoluto, directorioAux);
 		//puts("2 \n");
-		int encontrar_sem(t_archivosFileSystem* archivo) {
 
-			return (int)string_contains(pathAbsoluto, (char*)archivo->path);
+		t_metadataArch* archAborrar = leerMetadataDeArchivoCreado(pathAbsoluto);
 
+		int cant = archAborrar->bloquesEscritos->elements_count;
+
+		while(cant != 0)
+		{
+
+			cant--;
+
+			int numeroBloque = list_get(archAborrar->bloquesEscritos,cant);
+			char* bloque = string_new();
+
+			bloque = string_substring(montaje,0,string_length(montaje));
+			string_append(&bloque,"Bloques/");
+			string_append(&bloque,string_itoa(numeroBloque));
+			string_append(&bloque,".bin");
+			remove(bloque);
+			FILE * bitmapArchivo = fopen(bloque, "w+");
+			ponerVaciosAllenarEnArchivos(bitmapArchivo,metadataSadica->tamanio_bloques);
+
+			char* directorioBit = string_new();
+			directorioBit = string_substring(montaje,0,string_length(montaje));
+
+			string_append(&directorioBit,"Metadata/Bitmap.bin");
+			remove(directorioBit);
+		     bitmapArchivo = fopen(directorioBit, "w+");
+
+			bitarray_clean_bit(bitmap, numeroBloque);
+
+		    fputs(bitmap->bitarray, bitmapArchivo);
+		    fseek(bitmapArchivo, string_length(bitmap->bitarray),0);
 		}
-		//puts("2 \n");
-		t_archivosFileSystem* archDestroy = list_find(lista_archivos, (void *) encontrar_sem);
-		//puts("2 \n");
-		//printf("la lista tiene %s", (char*)archDestroy->path);
-		//printf("la lista tiene %s", (char*)archDestroy->referenciaArchivo);
-		int result = remove((char*)archDestroy->path);
+
+		int result = remove((char*)pathAbsoluto);
 		if(result == 0)
 		{
-			puts("El archivo ha sido eliminado con exito");
+			//puts("El archivo ha sido eliminado con exito");
 		}
 		else
 		{
 			puts("El archivo no pudo eliminarse, revise el path");
 
 		}
+
 		//puts("2 \n");
-		fclose((FILE*)archDestroy->referenciaArchivo);
-		list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
+		//fclose((FILE*)archDestroy->referenciaArchivo);
+
+		//list_remove_by_condition(lista_archivos, (void *) encontrar_sem);
 		//free(pathAbsoluto);
 		//free(directorioAux);
         //return mensaje;
@@ -525,66 +574,72 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado(pathAbsoluto);
 
-			int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques); //numero de bloque donde comienzo a leer
-
-			int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
-
-			t_mapeoArchivo* archBloqueAleer = malloc(sizeof(t_mapeoArchivo));
-			archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
-
-			if(size > metadataSadica->tamanio_bloques) //el tamaño de lo que quiero leer es mayor a un bloque?
+			if(regMetaArchBuscado->bloquesEscritos->elements_count != 0)
 			{
-				int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques;
-				if((size % metadataSadica->tamanio_bloques) != 0)
-				{
-					cantidadDeBloquesALeer++;
-				}
-				while(cantidadDeBloquesALeer != 0)
-				{
-					if(cantidadDeBloquesALeer != 1)
-					{
+				int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques); //numero de bloque donde comienzo a leer
 
-						valorLeido = archBloqueAleer->archivoMapeado;
-						string_append(&buffer, valorLeido);
-						cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
-						idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
-						archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
-					}
-					else
-					{
-						valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
-						string_append(&buffer, valorLeido);
-					}
+							int idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion); //bloque donde comienza lo que quiero leer
 
-					cantidadDeBloquesALeer--;
-				}
-				string_append(&textoResult, buffer);
+							t_mapeoArchivo* archBloqueAleer = malloc(sizeof(t_mapeoArchivo));
+							archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+
+							if(size > metadataSadica->tamanio_bloques) //el tamaño de lo que quiero leer es mayor a un bloque?
+							{
+								int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques;
+								if((size % metadataSadica->tamanio_bloques) != 0)
+								{
+									cantidadDeBloquesALeer++;
+								}
+								while(cantidadDeBloquesALeer != 0)
+								{
+									if(cantidadDeBloquesALeer != 1)
+									{
+										valorLeido = archBloqueAleer->archivoMapeado;
+										string_append(&buffer, valorLeido);
+										cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
+										idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
+										archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+									}
+									else
+									{
+										valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
+										string_append(&buffer, valorLeido);
+									}
+
+									cantidadDeBloquesALeer--;
+								}
+								string_append(&textoResult, buffer);
+							}
+							else
+							{
+								if(string_length(archBloqueAleer->archivoMapeado) < size)
+								{
+									if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
+									{
+										textoResult = "El archivo no contiene datos para ser leídos";
+									}
+									else
+									{
+										string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
+										valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,string_length(archBloqueAleer->archivoMapeado));
+										string_append(&buffer, valorLeido);
+										strcat(textoResult, valorLeido);
+									}
+								}
+								else
+								{
+									valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
+									string_append(&buffer, valorLeido);
+									string_append(&textoResult, buffer);
+								}
+
+								cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
+
+							}
 			}
 			else
 			{
-				if(string_length(archBloqueAleer->archivoMapeado) < size)
-				{
-					if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
-					{
-						textoResult = "El archivo no contiene datos para ser leídos";
-					}
-					else
-					{
-						string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
-						valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,string_length(archBloqueAleer->archivoMapeado));
-						string_append(&buffer, valorLeido);
-						strcat(textoResult, valorLeido);
-					}
-				}
-				else
-				{
-					valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
-					string_append(&buffer, valorLeido);
-					string_append(&textoResult, buffer);
-				}
-
-				cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
-
+				string_append(&textoResult, "Error: El arhivo esta vacio");
 			}
 
 		}
@@ -773,7 +828,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 			return string_starts_with(pathAbsoluto, archivo->path);
 		}
 
-		t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
+		//t_archivosFileSystem* archBuscado = list_find(lista_archivos, (void *) encontrar_sem);
 
 		t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado(pathAbsoluto);
 		int posicionesParaGuardar = (int)regMetaArchBuscado->bloquesEscritos->elements_count * (int)metadataSadica->tamanio_bloques;
@@ -799,7 +854,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 				  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size);
 			  }
 			}
-		   	 actualizarArchivoCreado(regMetaArchBuscado, archBuscado);
+		   	 actualizarArchivoCreado(regMetaArchBuscado, pathAbsoluto);
 		    enviarMensaje(&socketKernel, "Archivo Escrito Correctamente");
 		}
 

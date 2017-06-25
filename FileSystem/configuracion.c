@@ -105,20 +105,39 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 
 		buffer[num*sizeof(char)] = '\0';
 	}*/
-	char* buffer = string_new();
+
 
 	char* directorio = string_new();
 	directorio = string_substring(mnt,0,string_length(mnt));
 
 	string_append(&directorio,"Metadata/Bitmap.bin");
-	FILE * bitmapArchivo = fopen(directorio, "w+");
+	//FILE * bitmapArchivo = fopen(directorio, "w+");
+
+	char* buffer = string_new();
+	int fd_script = open(directorio, O_RDWR);
+	t_bitarray* bitmap;
+	if(fd_script != -1)
+	{
+		struct stat scriptFileStat;
+		fstat(fd_script, &scriptFileStat);
+		FILE * bitmapArchivo = fopen(directorio, "r");
+	    fgets(buffer,scriptFileStat.st_size,bitmapArchivo);
+		 bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
+
+	}
+	else
+	{
+
+		FILE * bitmapArchivo = fopen(directorio, "w+");
+
+	    bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
+
+	}
 
 
-	t_bitarray* bitmap = bitarray_create_with_mode(buffer, tamanio_bitmap, LSB_FIRST);
+    //fputs(" ", bitmapArchivo);
 
-    fputs(" ", bitmapArchivo);
-
-    fseek((FILE*)bitmapArchivo, string_length(" "), 0);
+   // fseek((FILE*)bitmapArchivo, string_length(" "), 0);
 
 	//fwrite(bitmap, sizeof(t_bitarray), 1, bitmapArchivo);
 	//lfseek(bitmapArchivo,tamanio_bitmap, SEEK_SET);
@@ -128,6 +147,10 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	fstat(fd_script, &scriptFileStat);
 	t_bitarray* bitmapeo = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);*/
 	//fclose(ptr_fich1);
+
+
+   // munmap(buffer,longitudAGrabar);
+    //close(fd_script);
 	free(directorio);
 
 	return bitmap;
@@ -144,8 +167,12 @@ void crearBloques(char* mnt, int cantidad, int tamanio)
 		string_append(&bloque,"Bloques/");
 		string_append(&bloque,string_itoa(i));
 		string_append(&bloque,".bin");
-		FILE * bitmapArchivo = fopen(bloque, "w");
-		ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
+		int fd_script = open(bloque, O_RDWR);
+		if(fd_script == -1)
+		{
+			FILE * bitmapArchivo = fopen(bloque, "w");
+			ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
+		}
 		//free(bloque);
 		i++;
 	}

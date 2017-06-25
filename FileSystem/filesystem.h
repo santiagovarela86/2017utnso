@@ -48,7 +48,7 @@ int buscarPrimerBloqueLibre();
 t_metadataArch* leerMetadataDeArchivoCreado(char* arch);
 void cerrarUnArchivoBloque(char* pmap, struct stat script);
 t_fileProceso* existeEnElementoTablaArchivoPorFD(t_list* tablaDelProceso, int fd);
-void actualizarArchivoCreado(t_metadataArch* regArchivo, t_archivosFileSystem* arch);
+void actualizarArchivoCreado(t_metadataArch* regArchivo, char* path);
 char* concatenernaVacios(char* buffer, int size);
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque);
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size);
