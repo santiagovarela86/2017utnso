@@ -494,7 +494,7 @@ void asignar(t_puntero direccion, t_valor_variable valor) {
 			free(mensajeAKernel);
 		} else {
 			enviarMensaje(&socketMemoria,
-									serializarMensaje(3, 511, direccion, valor));
+									serializarMensaje(4, 511, pcb->pid, direccion, valor));
 
 			/*
 

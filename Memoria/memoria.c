@@ -639,10 +639,15 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 
 void asignarVariable(char** mensajeDesdeCPU, int sock){
 
-	int direccion = atoi(mensajeDesdeCPU[1]);
-	int valor = atoi(mensajeDesdeCPU[2]);
+	int pid = atoi(mensajeDesdeCPU[1]);
+	int direccion = atoi(mensajeDesdeCPU[2]);
+	int valor = atoi(mensajeDesdeCPU[3]);
 
-	grabar_valor(direccion, valor);
+	int marco = direccion / configuracion->marco_size;
+	t_pagina_invertida * pagina = list_get(tabla_paginas, marco);
+	int offset = direccion % configuracion->marco_size;
+
+	almacenarBytesEnPagina(pid, pagina->nro_pagina, offset, OFFSET_VAR, decimalABinarioUnsigned(valor));
 
 	printf("Se asigno el valor %d en Memoria \n", valor);
 			printf("\n");
@@ -1262,30 +1267,17 @@ void subconsola_contenido_memoria(){
 	}
 }
 
-void grabar_valor(int direccion, int valor){
-
-	//char str[MAXBUF];
-	//sprintf(str, "%d", valor);
-	//printf("Valor String (Para la cache): [%s]\n",str);
-	//printf("\n");
+char * decimalABinarioUnsigned(int valor){
 
 	char * buffer = malloc(OFFSET_VAR);
 
-	pthread_mutex_lock(&mutex_bloque_memoria);
-
 	//ESTO GUARDA EL NUMERO EN BIG ENDIAN EN 4 BYTES
-	bloque_memoria[direccion+0] = (valor >> 24) & 0xFF;
-	bloque_memoria[direccion+1] = (valor >> 16) & 0xFF;
-	bloque_memoria[direccion+2] = (valor >> 8) & 0xFF;
-	bloque_memoria[direccion+3] = valor & 0xFF;
+	buffer[0] = (valor >> 24) & 0xFF;
+	buffer[1] = (valor >> 16) & 0xFF;
+	buffer[2] = (valor >> 8) & 0xFF;
+	buffer[3] = valor & 0xFF;
 
-	memcpy(buffer, &bloque_memoria[direccion], OFFSET_VAR);
-
-	if (cache_habilitada) grabar_valor_en_cache(direccion, buffer);
-
-	pthread_mutex_unlock(&mutex_bloque_memoria);
-
-	free(buffer);
+	return buffer;
 
 }
 
@@ -1720,11 +1712,15 @@ void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, char * bu
 	if (cache_habilitada){
 			t_entrada_cache * entradaCache = obtener_entrada_cache(pid, pagina);
 
+			pthread_mutex_lock(&mutex_estructuras_administrativas);
+
 			if (entradaCache == NULL){
 				almacenar_pagina_en_cache_para_pid(pid, paginaAActualizar);
 				entradaCache = obtener_entrada_cache(pid, pagina);
 			}
 
 			memcpy(&entradaCache->contenido_pagina[offset], buffer, size);
+
+			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	}
 }

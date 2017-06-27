@@ -119,8 +119,10 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 void eliminarMemoriaHeap(int pid, int direccion);
 int reordenarPaginaHeap(int indicePaginaHeap);
 void reordenarMetadata(int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesAUnir);
+char * decimalABinarioUnsigned(int valor);
 
-#define VARIABLE_EN_CACHE 99
+
+//#define VARIABLE_EN_CACHE 99
 
 
 #endif /* MEMORIA_H_ */
