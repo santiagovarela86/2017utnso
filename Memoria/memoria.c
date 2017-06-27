@@ -206,14 +206,15 @@ void * hilo_conexiones_kernel(){
 					int direccionMeta1 = atoi(mensajeDelKernel[3]);
 					int direccionMeta2 = atoi(mensajeDelKernel[4]);
 					int bytesAUnir = atoi(mensajeDelKernel[5]);
-					reordenarMetadata(paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir);
+					reordenarMetadata(pid, paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir);
 					break;
 
 				case 705:
 					;
 					int pid = atoi(mensajeDelKernel[1]);
-					int direccion = atoi(mensajeDelKernel[2]);
-					eliminarMemoriaHeap(pid, direccion);
+					int pagina = atoi(mensajeDelKernel[2]);
+					int direccion = atoi(mensajeDelKernel[3]);
+					eliminarMemoriaHeap(pid, pagina, direccion);
 					break;
 
 				case 612:
@@ -244,9 +245,15 @@ void * hilo_conexiones_kernel(){
 	return EXIT_SUCCESS;
 }
 
-void reordenarMetadata(int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesSolicitados){
-	heapMetadata * meta1 = (heapMetadata *) (bloque_memoria + direccionMeta1);
-	heapMetadata * meta2 = (heapMetadata *) (bloque_memoria + direccionMeta2);
+void reordenarMetadata(int pid, int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesSolicitados){
+	heapMetadata * meta1 = malloc(sizeof(heapMetadata));
+	int offset1 = direccionMeta1 % configuracion->marco_size;
+
+	heapMetadata * meta2 = malloc(sizeof(heapMetadata));
+	int offset2 = direccionMeta2 % configuracion->marco_size;
+
+	meta1 = solicitar_datos_de_pagina(pid, paginaConDosBloques, offset1, sizeof(heapMetadata));
+	meta2 = solicitar_datos_de_pagina(pid, paginaConDosBloques, offset2, sizeof(heapMetadata));
 
 	//SI ENTRA JUSTO
 	if ((meta1->size + meta2->size + sizeof(heapMetadata)) == bytesSolicitados){
@@ -268,21 +275,35 @@ void reordenarMetadata(int paginaConDosBloques, int direccionMeta1, int direccio
 		meta2->isFree = true;
 		meta2->size = meta1->size + meta2->size - bytesSolicitados;
 
-		memcpy(&bloque_memoria[nuevaDireccionMeta2], meta2, sizeof(heapMetadata));
+		//memcpy(&bloque_memoria[nuevaDireccionMeta2], meta2, sizeof(heapMetadata));
+
+		offset2 = nuevaDireccionMeta2 % configuracion->marco_size;
+
+		almacenarBytesEnPagina(pid, paginaConDosBloques, offset2, sizeof(heapMetadata), meta2);
 
 		meta1->isFree = false;
 		meta1->size = bytesSolicitados;
 	}
 
+	almacenarBytesEnPagina(pid, paginaConDosBloques, offset1, sizeof(heapMetadata), meta1);
+
 	enviarMensaje(&socketKernel, serializarMensaje(1, 611));
+
+	//free(meta1);
+	//free(meta2);
 }
 
-void eliminarMemoriaHeap(int pid, int direccion){
+void eliminarMemoriaHeap(int pid, int pagina, int direccion){
 	int posicionMetadata = direccion - sizeof(heapMetadata);
+	int offsetMeta = posicionMetadata % configuracion->marco_size;
 
-	heapMetadata * metadataALiberar = (heapMetadata *) (bloque_memoria + posicionMetadata);
+	heapMetadata * metadataALiberar = solicitar_datos_de_pagina(pid, pagina, offsetMeta, sizeof(heapMetadata));
+
+	//heapMetadata * metadataALiberar = (heapMetadata *) (bloque_memoria + posicionMetadata);
 
 	metadataALiberar->isFree = true;
+
+	almacenarBytesEnPagina(pid, pagina, offsetMeta, sizeof(heapMetadata), metadataALiberar);
 
 	enviarMensaje(&socketKernel, serializarMensaje(1, 706));
 }
@@ -331,13 +352,18 @@ void iniciarPrograma(int pid, char * codigo_programa) {
 }
 
 void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedidos){
-	printf("Me pasaron: PID: %d, Pagina: %d, Bytes: %d\n", pid, paginaExistente, bytesPedidos);
+	//printf("Me pasaron: PID: %d, Pagina: %d, Bytes: %d\n", pid, paginaExistente, bytesPedidos);
 	//BUSCO LA PAGINA EXISTENTE
 	t_pagina_invertida * pagina = buscar_pagina_para_consulta(pid, paginaExistente);
 	printf("USO UNA PAGINA EXISTENTE\n");
 	printf("Marco: %d, Pagina: %d, Pid: %d\n", pagina->nro_marco, pagina->nro_pagina, pagina->pid);
+	puts(" ");
 
-	heapMetadata * metadata = (heapMetadata *) (bloque_memoria + direccion);
+	int offsetMeta = direccion % configuracion->marco_size;
+
+	heapMetadata * metadata = solicitar_datos_de_pagina(pid, paginaExistente, offsetMeta, sizeof(heapMetadata));
+
+	//heapMetadata * metadata = (heapMetadata *) (bloque_memoria + direccion);
 
 	//SI ENTRA JUSTO
 	if (bytesPedidos == metadata->size){
@@ -351,12 +377,19 @@ void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedido
 		metadata->isFree = false;
 		metadata->size = bytesPedidos;
 
-		memcpy(&bloque_memoria[direccion+sizeof(heapMetadata)+metadata->size], metadataNuevo, sizeof(heapMetadata));
+		//memcpy(&bloque_memoria[direccion+sizeof(heapMetadata)+metadata->size], metadataNuevo, sizeof(heapMetadata));
+		//free(metadataNuevo);
+
+		almacenarBytesEnPagina(pid, paginaExistente, offsetMeta + sizeof(heapMetadata) + metadata->size, sizeof(heapMetadata), metadataNuevo);
 	}
 
-	printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, bytesPedidos);
+	almacenarBytesEnPagina(pid, paginaExistente, offsetMeta, sizeof(heapMetadata), metadata);
+
+	//printf("Envio PID: %d, Pagina: %d, Direccion: %d, Tamaño: %d\n", pagina->pid, pagina->nro_pagina, direccion, bytesPedidos);
 
 	enviarMensaje(&socketKernel, serializarMensaje(1, 608));
+
+	//free(metadata);
 
 }
 
@@ -383,6 +416,9 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 	almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, sizeof(heapMetadata) + bytesPedidos, sizeof(heapMetadata), meta_free);
 
 	enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
+
+	//free(meta_used);
+	//free(meta_free);
 
 	contadorPaginasHeap++;
 	printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
@@ -441,9 +477,6 @@ void * handler_conexiones_cpu(void * socketCliente) {
 
 			puts("ASIGNACION DE VARIABLE");
 			puts("");
-
-			//Ocurre el retardo para acceder a la memoria principal
-			retardo_acceso_memoria();
 
 			asignarVariable(mensajeDesdeCPU, sock);
 
@@ -737,7 +770,7 @@ void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU){
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	char * instr = string_substring(instruccion, 0, offset);
 	printf("Se envia la instruccion %s\n", instr);
-	printf("Longitud Instruccion: %d\n", strlen(instr));
+	//printf("Longitud Instruccion: %d\n", strlen(instr));
 	//printf("\n");
 
 	enviarMensaje(socketCliente, instr);
@@ -939,8 +972,8 @@ t_pagina_invertida *leer_pagina_de_bloque(char *base, int offset, int size){
     return (t_pagina_invertida*)buffer;
 }
 
-char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
-	char * datos_pagina = malloc(tamanio);
+void * solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
+	void * datos_pagina = malloc(tamanio);
 
 	t_entrada_cache* entrada_cache = obtener_entrada_cache(pid, pagina); ////ESTO A VECES TRAE BASURA
 
@@ -1548,7 +1581,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 
 		int indice_cache = obtener_nuevo_indice_cache();
 
-		printf("almacenar_pagina_en_cache_para_pid %d indice cache %d\n", pid, indice_cache);
+		//printf("almacenar_pagina_en_cache_para_pid %d indice cache %d\n", pid, indice_cache);
 
 		t_entrada_cache * entrada_cache = crear_entrada_cache(indice_cache,
 				pagina->pid, pagina->nro_pagina,

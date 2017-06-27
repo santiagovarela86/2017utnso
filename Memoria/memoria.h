@@ -91,7 +91,7 @@ t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina);
 void retardo_acceso_memoria(void);
 void pruebas_f_hash(void);
 void grabar_codigo_programa(int* j, t_pagina_invertida* pagina, char* codigo);
-char* solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio);
+void * solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio);
 t_Stack* crear_entrada_stack(char variable, t_pagina_invertida* pagina);
 char* serializar_entrada_indice_stack(t_Stack* indice_stack);
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
@@ -116,11 +116,12 @@ void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int*
 void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
 void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock);
 void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock);
-void eliminarMemoriaHeap(int pid, int direccion);
+void eliminarMemoriaHeap(int pid, int pagina, int direccion);
 int reordenarPaginaHeap(int indicePaginaHeap);
-void reordenarMetadata(int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesAUnir);
+void reordenarMetadata(int pid, int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesAUnir);
 char * decimalABinarioUnsigned(int valor);
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * buffer);
+int obtener_nuevo_indice_cache();
 
 //#define VARIABLE_EN_CACHE 99
 

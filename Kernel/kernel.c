@@ -2360,7 +2360,7 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 
 void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
-	printf("Intento eliminar Pagina Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
+	printf("Intento eliminar Reserva de Heap de PID: %d, Direccion: %d", pcb->pid, direccion);
 	printf("\n");
 
 	_Bool coincideDireccion(admMetadata * elem){
@@ -2374,9 +2374,11 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 	//Verifico que exista una pagina que tenga esa direccion y sea para ese proceso
 	if(list_any_satisfy(lista_paginas_heap, (void *) coincideHeapPIDyDireccion)){
 
+		admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
+
 		printf("Existe la reserva heap con direccion %d y PID %d\n", direccion, pcb->pid);
 
-		enviarMensaje(&skt_memoria, serializarMensaje(3, 705, pcb->pid, direccion));
+		enviarMensaje(&skt_memoria, serializarMensaje(4, 705, pcb->pid, paginaHeapAEditar->nro_pagina, direccion));
 
 		char * buffer = malloc(MAXBUF);
 
@@ -2387,7 +2389,6 @@ void eliminarMemoriaHeap(t_pcb * pcb, int direccion, int * socketCliente){
 
 			if (strcmp(respuesta[0], "706") == 0){
 
-				admPaginaHeap * paginaHeapAEditar = list_find(lista_paginas_heap, (void *) coincideHeapPIDyDireccion);
 				admMetadata * meta = list_find(paginaHeapAEditar->metadatas, (void *) coincideDireccion);
 				meta->free = true;
 
