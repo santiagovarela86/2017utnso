@@ -30,6 +30,7 @@
 int conexionesKernel = 0;
 int conexionesCPU = 0;
 int tiempo_retardo;
+
 pthread_mutex_t mutex_tiempo_retardo;
 pthread_mutex_t mutex_estructuras_administrativas;
 pthread_mutex_t mutex_bloque_memoria;
@@ -243,7 +244,7 @@ void * hilo_conexiones_kernel(){
 	return EXIT_SUCCESS;
 }
 
-void reordenarMetadata(paginaConDosBloques, direccionMeta1, direccionMeta2, bytesSolicitados){
+void reordenarMetadata(int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesSolicitados){
 	heapMetadata * meta1 = (heapMetadata *) (bloque_memoria + direccionMeta1);
 	heapMetadata * meta2 = (heapMetadata *) (bloque_memoria + direccionMeta2);
 
@@ -1705,4 +1706,6 @@ void reorganizar_indice_cache_y_ordenar(){
 	list_sort(tabla_cache, (void*)_indice_menor);
 }
 
+void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, char * buffer){
 
+}
