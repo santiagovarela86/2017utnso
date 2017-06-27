@@ -370,13 +370,17 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
 	int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
-	heapMetadata * meta_used = (heapMetadata *) (bloque_memoria + dirInicioPagina);
+	heapMetadata * meta_used = malloc(sizeof(heapMetadata));
 	meta_used->isFree = false;
 	meta_used->size = bytesPedidos;
 
-	heapMetadata * meta_free = (heapMetadata *) (bloque_memoria + dirInicioPagina + sizeof(heapMetadata) + bytesPedidos);
+	almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, 0, sizeof(heapMetadata), meta_used);
+
+	heapMetadata * meta_free = malloc(sizeof(heapMetadata));
 	meta_free->isFree = true;
 	meta_free->size = freeSpace - bytesPedidos;
+
+	almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, sizeof(heapMetadata) + bytesPedidos, sizeof(heapMetadata), meta_free);
 
 	enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
 
@@ -1636,6 +1640,8 @@ t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
 	return entrada;
 }
 
+//OBSOLETO
+/*
 void grabar_valor_en_cache(int direccion, char * buffer){
 
 	puts("Grabar_valor_en_cache");
@@ -1654,6 +1660,7 @@ void grabar_valor_en_cache(int direccion, char * buffer){
 					leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size)); ////REVISAR
 	}
 }
+*/
 
 t_entrada_cache* obtener_entrada_reemplazo_cache(int pid){
 
@@ -1698,7 +1705,7 @@ void reorganizar_indice_cache_y_ordenar(){
 	list_sort(tabla_cache, (void*)_indice_menor);
 }
 
-void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, char * buffer){
+void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * buffer){
 	//TENGO QUE VALIDAR QUE EXISTA LA PAGINA?
 	t_pagina_invertida * paginaAActualizar = buscar_pagina_para_consulta(pid, pagina);
 	int direccionBasePagina = obtener_inicio_pagina(paginaAActualizar);
