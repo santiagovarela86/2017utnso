@@ -299,7 +299,7 @@ void * escuchar_Kernel(void * args){
 				pthread_t threadPrograma;
 				list_add(infoConsola.threads, &threadPrograma);
 
-				programa* program = malloc(sizeof(program));
+				programa* program = malloc(sizeof(programa));
 
 				printf("Se acepto el programa de pid: %d\n",  atoi(respuesta_kernel[1]));
 
@@ -369,12 +369,16 @@ void iniciar_programa(int* socket_kernel){
 	struct stat scriptFileStat;
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
-	char* respuestaConsola =  string_new();
-	string_append(&respuestaConsola, "303");
+
+	char * respuestaConsola = string_new();
+
+	string_append(&respuestaConsola, string_itoa(303));
 	string_append(&respuestaConsola, ";");
 	string_append(&respuestaConsola, pmap_script);
+	string_append(&respuestaConsola, ";");
 
 	enviarMensaje(socket_kernel, respuestaConsola);
+
 	free(respuestaConsola);
 
 	close(fd_script);
