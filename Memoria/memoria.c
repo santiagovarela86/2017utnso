@@ -1707,5 +1707,24 @@ void reorganizar_indice_cache_y_ordenar(){
 }
 
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, char * buffer){
+	//TENGO QUE VALIDAR QUE EXISTA LA PAGINA?
+	t_pagina_invertida * paginaAActualizar = buscar_pagina_para_consulta(pid, pagina);
+	int direccionBasePagina = obtener_inicio_pagina(paginaAActualizar);
 
+	retardo_acceso_memoria();
+
+	pthread_mutex_lock(&mutex_bloque_memoria);
+	memcpy(&bloque_memoria[direccionBasePagina + offset], buffer, size);
+	pthread_mutex_unlock(&mutex_bloque_memoria);
+
+	if (cache_habilitada){
+			t_entrada_cache * entradaCache = obtener_entrada_cache(pid, pagina);
+
+			if (entradaCache == NULL){
+				almacenar_pagina_en_cache_para_pid(pid, paginaAActualizar);
+				entradaCache = obtener_entrada_cache(pid, pagina);
+			}
+
+			memcpy(&entradaCache->contenido_pagina[offset], buffer, size);
+	}
 }
