@@ -881,15 +881,27 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 	list_add(pcb->indiceStack, stackFuncion);
 
 
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(etiqueta, pcb->etiquetas, pcb->etiquetas_size);
+	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
 	pthread_mutex_unlock(&mutex_instrucciones);
 	pcb->program_counter = instruccion - 1;
 
 	//pcb->program_counter++;
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("el valor de la instruccion es: %d\n", instruccion);
 	//printf("\n");
 	//free(stackFuncion);
-	//printf("ahora el program counter es: %d\n", pcb->program_counter);
+	printf("ahora el program counter es: %d\n", pcb->program_counter);
+
+	if(instruccion == -1)
+	{
+		char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "808");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(pcb->pid));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+		free(mensajeAKernel);
+	}
 	return;
 }
 

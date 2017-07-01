@@ -1316,6 +1316,7 @@ void * handler_conexion_cpu(void * sock) {
 				 {
 					 puts("El la longitud a escribir supera el tamaño del buffer");
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
+			    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
 				 }
 				 else
 				 {
@@ -1323,11 +1324,22 @@ void * handler_conexion_cpu(void * sock) {
 
 					 if(string_contains(auxEscribir, "Error"))
 					 {
-						 puts("No se puede escribir el archivo debido a sus permisos");
-						 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+						 if(string_contains(auxEscribir, "permisos"))
+						 {
+							 puts("No se puede escribir el archivo debido a sus permisos");
+							 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+					    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+						 }
+						 else
+						 {
+					    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+					    		enviarMensaje(socketCliente, "Finalización por ExitCode");
+						 }
+
 				     }
 					 else
 					 {
+
 						 enviarMensaje(socketCliente, auxEscribir);
 					 }
 				 }
@@ -1345,6 +1357,7 @@ void * handler_conexion_cpu(void * sock) {
 				 if(string_contains(result->exitCode, "Error"))
 				 {
 					finalizarPrograma(pid_mensaje, FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS);
+			    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
 			     }
 				 else
 				 {
@@ -1386,14 +1399,17 @@ void * handler_conexion_cpu(void * sock) {
 			    	if(string_contains(auxLeer, "vacio"))
 			    	{
 			    		finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_VACIO);
+			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
 			    	}
 			    	else if(string_contains(auxLeer, "fileDescriptor"))
 			    	{
 			    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
 			    	}
 			    	else
 			    	{
 			    		finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
+			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
 			    	}
 
 			    }
@@ -1456,6 +1472,12 @@ void * handler_conexion_cpu(void * sock) {
 				enviarMensaje(socketCliente, serializarMensaje(1, 777));
 				break;
 			case 778:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				un_pcb = pcbFromPid(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_SIN_DEFINICION);
+				break;
+
+			case 808:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				un_pcb = pcbFromPid(pid_msg);
 				finalizarPrograma(pid_msg, FIN_ERROR_SIN_DEFINICION);
@@ -1619,6 +1641,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		break;
 	case FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS:
 		errorLog = "La instruccion no posee los permisos para crear el archivo";
+		break;
+	case FIN_ERROR_ETIQUETA_INEXISTENTE:
+		errorLog = "La etiqueta o funcion a la que esta llamando no fue definida";
 		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
@@ -3384,57 +3409,65 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 		t_lista_fileProcesos* listaProceoso = existeEnListaProcesosArchivos(pid_mensaje);
 
 		t_fileProceso* regArchivo = existeEnElementoTablaArchivoPorFD(listaProceoso->tablaProceso, fd);
-
-		if(string_contains(regArchivo->flags, "w"))
+		if(regArchivo != NULL)
 		{
-			char* mensajeFS= string_new();
-			t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
-			regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
+			if(string_contains(regArchivo->flags, "w"))
+					{
+						char* mensajeFS= string_new();
+						t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
+						regTablaGlobal = traducirFDaPath(pid_mensaje,fd);
 
-			string_append(&mensajeFS, "804");
-			string_append(&mensajeFS, ";");
-			string_append(&mensajeFS, regTablaGlobal->path);
-			string_append(&mensajeFS, ";");
-			string_append(&mensajeFS, string_itoa(tamanio));
-			string_append(&mensajeFS, ";");
-			string_append(&mensajeFS, ((char*)infofile));
-			string_append(&mensajeFS, ";");
+						string_append(&mensajeFS, "804");
+						string_append(&mensajeFS, ";");
+						string_append(&mensajeFS, regTablaGlobal->path);
+						string_append(&mensajeFS, ";");
+						string_append(&mensajeFS, string_itoa(tamanio));
+						string_append(&mensajeFS, ";");
+						string_append(&mensajeFS, ((char*)infofile));
+						string_append(&mensajeFS, ";");
 
-			int encontrar_archProceso(t_fileProceso* glo) {
-				if (fd == glo->fileDescriptor)
-					return 1;
-				else
-					return 0;
+						int encontrar_archProceso(t_fileProceso* glo) {
+							if (fd == glo->fileDescriptor)
+								return 1;
+							else
+								return 0;
+						}
+
+						int offset = hayOffsetArch(fd);
+
+						string_append(&mensajeFS, string_itoa(offset));
+						string_append(&mensajeFS, ";");
+
+
+						//free(regTablaGlobal);
+
+						enviarMensaje(&skt_filesystem, mensajeFS);
+
+						char* resulMenEscribir = malloc(MAXBUF);
+						int result = recv(skt_filesystem, resulMenEscribir, MAXBUF, 0);
+
+						if (result > 0) {
+							return resulMenEscribir;
+						} else {
+							printf("Error el archivo no se pudo escribir \n");
+						}
+
+						free(resulMenEscribir);
+
+						//free(mensajeFS);
+
+				}
+			else
+			{
+				return "Error: de permisos";
+
 			}
-
-			int offset = hayOffsetArch(fd);
-
-			string_append(&mensajeFS, string_itoa(offset));
-			string_append(&mensajeFS, ";");
-
-
-			//free(regTablaGlobal);
-
-			enviarMensaje(&skt_filesystem, mensajeFS);
-
-			char* resulMenEscribir = malloc(MAXBUF);
-			int result = recv(skt_filesystem, resulMenEscribir, MAXBUF, 0);
-
-			if (result > 0) {
-				return resulMenEscribir;
-			} else {
-				printf("Error el archivo no se pudo escribir \n");
-			}
-
-			free(resulMenEscribir);
-
-			//free(mensajeFS);
 
 	    }
+
 		else
 		{
-			return "Error";
-
+			return "Error: fileDescriptor inexistente";
 		}
 	  }
 
@@ -3867,13 +3900,13 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 			}
 			else
 			{
-				return "Error: fileDescriptor inexistente";
+				return "Error de permisos";
 			}
 
 		}
 		else
 		{
-			return "Error";
+			return "Error: fileDescriptor inexistente";
 		}
      }
 }
