@@ -141,12 +141,7 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804:
-					;
-					char * directorio = mensajeAFileSystem[1];
-					int size = atoi(mensajeAFileSystem[2]);
-					char * buffer = mensajeAFileSystem[3];
-					int offset = atoi(mensajeAFileSystem[4]);
-					guardar_datos(directorio, size, buffer, offset);
+					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
 				break;
 
 				case 803:
@@ -317,11 +312,11 @@ void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
       directorioAux = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
-	  char* auxConBarra = string_substring(directorioAux,string_length(directorioAux)-1,string_length(directorioAux));
-	  printf("%s\n",auxConBarra);
+      char* auxConBarra = string_substring(directorioAux,0,1);
+
 	  if(string_equals_ignore_case(auxConBarra,"/"))
 	  {
-		  directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
+		directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
 	  }
 
 	  char* pathAbsoluto = string_new();
@@ -519,6 +514,13 @@ void borrarArchivo(char* directorio){
 		//printf("el valor del directorio es %s \n", directorio);
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
+	   char* auxConBarra = string_substring(directorioAux,0,1);
+
+		if(string_equals_ignore_case(auxConBarra,"/"))
+		{
+		  directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
+		}
+
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
 		string_append(&pathAbsoluto, directorioAux);
@@ -583,7 +585,12 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 	buffer= string_new();
 	char* directorioAux = string_new();
 	directorioAux = strtok(directorio, "\n");
+    char* auxConBarra = string_substring(directorioAux,0,1);
 
+	if(string_equals_ignore_case(auxConBarra,"/"))
+	{
+	  directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
+ 	}
 	char* pathAbsoluto = string_new();
 	string_append(&pathAbsoluto, montaje);
 	string_append(&pathAbsoluto, directorioAux);
@@ -840,6 +847,12 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 {
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
+		  char* auxConBarra = string_substring(directorioAux,0,1);
+
+		  if(string_equals_ignore_case(auxConBarra,"/"))
+		  {
+			directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
+		  }
 
 		char* pathAbsoluto = string_new();
 		string_append(&pathAbsoluto, montaje);
@@ -882,3 +895,4 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 	 //free(pathAbsoluto);
    	 //free(directorioAux);
  }
+
