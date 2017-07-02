@@ -1312,7 +1312,7 @@ void * handler_conexion_cpu(void * sock) {
 				 infofile = mensajeDesdeCPU[3];
 				 tamanio = atoi(mensajeDesdeCPU[4]);
 
-				 if(string_length(infofile) < tamanio)
+				 if(string_length(infofile) > tamanio)
 				 {
 					 puts("El la longitud a escribir supera el tamaño del buffer");
 					 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
