@@ -38,9 +38,14 @@
 #include "helperFunctions.h"
 #include <parser/metadata_program.h>
 #include <semaphore.h>
+#include <linux/inotify.h>
 
 #define MAXCON 10
 #define MAXCPU 10
+
+//TODO: Agregar logica quantum_sleep una vez se hayan completado las pruebas unitarias
+#define EVENT_SIZE  ( sizeof (struct inotify_event) )
+#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
 int conexionesCPU = 0;
 int conexionesConsola = 0;
