@@ -141,7 +141,12 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804:
-					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
+					;
+					char * directorio = mensajeAFileSystem[1];
+					int size = atoi(mensajeAFileSystem[2]);
+					char * buffer = mensajeAFileSystem[3];
+					int offset = atoi(mensajeAFileSystem[4]);
+					guardar_datos(directorio, size, buffer, offset);
 				break;
 
 				case 803:

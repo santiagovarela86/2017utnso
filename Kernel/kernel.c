@@ -3432,7 +3432,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 						string_append(&mensajeFS, ";");
 						string_append(&mensajeFS, string_itoa(tamanio));
 						string_append(&mensajeFS, ";");
-						string_append(&mensajeFS, ((char*)infofile));
+						string_append(&mensajeFS, infofile);
 						string_append(&mensajeFS, ";");
 
 						int encontrar_archProceso(t_fileProceso* glo) {

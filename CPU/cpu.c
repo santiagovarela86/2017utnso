@@ -39,9 +39,6 @@ int sktKernel;
 t_list* variables_locales;
 t_pcb* pcb;
 int bloqueo;
-int pagina_a_leer_cache = 0;
-int offset_a_leer_cache = 0;
-int tamanio_a_leer_cache = 0;
 pthread_mutex_t mutex_instrucciones;
 _Bool pcbHabilitado = true;
 
