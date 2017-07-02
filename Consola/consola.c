@@ -370,7 +370,7 @@ void iniciar_programa(int* socket_kernel){
 	fstat(fd_script, &scriptFileStat);
 	char* pmap_script = mmap(0, scriptFileStat.st_size, PROT_READ, MAP_SHARED, fd_script, 0);
 
-	char * respuestaConsola = string_new();
+	char * respuestaConsola = malloc(MAXBUF);
 
 	string_append(&respuestaConsola, string_itoa(303));
 	string_append(&respuestaConsola, ";");
@@ -379,10 +379,10 @@ void iniciar_programa(int* socket_kernel){
 
 	enviarMensaje(socket_kernel, respuestaConsola);
 
-	free(respuestaConsola);
-
 	close(fd_script);
 	munmap(pmap_script,scriptFileStat.st_size);
+
+	//free(respuestaConsola);
 
 	return;
 }
