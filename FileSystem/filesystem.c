@@ -63,10 +63,19 @@ void inicializarEstructuras(char * pathConfig){
 
 	lista_archivos = list_create();
 
-	montaje = string_new();
-	montaje = configuracion->punto_montaje;
-
-
+	char* montajeInicial = string_new();
+	montajeInicial = configuracion->punto_montaje;
+	char* aux = string_substring(montajeInicial,string_length(montajeInicial)-1,string_length(montajeInicial));
+	printf("%s\n",aux);
+	if(string_equals_ignore_case(aux,"/"))
+	{
+		montaje = montajeInicial;
+	}
+	else
+	{
+		montaje = montajeInicial;
+		string_append(&montaje,"/");
+	}
 	metadataSadica = leerMetaData(montaje);
     bitmap = crearBitmap(montaje, (size_t)metadataSadica->cantidad_bloques);
 
