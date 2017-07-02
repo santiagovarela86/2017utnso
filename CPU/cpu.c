@@ -40,6 +40,7 @@ t_list* variables_locales;
 t_pcb* pcb;
 int bloqueo;
 pthread_mutex_t mutex_instrucciones;
+
 _Bool pcbHabilitado = true;
 
 
@@ -68,6 +69,7 @@ int main(int argc, char **argv) {
 	pthread_join(thread_id_memoria, NULL);
 
 	pthread_mutex_init(&mutex_instrucciones, NULL);
+
 
 	free(configuracion);
 
@@ -875,6 +877,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	}
 	else
 	{
+		pthread_mutex_unlock(&mutex_instrucciones);
 		char* mensajeAKernel = string_new();
 		string_append(&mensajeAKernel, "809");
 		string_append(&mensajeAKernel, ";");
@@ -882,7 +885,8 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 		string_append(&mensajeAKernel, ";");
 
 		enviarMensaje(&sktKernel, mensajeAKernel);
-		free(mensajeAKernel);
+
+		pcbHabilitado= false;
 	}
 
 
@@ -929,20 +933,21 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 			string_append(&mensajeAKernel, ";");
 
 			enviarMensaje(&sktKernel, mensajeAKernel);
-			free(mensajeAKernel);
+			pcbHabilitado= false;
 		}
 	}
 	else
 	{
-		char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "809");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
+		pthread_mutex_unlock(&mutex_instrucciones);
+		char* exitLlamada = string_new();
+		string_append(&exitLlamada, "809");
+		string_append(&exitLlamada, ";");
+		string_append(&exitLlamada, string_itoa(pcb->pid));
+		string_append(&exitLlamada, ";");
 
-		enviarMensaje(&sktKernel, mensajeAKernel);
-		free(mensajeAKernel);
-
+		enviarMensaje(&sktKernel, exitLlamada);
+		//free(aux);
+		pcbHabilitado= false;
 	}
 	return;
 }
