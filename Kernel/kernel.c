@@ -1480,7 +1480,13 @@ void * handler_conexion_cpu(void * sock) {
 			case 808:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				un_pcb = pcbFromPid(pid_msg);
-				finalizarPrograma(pid_msg, FIN_ERROR_SIN_DEFINICION);
+				finalizarPrograma(pid_msg, FIN_ERROR_ETIQUETA_INEXISTENTE);
+				break;
+
+			case 809:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				un_pcb = pcbFromPid(pid_msg);
+				finalizarPrograma(pid_msg, FIN_ERROR_LOOP_INFINITO);
 				break;
 
 		}
@@ -1644,6 +1650,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		break;
 	case FIN_ERROR_ETIQUETA_INEXISTENTE:
 		errorLog = "La etiqueta o funcion a la que esta llamando no fue definida";
+		break;
+	case FIN_ERROR_LOOP_INFINITO:
+		errorLog = "La funcion entró en un ciclo infinito y fue detenida";
 		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";

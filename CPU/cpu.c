@@ -844,20 +844,46 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	puts("");
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
-	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
+	if(pcb->indiceStack->elements_count < 64)
+	{
+		t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
-	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
-	stackFuncion->args = list_create();
-	stackFuncion->variables = list_create();
-	list_add(pcb->indiceStack, stackFuncion);
+		stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
+		stackFuncion->args = list_create();
+		stackFuncion->variables = list_create();
+		list_add(pcb->indiceStack, stackFuncion);
 
-	printf("Etiqueta: %s\n", trim(etiqueta));
-	printf("\n");
+		printf("Etiqueta: %s\n", trim(etiqueta));
+		printf("\n");
 
-//	imprimoInfoPCB(pcb);
+	//	imprimoInfoPCB(pcb);
 
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
-	pcb->program_counter = instruccion-1;
+		t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
+		pcb->program_counter = instruccion-1;
+		if(instruccion == -1)
+		{
+			char* mensajeAKernel = string_new();
+			string_append(&mensajeAKernel, "808");
+			string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, string_itoa(pcb->pid));
+			string_append(&mensajeAKernel, ";");
+
+			enviarMensaje(&sktKernel, mensajeAKernel);
+			free(mensajeAKernel);
+		}
+	}
+	else
+	{
+		char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "809");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(pcb->pid));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+		free(mensajeAKernel);
+	}
+
 
 	//pcb->program_counter++;
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
@@ -871,36 +897,51 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	printf("\n");
-	t_Stack* stackFuncion = malloc(sizeof(t_Stack));
+	if(pcb->indiceStack->elements_count < 64)
+	{
+		t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
-	stackFuncion->retPost = pcb->program_counter;
-	stackFuncion->retVar = donde_retornar;
-	stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
-	stackFuncion->args = list_create();
-	stackFuncion->variables = list_create();
-	list_add(pcb->indiceStack, stackFuncion);
+		stackFuncion->retPost = pcb->program_counter;
+		stackFuncion->retVar = donde_retornar;
+		stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
+		stackFuncion->args = list_create();
+		stackFuncion->variables = list_create();
+		list_add(pcb->indiceStack, stackFuncion);
 
 
-	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
-	pthread_mutex_unlock(&mutex_instrucciones);
-	pcb->program_counter = instruccion - 1;
+		t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
+		pthread_mutex_unlock(&mutex_instrucciones);
+		pcb->program_counter = instruccion - 1;
 
-	//pcb->program_counter++;
-	printf("el valor de la instruccion es: %d\n", instruccion);
-	//printf("\n");
-	//free(stackFuncion);
-	printf("ahora el program counter es: %d\n", pcb->program_counter);
+		//pcb->program_counter++;
+		//printf("el valor de la instruccion es: %d\n", instruccion);
+		//printf("\n");
+		//free(stackFuncion);
+		//printf("ahora el program counter es: %d\n", pcb->program_counter);
 
-	if(instruccion == -1)
+		if(instruccion == -1)
+		{
+			char* mensajeAKernel = string_new();
+			string_append(&mensajeAKernel, "808");
+			string_append(&mensajeAKernel, ";");
+			string_append(&mensajeAKernel, string_itoa(pcb->pid));
+			string_append(&mensajeAKernel, ";");
+
+			enviarMensaje(&sktKernel, mensajeAKernel);
+			free(mensajeAKernel);
+		}
+	}
+	else
 	{
 		char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "808");
+		string_append(&mensajeAKernel, "809");
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(pcb->pid));
 		string_append(&mensajeAKernel, ";");
 
 		enviarMensaje(&sktKernel, mensajeAKernel);
 		free(mensajeAKernel);
+
 	}
 	return;
 }
