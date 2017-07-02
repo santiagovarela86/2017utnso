@@ -1131,11 +1131,11 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 	int result = recv(sktKernel, mensajeDeKernel, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("El Archivo se abrió correctamente");
+		puts("El Archivo se abrió correctamente \n");
 		int fdNuevo = atoi(mensajeDeKernel);
 		printf("El file descriptor es %d \n", fdNuevo);
 		 retorno = fdNuevo;
-
+		 puts("\n");
 	} else {
 		printf("Error al abrir el archivo \n");
 		retorno = 0;

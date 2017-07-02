@@ -312,6 +312,13 @@ void crear_archivo(char* flag, char* directorio){
 
 	  char* directorioAux = string_new();
       directorioAux = strtok(directorio, "\n"); //porque me agrega un \n al final del archivo
+	  char* auxConBarra = string_substring(directorioAux,string_length(directorioAux)-1,string_length(directorioAux));
+	  printf("%s\n",auxConBarra);
+	  if(string_equals_ignore_case(auxConBarra,"/"))
+	  {
+		  directorioAux = string_substring(directorioAux,1,string_length(directorioAux));
+	  }
+
 	  char* pathAbsoluto = string_new();
 	  string_append(&pathAbsoluto, montaje);
 	  string_append(&pathAbsoluto, directorioAux);
