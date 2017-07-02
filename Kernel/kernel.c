@@ -1914,7 +1914,10 @@ t_pcb * deserializar_pcb(char * mensajeRecibido){
 			cantVariables--;
 		}
 
-		int cantArgumentos = atoi(message[i]);
+		int cantArgumentos = 0;
+		if (message[i] != NULL){
+			cantArgumentos = atoi(message[i]);
+		}
 		i++;
 		while (cantArgumentos > 0) {
 			t_variables* argus = malloc(sizeof(t_variables));
