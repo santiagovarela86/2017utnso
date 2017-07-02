@@ -217,7 +217,7 @@ void * manejoPrograma(void * args){
 
 	hilo_programa* est_program = (hilo_programa* ) list_find(lista_semaforos, (void *) encontrar_pid);
 
-	pthread_mutex_lock(&(est_program->mtx_programa));
+	//pthread_mutex_lock(&(est_program->mtx_programa));
 
 	while(1){
 

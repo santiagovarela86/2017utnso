@@ -1239,7 +1239,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(pcb->pid));
 	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs,  string_itoa((int)informacion));
+	string_append(&mensajeFs, (char *) informacion);
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(tamanio));
 	string_append(&mensajeFs, ";");

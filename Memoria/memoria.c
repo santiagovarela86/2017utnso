@@ -631,7 +631,7 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 	char* mensajeACpu = string_new();
 	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
 	string_append(&mensajeACpu, ";");
-	string_append(&mensajeACpu, string_itoa(*paginaNueva));
+	string_append(&mensajeACpu, string_itoa(false));
 	string_append(&mensajeACpu, ";");
 	string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 	string_append(&mensajeACpu, ";");
@@ -642,9 +642,15 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 
 void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock){
 
+	puts("definirVariableEnNuevaPagina");
+
 	t_pagina_invertida* pag_encontrada = buscar_pagina_para_insertar(pid, cantPaginasStackAsignadas + 1);
 
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
+
+	pag_encontrada->nro_pagina = cantPaginasStackAsignadas + 1;
+	pag_encontrada->pid = pid;
+
 	list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 
 	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_encontrada->nro_marco, pag_encontrada->nro_pagina, pag_encontrada->pid);
@@ -657,14 +663,14 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasS
 	list_add(lista_paginas_stack, pag_stack);
 
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
-	//grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+	pag_encontrada->offset = pag_encontrada->offset + OFFSET_VAR; ////ACTUALIZO EL VALOR DEL OFFSET
 
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
 	char* mensajeACpu = string_new();
 	string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_OK));
 	string_append(&mensajeACpu, ";");
-	string_append(&mensajeACpu, string_itoa(*paginaNueva));
+	string_append(&mensajeACpu, string_itoa(true));
 	string_append(&mensajeACpu, ";");
 	string_append(&mensajeACpu, serializar_entrada_indice_stack(entrada_stack));
 	string_append(&mensajeACpu, ";");
