@@ -3857,23 +3857,23 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 		//printf("el valor a borrar es %d en FD \n", archAbrir1->fileDescriptor);
 		if(archAbrir2->cantidadDeAperturas <= 1)
 		{
-			char* mensajeCerrarRetorno = string_new();
+			/*char* mensajeCerrarRetorno = string_new();
 			string_append(&mensajeCerrarRetorno, "802");
 			string_append(&mensajeCerrarRetorno, ";");
 			string_append(&mensajeCerrarRetorno, archAbrir2->path);
 			string_append(&mensajeCerrarRetorno, ";");
 
-			enviarMensaje(&skt_filesystem, mensajeCerrarRetorno);
+			enviarMensaje(&skt_filesystem, mensajeCerrarRetorno);*/
 
 			list_remove(lista_File_global, archAbrir1->global_fd);
 			free(archAbrir2);
-			string_append(&resultado, "El archivo fue cerrado y eliminado ya que no tiene referencias en otros procesos");
+			string_append(&resultado, "El archivo fue cerrado y eliminado de la tabla global ya que no tiene referencias en otros procesos");
 		}
 		else
 		{
 			archAbrir2->cantidadDeAperturas--;
 			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
-			string_append(&resultado, "El archivo fue cerrado del proceso, pero no se eliminó dado que tiene referencias en otros procesos");
+			string_append(&resultado, "El archivo fue cerrado del proceso");
 		}
 
 		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
