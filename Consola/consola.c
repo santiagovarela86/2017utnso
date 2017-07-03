@@ -233,6 +233,26 @@ void * manejoPrograma(void * args){
 		respuesta_kernel = string_split(buffer_local, ";");
 
 		if (atoi(respuesta_kernel[0]) == 575){
+
+			int encontrado = 0;
+			int fin = queue_size(cola_programas);
+			programa* p;
+
+			while(fin > 0 && encontrado == 0){
+				int pid = atoi(respuesta_kernel[1]);
+				p = queue_pop(cola_programas);
+
+				if(p->pid == pid){
+					encontrado = 1;
+					p->mensajes++;
+				}
+
+				queue_push(cola_programas, p);
+
+				fin--;
+
+			}
+
 			printf("Mensaje de programa %d : %s\n", atoi(respuesta_kernel[1]), respuesta_kernel[2]);
 			puts("");
 
@@ -256,7 +276,7 @@ void * manejoPrograma(void * args){
 					// sleep(3); // Sleep para probar el calculo del tiempo
 
 					time_t tiempo = time(0);
-					struct tm * morfeo = localtime(&tiempo); //TODO Aqui rompe al ejecutar un segundo programa
+					struct tm * morfeo = localtime(&tiempo);
 
 					p->fin = morfeo->tm_hour * 10000 + morfeo->tm_min * 100 + morfeo->tm_sec;
 					p->duracion = p->fin - p->inicio;
@@ -264,6 +284,7 @@ void * manejoPrograma(void * args){
 					printf("La hora de inicio fue H: %d, M: %d, S: %d \n", (p->inicio / 10000), ((p->inicio % 10000) / 100), (p->inicio % 100));
 					printf("La hora de finalizacion fue H: %d, M: %d, S: %d \n", (p->fin / 10000), ((p->fin % 10000) / 100), (p->fin % 100));
 					printf("La duracion fue H: %d, M: %d, S: %d \n", (p->duracion / 10000), ((p->duracion % 10000) / 100), (p->duracion % 100));
+					printf("La cantidad de impresiones por pantalla fue: %d \n", p->mensajes);
 
 				}
 
