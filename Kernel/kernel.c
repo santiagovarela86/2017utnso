@@ -3737,8 +3737,8 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	      }
 		 else
 		 {
-			if(string_contains(flag, "c"))
-			{
+			//if(string_contains(flag, "c"))
+			//{
 				fdNuevo = 3;
 				grabarEnTablaGlobal(1, 0,direccion);
 				grabarEnTablaProcesos(pid_mensaje, fdNuevo, 0, flag);
@@ -3757,11 +3757,11 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 				retorno->exitCode = "";
 				retorno->fd = fdNuevo;
-		    }
-			else
-				{
-				retorno->exitCode ="Error";
-				}
+		    //}
+			//else
+				//{
+				//retorno->exitCode ="Error";
+				//}
 		 }
 	return retorno;
 }
