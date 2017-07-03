@@ -3724,24 +3724,31 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 	      }
 		 else
 		 {
-			fdNuevo = 3;
-			grabarEnTablaGlobal(1, 0,direccion);
-			grabarEnTablaProcesos(pid_mensaje, fdNuevo, 0, flag);
+			if(string_contains(flag, "c"))
+			{
+				fdNuevo = 3;
+				grabarEnTablaGlobal(1, 0,direccion);
+				grabarEnTablaProcesos(pid_mensaje, fdNuevo, 0, flag);
 
-			char* mensajeAFS = string_new();
-			string_append(&mensajeAFS, "803");
-			string_append(&mensajeAFS, ";");
-			string_append(&mensajeAFS, flag);
-			string_append(&mensajeAFS, ";");
-			string_append(&mensajeAFS, direccion);
-			string_append(&mensajeAFS, ";");
+				char* mensajeAFS = string_new();
+				string_append(&mensajeAFS, "803");
+				string_append(&mensajeAFS, ";");
+				string_append(&mensajeAFS, flag);
+				string_append(&mensajeAFS, ";");
+				string_append(&mensajeAFS, direccion);
+				string_append(&mensajeAFS, ";");
 
-			enviarMensaje(&skt_filesystem, mensajeAFS);
+				enviarMensaje(&skt_filesystem, mensajeAFS);
 
-			//free(mensajeAFS);
+				//free(mensajeAFS);
 
-			retorno->exitCode = "";
-			retorno->fd = fdNuevo;
+				retorno->exitCode = "";
+				retorno->fd = fdNuevo;
+		    }
+			else
+				{
+				retorno->exitCode ="Error";
+				}
 		 }
 	return retorno;
 }

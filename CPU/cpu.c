@@ -1119,36 +1119,48 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 		string_append(&flagEnviar,"r");
 	}
 
-	char* mensajeKernel = string_new();
-	string_append(&mensajeKernel, "803");
-	string_append(&mensajeKernel, ";");
-	string_append(&mensajeKernel, string_itoa(pcb->pid));
-	string_append(&mensajeKernel, ";");
-	string_append(&mensajeKernel, ((char*) (direccion)));
-	string_append(&mensajeKernel, ";");
-	string_append(&mensajeKernel, flagEnviar);
-	string_append(&mensajeKernel, ";");
+	char* mensajeAbrirEnviar = string_new();
+	string_append(&mensajeAbrirEnviar, "803");
+	string_append(&mensajeAbrirEnviar, ";");
+	string_append(&mensajeAbrirEnviar, string_itoa(pcb->pid));
+	string_append(&mensajeAbrirEnviar, ";");
+	string_append(&mensajeAbrirEnviar, ((char*) (direccion)));
+	string_append(&mensajeAbrirEnviar, ";");
+	string_append(&mensajeAbrirEnviar, flagEnviar);
+	string_append(&mensajeAbrirEnviar, ";");
     //printf("la direccion es %s", direccion);
-	enviarMensaje(&sktKernel, mensajeKernel);
+	enviarMensaje(&sktKernel, mensajeAbrirEnviar);
 
 	t_descriptor_archivo retorno;
 
-	char* mensajeDeKernel = string_new();
-	int result = recv(sktKernel, mensajeDeKernel, MAXBUF, 0);
+	char* mensajeAbrirRespuesta =  malloc(MAXBUF);
+	int result = recv(sktKernel, mensajeAbrirRespuesta, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("El Archivo se abrió correctamente \n");
-		int fdNuevo = atoi(mensajeDeKernel);
-		printf("El file descriptor es %d \n", fdNuevo);
-		 retorno = fdNuevo;
-		 puts("\n");
+		if(string_contains(mensajeAbrirRespuesta,"Finalización"))
+		{
+			pcbHabilitado = false;
+			retorno = 0;
+			free(mensajeAbrirEnviar);
+			free(mensajeAbrirRespuesta);
+		}
+		else
+		{
+			puts("El Archivo se abrió correctamente \n");
+			int fdNuevo = atoi(mensajeAbrirRespuesta);
+			printf("El file descriptor es %d \n", fdNuevo);
+			 retorno = fdNuevo;
+			 puts("\n");
+
+
+		free(mensajeAbrirEnviar);
+		free(mensajeAbrirRespuesta);
+		}
+
 	} else {
 		printf("Error al abrir el archivo \n");
 		retorno = 0;
 	}
-
-	free(mensajeKernel);
-	free(mensajeDeKernel);
 	return retorno;
 }
 
