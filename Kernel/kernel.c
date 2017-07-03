@@ -38,14 +38,14 @@
 #include "helperFunctions.h"
 #include <parser/metadata_program.h>
 #include <semaphore.h>
-#include <linux/inotify.h>
+#include <sys/types.h>
+#include <sys/inotify.h>
 
 #define MAXCON 10
 #define MAXCPU 10
 
-//TODO: Agregar logica quantum_sleep una vez se hayan completado las pruebas unitarias
 #define EVENT_SIZE  ( sizeof (struct inotify_event) )
-#define EVENT_BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
+#define BUF_LEN     ( 1024 * ( EVENT_SIZE + 16 ) )
 
 int conexionesCPU = 0;
 int conexionesConsola = 0;
@@ -87,6 +87,8 @@ sem_t sem_prog;
 sem_t sem_cpus;
 int programCounter;
 int longitud_pag;
+char* dir_path_archivo_config;
+char* path_archivo_config_notificador;
 
 int main(int argc, char **argv) {
 
@@ -101,8 +103,11 @@ int main(int argc, char **argv) {
 	pthread_t thread_proceso_cpu;
 	pthread_t thread_consola_kernel;
 	pthread_t thread_planificador;
+	pthread_t thread_notificador;
 
-	char * pathConfig = argv[1];
+	char * pathConfig = string_new();
+	string_append(&pathConfig, argv[1]);
+
 	inicializarEstructuras(pathConfig);
 
 	imprimirConfiguracion(configuracion);
@@ -113,6 +118,7 @@ int main(int argc, char **argv) {
 	creoThread(&thread_proceso_cpu, hilo_conexiones_cpu, NULL);
 	creoThread(&thread_consola_kernel, inicializar_consola, NULL);
 	creoThread(&thread_planificador, planificar, NULL);
+	creoThread(&thread_notificador, manejo_notificador, NULL);
 
 	pthread_join(thread_id_filesystem, NULL);
 	pthread_join(thread_id_memoria, NULL);
@@ -120,6 +126,7 @@ int main(int argc, char **argv) {
 	pthread_join(thread_proceso_cpu, NULL);
 	pthread_join(thread_consola_kernel, NULL);
 	pthread_join(thread_planificador, NULL);
+	pthread_join(thread_notificador, NULL);
 
 	liberarEstructuras();
 
@@ -174,6 +181,12 @@ void inicializarEstructuras(char * pathConfig){
 
 	inicializar_variables_globales();
 	inicializar_semaforos();
+
+	path_archivo_config_notificador = string_new();
+	string_append(&path_archivo_config_notificador, pathConfig);
+
+	dir_path_archivo_config = string_new();
+	string_append(&dir_path_archivo_config, dirname(pathConfig));
 
 }
 
@@ -3972,5 +3985,51 @@ void analisisMemoryLeaks(int pid){
 	else {
 		printf("El programa con PID %d finalizo sin Memory Leaks \n", pid);
 	}
+}
+
+void* manejo_notificador(void* args){
+
+	while(1){
+
+		int fd_config = inotify_init();
+		char buffer_notify[BUF_LEN];
+
+		int watch_directory = inotify_add_watch(fd_config, dir_path_archivo_config, IN_MODIFY);
+
+		/*check for error*/
+		if ( fd_config < 0 ) {
+			perror("inotify_init");
+		}
+
+		int length_notify = read(fd_config, buffer_notify, BUF_LEN);
+
+		if (length_notify < 0) {
+			perror("read");
+		}
+
+		int i = 0;
+		while (i < length_notify) {
+
+			struct inotify_event *event = (struct inotify_event *) &buffer_notify[i];
+			if (event->len) {
+				if (event->mask & IN_MODIFY) {
+
+					sleep(1);
+					Kernel_Config* configuracion_modificada = leerConfiguracion(path_archivo_config_notificador);
+					printf("VALOR ANTERIOR DEL QUANTUM SLEEP: %d\n", configuracion->quantum_sleep);
+					configuracion->quantum_sleep = configuracion_modificada->quantum_sleep;
+					printf("VALOR NUEVO DEL QUANTUM SLEEP: %d\n", configuracion->quantum_sleep);
+				}
+			}
+			i += EVENT_SIZE + event->len;
+		}
+
+		buffer_notify[BUF_LEN] = '\0';
+	    (void) inotify_rm_watch(fd_config, watch_directory);
+	    (void) close(fd_config);
+	}
+
+	return EXIT_SUCCESS;
+
 }
 

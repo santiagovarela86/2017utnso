@@ -248,6 +248,7 @@ void detener_pcb(int* skt);
 void incrementarContadorPaginasHeapSolicitadas(int pid);
 void incrementarContadorPaginasHeapLiberadas(int pid);
 void analisisMemoryLeaks(int pid);
+void* manejo_notificador(void* args);
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 
