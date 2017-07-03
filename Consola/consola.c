@@ -264,6 +264,7 @@ void * manejoPrograma(void * args){
 					printf("La hora de inicio fue H: %d, M: %d, S: %d \n", (p->inicio / 10000), ((p->inicio % 10000) / 100), (p->inicio % 100));
 					printf("La hora de finalizacion fue H: %d, M: %d, S: %d \n", (p->fin / 10000), ((p->fin % 10000) / 100), (p->fin % 100));
 					printf("La duracion fue H: %d, M: %d, S: %d \n", (p->duracion / 10000), ((p->duracion % 10000) / 100), (p->duracion % 100));
+					printf("La cantidad de impresiones por pantalla fue: %d \n", p->mensajes);
 
 				}
 
