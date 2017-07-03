@@ -1348,6 +1348,11 @@ void * handler_conexion_cpu(void * sock) {
 							 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
 					    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
 						 }
+						 if(string_contains(auxEscribir, "secundario"))
+						 {
+							 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
+					    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+						 }
 						 else
 						 {
 					    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
@@ -1389,8 +1394,12 @@ void * handler_conexion_cpu(void * sock) {
 
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
-				 char* resulBorrar = string_duplicate(borrarArchivo(pid_mensaje, fd));
-
+				 char* resulBorrar = borrarArchivo(pid_mensaje, fd);
+					 if(string_contains(resulBorrar, "Error"))
+					{
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+						enviarMensaje(socketCliente, "Finalización por ExitCode");
+					}
 				 enviarMensaje(socketCliente, resulBorrar);
 
 				break;
@@ -1400,7 +1409,11 @@ void * handler_conexion_cpu(void * sock) {
 				 fd = atoi(mensajeDesdeCPU[2]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 			     char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
-
+				 if(string_contains(auxCerrar, "Error"))
+				{
+					finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+					enviarMensaje(socketCliente, "Finalización por ExitCode");
+				}
 				 enviarMensaje(socketCliente, auxCerrar);
 
 				break;
@@ -1672,6 +1685,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		break;
 	case FIN_ERROR_LOOP_INFINITO:
 		errorLog = "La funcion entró en un ciclo infinito y fue detenida";
+		break;
+	case FIN_ESCRITURA_SUPERIOR_A_DISCO:
+		errorLog = "La cantidad de caracteres que quiere escribir supera al almacenamiento secundario";
 		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
@@ -3828,7 +3844,7 @@ char* borrarArchivo(int pid_mensaje, int fd)
 		}
 		else
 		{
-			return "El archivo a ser eliminado ya fue borrado anteriormente o no fue creado";
+			return "Error: el archivo no existe";
 		}
 	return "El archivo fue eliminado";
 }
@@ -3882,7 +3898,7 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 	}
 	else
 	{
-		string_append(&resultado, "No se encuentra el archivo que se quiere cerrar.");
+		string_append(&resultado, "Error: el archivo no se encuentra");
 	}
 
 	return resultado;

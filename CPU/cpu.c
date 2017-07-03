@@ -1187,7 +1187,17 @@ void borrar(t_descriptor_archivo descriptor) {
 	int result = recv(sktKernel, resulMenBorrar, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("%s \n",resulMenBorrar);
+		if(string_contains(resulMenBorrar,"Finalización"))
+		{
+			pcbHabilitado = false;
+
+		}
+		else
+		{
+			printf("%s \n",resulMenBorrar);
+
+		}
+
 	} else {
 		printf("Error no se pudo borrar el archivo \n");
 	}
@@ -1215,7 +1225,16 @@ void cerrar(t_descriptor_archivo descriptor) {
 		int result = recv(sktKernel, resulMenCerrar, MAXBUF, 0);
 
 		if (result > 0) {
-			printf("%s \n",resulMenCerrar);
+			if(string_contains(resulMenCerrar,"Finalización"))
+			{
+				pcbHabilitado = false;
+
+			}
+			else
+			{
+				printf("%s \n",resulMenCerrar);
+			}
+
 		} else {
 			printf("Error el archivo no se pudo cerrar \n");
 		}
@@ -1272,7 +1291,16 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
 
 	if (result > 0) {
-		printf("%s \n",resulMenEscribir);
+		if(string_contains(resulMenEscribir,"Finalización"))
+		{
+			pcbHabilitado = false;
+
+		}
+		else
+		{
+			printf("%s \n",resulMenEscribir);
+		}
+
 	} else {
 		printf("Error el archivo no se pudo escribir \n");
 	}
@@ -1304,13 +1332,23 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	int result =recv(sktKernel, resulMenLeer, MAXBUF, 0);
 
 	if (result > 0) {
-		puts("El archivo se leyo correctamente\n");
-		//printf("%s \n", resulMenLeer);
-		printf("su contenido es %s \n", resulMenLeer);
+		if(string_contains(resulMenLeer,"Finalización"))
+		{
+			pcbHabilitado = false;
+			informacion = atoi(resulMenLeer);
+
+		}
+		else
+		{
+			puts("El archivo se leyo correctamente\n");
+				//printf("%s \n", resulMenLeer);
+				printf("su contenido es %s \n", resulMenLeer);
+		}
+
 	} else {
 		printf("Error no se pudo leer \n");
 	}
-	informacion = atoi(resulMenLeer);
+
 	free(resulMenLeer);
 	//free(mensajeFs);
 	return;

@@ -178,7 +178,7 @@ void * hilo_conexiones_kernel(void * args){
 	return EXIT_SUCCESS;
 }
 
-int validar_archivo(char* directorio){
+int validar_archivo(char* directorio, char* flag){
 
 	char* directorioAux = string_new();
 	directorioAux = strtok(directorio, "\n");
@@ -221,14 +221,25 @@ int validar_archivo(char* directorio){
 			}
 			else
 			{
-				return 1;
+				if(string_contains(flag, "c"))
+				{
+					return 1;
+				}
+				else
+				{
+					return 3;
+				}
+
 			}
 
 		}
-
-		else
+		if(string_contains(flag, "c"))
 		{
 			return 1;
+		}
+		else
+		{
+			return 3;
 		}
 	}
 	//free(pathAbsoluto);
@@ -323,7 +334,7 @@ void crear_archivo(char* flag, char* directorio){
 	  string_append(&pathAbsoluto, montaje);
 	  string_append(&pathAbsoluto, directorioAux);
 
-   	  int result = validar_archivo(pathAbsoluto);
+   	  int result = validar_archivo(pathAbsoluto, flag);
 
    	  if (result == 1)
    	  {
@@ -869,7 +880,7 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 		int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
 		if(size > tamanioDisco)
 		{
-		    enviarMensaje(&socketKernel, "El tamaño a escribir supera al almacenamiento secunadario");
+		    enviarMensaje(&socketKernel, "Error: tamaño a escribir supera al almacenamiento secunadario");
 		}
 		else
 		{
