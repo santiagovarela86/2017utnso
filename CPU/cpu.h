@@ -80,6 +80,7 @@ void manejador_signal();
 
 #define CONST_SIN_NOMBRE_FUNCION -1
 #define ASIGNACION_MEMORIA_OK 0
+#define STACK_OVERFLOW 2108
 #define ASIGNACION_MEMORIA_ERROR 1
 #define VARIABLE_EN_CACHE 99
 

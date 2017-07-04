@@ -26,6 +26,7 @@
 #define OFFSET_VAR 4
 #define ASIGNACION_MEMORIA_OK 0
 #define ASIGNACION_MEMORIA_ERROR 1
+#define STACK_OVERFLOW 2108
 
 typedef struct {
 	int socket_consola;
@@ -79,7 +80,7 @@ void liberarEstructuras();
 void enviarInstACPU(int * socketCliente, char ** mensajeDesdeCPU);
 void inicializar_tabla_paginas(Memoria_Config* config);
 t_list * grabar_en_bloque(int pid, char * codigo);
-t_pagina_proceso* get_manejo_programa(int pid);
+t_pagina_proceso* obtenerUltimaPaginaStack(int pid);
 t_pagina_proceso* crear_nuevo_manejo_programa(int pid, int pagina);
 void liberar_pagina(t_pagina_invertida* pagina);
 int marco_libre_para_variables();
@@ -112,10 +113,10 @@ void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedido
 void obtenerPosicionVariable(int pid, int pagina, int offset, int sock);
 void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock);
 void asignarVariable(char** mensajeDesdeCPU, int sock);
-void definirVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
-void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int* paginaNueva, int sock);
-void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int* paginaNueva, int sock);
-void definirVariableEnNuevaPagina(char nombreVariable, int pid, int cantPaginasStackAsignadas, int* paginaNueva, int sock);
+void definirVariable(char nombreVariable, int pid, int pagina, int sock);
+void definirPrimeraVariable(char nombreVariable, int pid, int paginaParaVariables, int sock);
+void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encontrada, int sock);
+void definirVariableEnNuevaPagina(char nombreVariable, int pid, int pagina, int sock);
 void eliminarMemoriaHeap(int pid, int pagina, int direccion);
 int reordenarPaginaHeap(int indicePaginaHeap);
 void reordenarMetadata(int pid, int paginaConDosBloques, int direccionMeta1, int direccionMeta2, int bytesAUnir);
