@@ -575,7 +575,7 @@ void definirVariable(char nombreVariable, int pid, int pagina, int sock){
 			else {
 				//Entonces llego al limite de paginas de stack
 				//Se envia mensaje a CPU informando que no puede continuar la ejecucion
-				finalizar_programa(pid);
+				//finalizar_programa(pid);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(STACK_OVERFLOW));

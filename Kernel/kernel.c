@@ -1516,7 +1516,6 @@ void * handler_conexion_cpu(void * sock) {
 
 			case 809:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
-				un_pcb = pcbFromPid(pid_msg);
 				finalizarPrograma(pid_msg, FIN_ERROR_STACK_OVERFLOW);
 
 				break;

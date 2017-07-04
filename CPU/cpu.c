@@ -174,21 +174,22 @@ void* manejo_kernel(void *args) {
 
 			free(mensajeAKernel);
 
-		} else { //FIN DE QUANTUM
-			char * buffer = malloc(MAXBUF);
+		} else if (pcb->quantum <= 0){
+				//FIN DE QUANTUM
+				char * buffer = malloc(MAXBUF);
 
-			enviarMensaje(&socketKernel, serializarMensaje(1, 530));
+				enviarMensaje(&socketKernel, serializarMensaje(1, 530));
 
-			pcb->quantum = q;
+				pcb->quantum = q;
 
-			//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
-			recv(socketKernel, buffer, MAXBUF, 0);
+				//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
+				recv(socketKernel, buffer, MAXBUF, 0);
 
-			//ENVIO EL PCB AL KERNEL NUEVAMENTE
-			enviarMensaje(&socketKernel, serializar_pcb(pcb));
+				//ENVIO EL PCB AL KERNEL NUEVAMENTE
+				enviarMensaje(&socketKernel, serializar_pcb(pcb));
 
-			free(buffer);
-		}
+				free(buffer);
+			}
 
 		//CUANDO CORTA POR ERROR DE HEAP, SE DESHABILITA EL PCB, EL WHILE QUE RECIBE INSTRUCCIONES SE CORTA
 		//Y NO CAE A NINGUNA DE LAS OPCIONES ANTERIORES, SIMPLEMENTE SE DEJA DE EJECUTAR EL PROGRAMA
