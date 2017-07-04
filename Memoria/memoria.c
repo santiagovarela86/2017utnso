@@ -611,9 +611,6 @@ void definirPrimeraVariable(char nombreVariable, int pid, int pagina, int sock){
 	printf("Se asigno el marco %d para la pagina de stack %d del PID %d \n", pag_a_cargar->nro_marco, pag_a_cargar->nro_pagina, pag_a_cargar->pid);
 	puts("");
 
-	////ACTUALIZO EL VALOR DEL OFFSET
-	pag_a_cargar->offset = pag_a_cargar->offset + OFFSET_VAR;
-
 	list_replace(tabla_paginas, pag_a_cargar->nro_marco, pag_a_cargar);
 
 	t_pagina_proceso* manejo_programa = crear_nuevo_manejo_programa(pid, pag_a_cargar->nro_pagina);
@@ -622,6 +619,9 @@ void definirPrimeraVariable(char nombreVariable, int pid, int pagina, int sock){
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_a_cargar);
 
 	//grabar_valor(obtener_inicio_pagina(pag_a_cargar), 0);
+
+	////ACTUALIZO EL VALOR DEL OFFSET
+	pag_a_cargar->offset = pag_a_cargar->offset + OFFSET_VAR;
 
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
@@ -644,14 +644,14 @@ void definirVariableEnPagina(char nombreVariable, t_pagina_invertida* pag_encont
 
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 
-	////ACTUALIZO EL VALOR DEL OFFSET
-	pag_encontrada->offset = pag_encontrada->offset + OFFSET_VAR;
-
 	list_replace(tabla_paginas, pag_encontrada->nro_marco, pag_encontrada);
 
 	t_Stack* entrada_stack = crear_entrada_stack(nombreVariable, pag_encontrada);
 
 	//grabar_valor(obtener_inicio_pagina(pag_encontrada) + obtener_offset_pagina(pag_encontrada), 0);
+
+	////ACTUALIZO EL VALOR DEL OFFSET
+	pag_encontrada->offset = pag_encontrada->offset + OFFSET_VAR;
 
 	pthread_mutex_unlock(&mutex_estructuras_administrativas);
 
@@ -1590,7 +1590,8 @@ int obtener_inicio_pagina(t_pagina_invertida* pagina){
 
 bool pagina_llena(t_pagina_invertida* pagina){
 
-	return pagina->offset == configuracion->marco_size - OFFSET_VAR;
+	//return pagina->offset == configuracion->marco_size - OFFSET_VAR;
+	return pagina->offset == configuracion->marco_size;
 
 }
 
