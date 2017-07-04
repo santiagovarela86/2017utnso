@@ -187,7 +187,7 @@ void * hilo_conexiones_kernel(){
 					pid = atoi(mensajeDelKernel[1]);
 					int paginaActual = atoi(mensajeDelKernel[2]);
 					int bytes = atoi(mensajeDelKernel[3]);
-					crearPaginaHeap(pid, paginaActual, bytes);
+					crearPaginaHeap(pid, paginaActual, bytes); //ESTO USA ALMACENAR BYTES EN PAGINA
 					break;
 
 				case 607:
@@ -196,7 +196,7 @@ void * hilo_conexiones_kernel(){
 					int paginaExistente = atoi(mensajeDelKernel[2]);
 					int direccionAUsar = atoi(mensajeDelKernel[3]);
 					int bytesSolicitados = atoi(mensajeDelKernel[4]);
-					usarPaginaHeap(pid, paginaExistente, direccionAUsar, bytesSolicitados);
+					usarPaginaHeap(pid, paginaExistente, direccionAUsar, bytesSolicitados); //ESTO USA SOLICITAR DATOS Y ALMACENAR BYTES EN PAGINA
 					break;
 
 				case 610:
@@ -206,7 +206,7 @@ void * hilo_conexiones_kernel(){
 					int direccionMeta1 = atoi(mensajeDelKernel[3]);
 					int direccionMeta2 = atoi(mensajeDelKernel[4]);
 					int bytesAUnir = atoi(mensajeDelKernel[5]);
-					reordenarMetadata(pid, paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir);
+					reordenarMetadata(pid, paginaConDosBloques, direccionMeta1, direccionMeta2, bytesAUnir); //ESTO USA SOLICITAR DATOS Y ALMACENAR BYTES EN PAGINA
 					break;
 
 				case 705:
@@ -214,7 +214,7 @@ void * hilo_conexiones_kernel(){
 					int pid = atoi(mensajeDelKernel[1]);
 					int pagina = atoi(mensajeDelKernel[2]);
 					int direccion = atoi(mensajeDelKernel[3]);
-					eliminarMemoriaHeap(pid, pagina, direccion);
+					eliminarMemoriaHeap(pid, pagina, direccion); //ESTO USA SOLICITAR DATOS Y ALMACENAR BYTES EN PAGINA
 					break;
 
 				case 612:
@@ -223,7 +223,7 @@ void * hilo_conexiones_kernel(){
 
 				case 616:
 					pid = atoi(mensajeDelKernel[1]);
-					finalizar_programa(pid);
+					finalizar_programa(pid); //ESTO NO NECESITA NI SOLICITAR DATOS NI ALMACENAR BYTES
 					break;
 			}
 
@@ -471,14 +471,14 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			puts("SOLICITUD DE INSTRUCCION");
 			puts("");
 
-			enviarInstACPU(&sock, mensajeDesdeCPU);
+			enviarInstACPU(&sock, mensajeDesdeCPU); //ESTO USA SOLICITAR DATOS DE PAGINA
 
 		} else if (codigo == 511) {
 
 			puts("ASIGNACION DE VARIABLE");
 			puts("");
 
-			asignarVariable(mensajeDesdeCPU, sock);
+			asignarVariable(mensajeDesdeCPU, sock); //ESTO USA ALMACENAR BYTES EN PAGINA
 
 		} else if (codigo == 512) {
 
@@ -500,7 +500,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			puts("DEREFERENCIAR VARIABLE");
 			puts("");
 
-			obtenerValorDeVariable(mensajeDesdeCPU, sock);
+			obtenerValorDeVariable(mensajeDesdeCPU, sock); //ESTO USA SOLICITAR DATOS DE PAGINA
 
 		} else if (codigo == 601) {
 
@@ -511,7 +511,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 			int pagina = atoi(mensajeDesdeCPU[2]);
 			int offset = atoi(mensajeDesdeCPU[3]);
 
-			obtenerPosicionVariable(pid, pagina, offset, sock);
+			obtenerPosicionVariable(pid, pagina, offset, sock); //ESTO NO NECESITA NI SOLICITAR DATOS NI ALMACENAR BYTES
 		}
 
 		free(mensajeDesdeCPU);
@@ -1770,3 +1770,4 @@ void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * bu
 			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	}
 }
+
