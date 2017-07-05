@@ -1762,9 +1762,9 @@ void * planificar() {
 
 	while (1) {
 		sem_wait(&sem_cpus);
-		puts("entre cpu");
+
 		sem_wait(&sem_prog);
-		puts("entre prog");
+
 		if (plan == 0) {
 			usleep(configuracion->quantum_sleep);
 
