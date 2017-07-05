@@ -2742,7 +2742,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE
 			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
 			|| codigo == FIN_ESCRITURA_SUPERIOR_A_DISCO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO){
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA){
 		int encontrado = 0;
 
 		estruct_cpu* temporalCpu;
