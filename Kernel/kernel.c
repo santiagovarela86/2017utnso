@@ -2740,7 +2740,9 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 	//TODO estar atentos por si hay que agregar otros codigos que deban liberar la CPU
 	if(codigo == FIN_ERROR_STACK_OVERFLOW || codigo == FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE
 			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE
-			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS){
+			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
+			|| codigo == FIN_ESCRITURA_SUPERIOR_A_DISCO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO){
 		int encontrado = 0;
 
 		estruct_cpu* temporalCpu;
