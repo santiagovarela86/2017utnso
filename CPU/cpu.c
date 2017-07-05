@@ -787,6 +787,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 	puts("");
 
 	int valor;
+	bool existe_var_compartida = false;
 	char* msj = string_new();
 
 	string_append(&msj, "514");
@@ -802,15 +803,19 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable) {
 
 		char**mensajeDesdeKernel = string_split(msj, ";");
 
-		valor = atoi(mensajeDesdeKernel[0]);
+		existe_var_compartida = atoi(mensajeDesdeKernel[0]);
 
+		if (existe_var_compartida == true){
+			valor = atoi(mensajeDesdeKernel[1]);
+			free(msj);
+			printf("El valor de la compartida es: %d \n", valor);
+			printf("\n");
+			return valor;
+		} else {
+			enviarMensaje(&sktKernel, serializarMensaje(2, 810, pcb->pid));
+			pcbHabilitado= false;
+		}
 	}
-
-	free(msj);
-	printf("El valor de la compartida es: %d \n", valor);
-	printf("\n");
-	return valor;
-
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor) {

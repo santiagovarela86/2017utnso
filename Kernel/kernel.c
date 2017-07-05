@@ -1520,6 +1520,12 @@ void * handler_conexion_cpu(void * sock) {
 
 				break;
 
+			case 810:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				finalizarPrograma(pid_msg, FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE);
+
+				break;
+
 		}
 
 
@@ -3355,8 +3361,16 @@ void obtenerValorCompartida(char * variable, int * socketCliente){
 			(void *) encontrar_sem);
 
 	char* mensajeACPU = string_new();
-	string_append(&mensajeACPU, string_itoa(var_glo->valor));
-	string_append(&mensajeACPU, ";");
+
+	if (var_glo == NULL){
+		string_append(&mensajeACPU, string_itoa(false));
+		string_append(&mensajeACPU, ";");
+	} else {
+		string_append(&mensajeACPU, string_itoa(true));
+		string_append(&mensajeACPU, ";");
+		string_append(&mensajeACPU, string_itoa(var_glo->valor));
+		string_append(&mensajeACPU, ";");
+	}
 
 	enviarMensaje(socketCliente, mensajeACPU);
 
