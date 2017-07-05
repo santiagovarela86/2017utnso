@@ -1049,6 +1049,7 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 				enviarMensaje(&sktKernel, serializarMensaje(2, 811, pcb->pid));
 				pcbHabilitado= false;
 			}
+			free(mensajeDesdeKernel);
 		}
 	}
 
@@ -1069,7 +1070,19 @@ void signale(t_nombre_semaforo identificador_semaforo) {
 
 	enviarMensaje(&sktKernel, mensajeAKernel);
 
-	recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+	int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
+
+	if (result > 0){
+		char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
+		int sem_existe = atoi(mensajeDesdeKernel[0]);
+
+		if (sem_existe == false){
+			enviarMensaje(&sktKernel, serializarMensaje(2, 811, pcb->pid));
+			pcbHabilitado= false;
+		}
+
+		free(mensajeDesdeKernel);
+	}
 
 	free(mensajeAKernel);
 
