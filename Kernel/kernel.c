@@ -3202,53 +3202,71 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 
 		t_globales* sem = list_find(lista_semaforos, encontrar_sem);
 
-		if(sem->valor == 0){
+		if (sem != NULL){
 
-			int fin = queue_size(cola_ejecucion);
-			int encontrado = 0;
-			t_pcb* p;
+			if(sem->valor == 0){
 
-			while(fin > 0 && encontrado == 0){
+				int fin = queue_size(cola_ejecucion);
+				int encontrado = 0;
+				t_pcb* p;
 
-				pthread_mutex_lock(&mtx_ejecucion);
-				p = queue_pop(cola_ejecucion);
-				pthread_mutex_unlock(&mtx_ejecucion);
+				while(fin > 0 && encontrado == 0){
 
-				if(*(p->socket_cpu) == *(socketCliente)){
-					t_bloqueo* bloq = malloc(sizeof(t_bloqueo));
-					bloq->pid = p->pid;
-					bloq->sem = string_new();
-					bloq->sem = sem->nombre;
-					puts("entre");
-					list_add(registro_bloqueados, bloq);
+					pthread_mutex_lock(&mtx_ejecucion);
+					p = queue_pop(cola_ejecucion);
+					pthread_mutex_unlock(&mtx_ejecucion);
 
-					encontrado = 1;
+					if(*(p->socket_cpu) == *(socketCliente)){
+						t_bloqueo* bloq = malloc(sizeof(t_bloqueo));
+						bloq->pid = p->pid;
+						bloq->sem = string_new();
+						bloq->sem = sem->nombre;
+						puts("entre");
+						list_add(registro_bloqueados, bloq);
+
+						encontrado = 1;
+					}
+
+					pthread_mutex_lock(&mtx_ejecucion);
+					queue_push(cola_ejecucion, p);
+					pthread_mutex_unlock(&mtx_ejecucion);
+
+					fin--;
 				}
 
-				pthread_mutex_lock(&mtx_ejecucion);
-				queue_push(cola_ejecucion, p);
-				pthread_mutex_unlock(&mtx_ejecucion);
+				char* mensajeACPU = string_new();
+				string_append(&mensajeACPU, string_itoa(true));
+				string_append(&mensajeACPU, ";");
+				string_append(&mensajeACPU, "577");
+				string_append(&mensajeACPU, ";");
 
-				fin--;
+				enviarMensaje(socketCliente, mensajeACPU);
+				logrado = 1;
+
+				free(mensajeACPU);
 			}
 
-			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, "577");
-			string_append(&mensajeACPU, ";");
+			if (sem->valor > 0) {
+				pthread_mutex_lock(&mtx_semaforos);
+				sem->valor--;
+				pthread_mutex_unlock(&mtx_semaforos);
 
-			enviarMensaje(socketCliente, mensajeACPU);
-			logrado = 1;
+				char* mensajeACPU = string_new();
+				string_append(&mensajeACPU, string_itoa(true));
+				string_append(&mensajeACPU, ";");
+				string_append(&mensajeACPU, "570");
+				string_append(&mensajeACPU, ";");
 
-			free(mensajeACPU);
+				enviarMensaje(socketCliente, mensajeACPU);
+				logrado = 1;
+
+				free(mensajeACPU);
+			}
 		}
-
-		if (sem->valor > 0) {
-			pthread_mutex_lock(&mtx_semaforos);
-			sem->valor--;
-			pthread_mutex_unlock(&mtx_semaforos);
+		else {
 
 			char* mensajeACPU = string_new();
-			string_append(&mensajeACPU, "570");
+			string_append(&mensajeACPU, string_itoa(false));
 			string_append(&mensajeACPU, ";");
 
 			enviarMensaje(socketCliente, mensajeACPU);

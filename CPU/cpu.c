@@ -1024,19 +1024,30 @@ void wait(t_nombre_semaforo identificador_semaforo) {
 	int valor_esperado = 0;
 
 	while (valor_esperado == 0) {
+
 		int result = recv(sktKernel, mensajeAKernel, MAXBUF, 0);
 
 		if (result > 0) {
 
 			char**mensajeDesdeKernel = string_split(mensajeAKernel, ";");
 
-			int valor = atoi(mensajeDesdeKernel[0]);
+			int sem_existe = atoi(mensajeDesdeKernel[0]);
 
-			if (valor == 570) {
+			if (sem_existe == true){
+
+				int valor = atoi(mensajeDesdeKernel[1]);
+
+				if (valor == 570) {
+					valor_esperado = 1;
+				} else if (valor == 577) {
+					valor_esperado = 1;
+					bloqueo = 1;
+				}
+			}
+			else {
 				valor_esperado = 1;
-			} else if (valor == 577) {
-				valor_esperado = 1;
-				bloqueo = 1;
+				enviarMensaje(&sktKernel, serializarMensaje(2, 811, pcb->pid));
+				pcbHabilitado= false;
 			}
 		}
 	}
