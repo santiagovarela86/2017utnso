@@ -1461,7 +1461,7 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				char * variable = mensajeDesdeCPU[1];
 				int valor = atoi(mensajeDesdeCPU[2]);
-				asignarValorCompartida(variable, valor);
+				asignarValorCompartida(variable, valor, socketCliente);
 				break;
 
 			case 514:
@@ -1523,7 +1523,11 @@ void * handler_conexion_cpu(void * sock) {
 			case 810:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				finalizarPrograma(pid_msg, FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE);
+				break;
 
+			case 811:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				finalizarPrograma(pid_msg, FIN_ERROR_SEMAFORO_INEXISTENTE);
 				break;
 
 		}
@@ -3329,7 +3333,7 @@ void signalSemaforo(int * socketCliente, char * semaforo_buscado){
 
 }
 
-void asignarValorCompartida(char * variable, int valor){
+void asignarValorCompartida(char * variable, int valor, int* socketCliente){
 
 	char* var_comp = string_new();
 	string_append(&var_comp, "!");
@@ -3342,9 +3346,21 @@ void asignarValorCompartida(char * variable, int valor){
 	t_globales *var_glo = list_find(lista_variables_globales,
 			(void *) encontrar_sem);
 
-	pthread_mutex_lock(&mtx_globales);
-	var_glo->valor = valor;
-	pthread_mutex_unlock(&mtx_globales);
+	char* mensajeACPU = string_new();
+
+	if (var_glo == NULL){
+		string_append(&mensajeACPU, string_itoa(false));
+		string_append(&mensajeACPU, ";");
+	} else {
+		pthread_mutex_lock(&mtx_globales);
+		var_glo->valor = valor;
+		pthread_mutex_unlock(&mtx_globales);
+		string_append(&mensajeACPU, string_itoa(true));
+		string_append(&mensajeACPU, ";");
+	}
+
+	enviarMensaje(socketCliente, mensajeACPU);
+	free(mensajeACPU);
 
 }
 

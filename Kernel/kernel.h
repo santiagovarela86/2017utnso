@@ -162,6 +162,7 @@ enum exit_codes {
 	FIN_ERROR_STACK_OVERFLOW = 14,
 	FIN_ESCRITURA_SUPERIOR_A_DISCO = 15,
 	FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE = 16,
+	FIN_ERROR_SEMAFORO_INEXISTENTE = 17,
 	FIN_ERROR_SIN_DEFINICION = -20,
 
 };
@@ -203,7 +204,7 @@ void finDeQuantum(int * socketCliente);
 void finDePrograma(int * socketCliente, int codigo);
 void waitSemaforo(int * socketCliente, char * semaforo_buscado);
 void signalSemaforo(int * socketCliente, char * otro_semaforo_buscado);
-void asignarValorCompartida(char * variable, int valor);
+void asignarValorCompartida(char * variable, int valor, int* socketCliente);
 void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 
 

@@ -822,21 +822,35 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 	puts("Asignar Valor Compartida");
 	puts("");
 
-	char* mensajeAKernel = string_new();
-	string_append(&mensajeAKernel, "515");
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, variable);
-	string_append(&mensajeAKernel, ";");
-	string_append(&mensajeAKernel, string_itoa(valor));
-	string_append(&mensajeAKernel, ";");
+	char* msj = string_new();
+	string_append(&msj, "515");
+	string_append(&msj, ";");
+	string_append(&msj, variable);
+	string_append(&msj, ";");
+	string_append(&msj, string_itoa(valor));
+	string_append(&msj, ";");
 
-	enviarMensaje(&sktKernel, mensajeAKernel);
-	free(mensajeAKernel);
+	enviarMensaje(&sktKernel, msj);
 
-	printf("Se asigno el valor %d \n", valor);
-	printf("\n");
+	int result = recv(sktKernel, msj, MAXBUF, 0);
 
-	return valor;
+	if (result > 0) {
+
+		char**mensajeDesdeKernel = string_split(msj, ";");
+
+		bool existe_var_compartida = atoi(mensajeDesdeKernel[0]);
+
+		if (existe_var_compartida == true){
+			printf("Se asigno el valor %d \n", valor);
+			printf("\n");
+			return valor;
+		} else {
+			enviarMensaje(&sktKernel, serializarMensaje(2, 810, pcb->pid));
+			pcbHabilitado= false;
+		}
+	}
+
+	free(msj);
 }
 
 void irAlLabel(t_nombre_etiqueta identificador_variable) {
