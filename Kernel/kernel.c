@@ -2369,6 +2369,7 @@ void reservarMemoriaHeap(t_pcb * pcb, int bytes, int * socketCPU){
 					enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
 				}else{
 					//Si no puedo alocar en un solo bloque o en dos bloques, pido una pagina nueva
+
 					pedirPaginaHeapNueva(pcb, bytes, socketCPU);
 				}
 			}
@@ -2418,6 +2419,10 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 			pcb->cantidadPaginas++;
 
 			enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
+
+		}else if(strcmp(respuestaDeMemoria[0], "655") == 0){
+			printf("Se ha ocupado todo el lugar de memoria \n");
+			finalizarPrograma(pcb->pid, FIN_ERROR_EXCEPCION_MEMORIA);
 
 		} else {
 			printf("Error en el protocolo de mensajes entre Kernel y Memoria al reserver memoria heap\n");

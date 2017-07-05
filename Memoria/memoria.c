@@ -396,34 +396,41 @@ void usarPaginaHeap(int pid, int paginaExistente, int direccion, int bytesPedido
 void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 	t_pagina_invertida * pagina = buscar_pagina_para_insertar(pid, paginaActual);
-	pagina->nro_pagina = paginaActual;
-	pagina->pid = pid;
 
-	int dirInicioPagina = obtener_inicio_pagina(pagina);
-	int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
-	int direccionFree = dirInicioPagina + sizeof(heapMetadata);
+	if(pagina != NULL){
+		pagina->nro_pagina = paginaActual;
+		pagina->pid = pid;
 
-	heapMetadata * meta_used = malloc(sizeof(heapMetadata));
-	meta_used->isFree = false;
-	meta_used->size = bytesPedidos;
+		int dirInicioPagina = obtener_inicio_pagina(pagina);
+		int freeSpace = configuracion->marco_size - sizeof(heapMetadata) * 2;
+		int direccionFree = dirInicioPagina + sizeof(heapMetadata);
 
-	almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, 0, sizeof(heapMetadata), meta_used);
+		heapMetadata * meta_used = malloc(sizeof(heapMetadata));
+		meta_used->isFree = false;
+		meta_used->size = bytesPedidos;
 
-	heapMetadata * meta_free = malloc(sizeof(heapMetadata));
-	meta_free->isFree = true;
-	meta_free->size = freeSpace - bytesPedidos;
+		almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, 0, sizeof(heapMetadata), meta_used);
 
-	almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, sizeof(heapMetadata) + bytesPedidos, sizeof(heapMetadata), meta_free);
 
-	enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
+		heapMetadata * meta_free = malloc(sizeof(heapMetadata));
+		meta_free->isFree = true;
+		meta_free->size = freeSpace - bytesPedidos;
 
-	//free(meta_used);
-	//free(meta_free);
+		almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, sizeof(heapMetadata) + bytesPedidos, sizeof(heapMetadata), meta_free);
 
-	contadorPaginasHeap++;
-	printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+		enviarMensaje(&socketKernel, serializarMensaje(3, 605, direccionFree, meta_free->size));
+
+		//free(meta_used);
+		//free(meta_free);
+
+		contadorPaginasHeap++;
+		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
 		contadorPaginasHeap, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
-	printf("\n");
+		printf("\n");
+
+	}else{
+		enviarMensaje(&socketKernel, serializarMensaje(1, 655));
+	}
 }
 
 void * hilo_conexiones_cpu(){
@@ -1513,7 +1520,7 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 	//Si la pagina encontrada no es una estructura administrativa
 	//Ni esta ocupada por otro proceso
 
-	if (pagina_encontrada->pid != -1 && pagina_encontrada->pid == 0) {
+	if (pagina_encontrada->pid == 0) {
 		return pagina_encontrada;
 	}
 	else {
@@ -1523,11 +1530,11 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 		int i = tamanio_maximo->maxima_cant_paginas_administracion;
 		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
 			pagina_encontrada = list_get(tabla_paginas, i);
-			if (pagina_encontrada->pid != -1 && pagina_encontrada->pid == 0) {
+			//sleep(1);
+			if (pagina_encontrada->pid != 0) {
 				printf("HUBO COLISION BUSCO OTRA\n");
-				t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
+			}else{
 				printf("PAGINA ENCONTrAdA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
-
 				return pagina_encontrada;
 			}
 			i++;
