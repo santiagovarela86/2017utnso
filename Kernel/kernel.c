@@ -3706,16 +3706,20 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 				enviarMensaje(&skt_filesystem, mensajeAFS);
 
+				char* mensajeRespuestaAbrir = malloc(MAXBUF);
+				int result = recv(skt_filesystem, mensajeRespuestaAbrir, MAXBUF, 0);
 
-				retorno->exitCode = "";
-				retorno->fd = fdNuevo;
+				if (result > 0) {
+					retorno->exitCode = mensajeRespuestaAbrir;
+					retorno->fd = fdNuevo ;
+				} else {
+					printf("Error el archivo no se pudo leer \n");
+				}
 
 			 }
 			 else
 			 {
-				if(string_contains(flag, "c"))
-				{
-					grabarEnTablaGlobal(1, lista_File_global->elements_count, direccion);
+				   grabarEnTablaGlobal(1, lista_File_global->elements_count, direccion);
 
 					t_lista_fileProcesos* regListaProceso = existeEnListaProcesosArchivos(pid_mensaje);
 
@@ -3740,15 +3744,15 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 					enviarMensaje(&skt_filesystem, mensajeAFS);
 
-					retorno->exitCode = "";
-					retorno->fd = fdNuevo;
+					char* mensajeRespuestaAbrir = malloc(MAXBUF);
+					int result = recv(skt_filesystem, mensajeRespuestaAbrir, MAXBUF, 0);
 
-				}
-				else
-				{
-					retorno->exitCode ="Error";
-				}
-
+					if (result > 0) {
+						retorno->exitCode = mensajeRespuestaAbrir;
+						retorno->fd = fdNuevo ;
+					} else {
+						printf("Error el archivo no se pudo leer \n");
+					}
 		     }
 	      }
 		 else
@@ -3769,10 +3773,16 @@ t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag)
 
 				enviarMensaje(&skt_filesystem, mensajeAFS);
 
-				//free(mensajeAFS);
+				char* mensajeRespuestaAbrir = malloc(MAXBUF);
+				int result = recv(skt_filesystem, mensajeRespuestaAbrir, MAXBUF, 0);
 
-				retorno->exitCode = "";
-				retorno->fd = fdNuevo;
+				if (result > 0) {
+					retorno->exitCode = mensajeRespuestaAbrir;
+					retorno->fd = fdNuevo ;
+				} else {
+					printf("Error el archivo no se pudo leer \n");
+				}
+				//free(mensajeAFS);
 		    //}
 			//else
 				//{

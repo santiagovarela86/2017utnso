@@ -383,7 +383,15 @@ void crear_archivo(char* flag, char* directorio){
 
 		 // free(tamanio);
 		  //free(bloques);
-
+			enviarMensaje(&socketKernel, "Archivo creado");
+   	  }
+   	  else if(result == 3)
+   	  {
+   		 enviarMensaje(&socketKernel, "Error: creacion sin permiso");
+   	  }
+   	  else
+   	  {
+   		enviarMensaje(&socketKernel, "Archivo abierto");
    	  }
    	/*  else
    	  {
