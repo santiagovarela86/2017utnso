@@ -1714,9 +1714,9 @@ void * planificar() {
 
 	while (1) {
 		sem_wait(&sem_cpus);
-
+		puts("entre cpu");
 		sem_wait(&sem_prog);
-
+		puts("entre prog");
 		if (plan == 0) {
 			usleep(configuracion->quantum_sleep);
 
@@ -2734,6 +2734,33 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			queue_push(cola_ejecucion, temporalN);
 			pthread_mutex_unlock(&mtx_ejecucion);
 			printf("Se intento cerrar un programa que no existe\n");
+
+		}
+	}
+
+	if(codigo == FIN_ERROR_STACK_OVERFLOW || codigo == FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE
+			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE){
+		int encontrado = 0;
+
+		estruct_cpu* temporalCpu;
+
+		while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+			pthread_mutex_lock(&mtx_cpu);
+			temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+			pthread_mutex_unlock(&mtx_cpu);
+
+			if (temporalCpu->pid_asignado == temporalN->pid) {
+				encontrado = 1;
+				temporalCpu->pid_asignado = -1;
+			}
+
+			sem_post(&sem_cpus);
+
+
+			pthread_mutex_lock(&mtx_cpu);
+			queue_push(cola_cpu, temporalCpu);
+			pthread_mutex_unlock(&mtx_cpu);
 
 		}
 	}
