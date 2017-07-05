@@ -53,6 +53,7 @@ int main(int argc, char **argv) {
 
 	pthread_t thread_id_kernel;
 	pthread_t thread_id_memoria;
+	pthread_mutex_init(&mutex_instrucciones, NULL);
 
 	signal(SIGUSR1, manejador_signal);
 
@@ -68,10 +69,9 @@ int main(int argc, char **argv) {
 	pthread_join(thread_id_kernel, NULL);
 	pthread_join(thread_id_memoria, NULL);
 
-	pthread_mutex_init(&mutex_instrucciones, NULL);
-
-
 	free(configuracion);
+
+	pthread_mutex_destroy(&mutex_instrucciones);
 
 	return EXIT_SUCCESS;
 }
@@ -126,14 +126,14 @@ void* manejo_kernel(void *args) {
 			pcb->quantum--;
 			pcb->program_counter++;
 
+			pthread_mutex_unlock(&mutex_instrucciones);
+
 			if(!string_contains(instruccion, "end"))
 			{
 				printf("El program counter es: %d\n", pcb->program_counter);
 				printf("\n");
 			}
 
-
-			pthread_mutex_unlock(&mutex_instrucciones);
 		}
 
 		if (bloqueo == 1) {
@@ -174,21 +174,22 @@ void* manejo_kernel(void *args) {
 
 			free(mensajeAKernel);
 
-		} else { //FIN DE QUANTUM
-			char * buffer = malloc(MAXBUF);
+		} else if (pcb->quantum <= 0){
+				//FIN DE QUANTUM
+				char * buffer = malloc(MAXBUF);
 
-			enviarMensaje(&socketKernel, serializarMensaje(1, 530));
+				enviarMensaje(&socketKernel, serializarMensaje(1, 530));
 
-			pcb->quantum = q;
+				pcb->quantum = q;
 
-			//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
-			recv(socketKernel, buffer, MAXBUF, 0);
+				//CUANDO EL KERNEL TERMINA DE PROCESAR EL FIN DE QUANTUM
+				recv(socketKernel, buffer, MAXBUF, 0);
 
-			//ENVIO EL PCB AL KERNEL NUEVAMENTE
-			enviarMensaje(&socketKernel, serializar_pcb(pcb));
+				//ENVIO EL PCB AL KERNEL NUEVAMENTE
+				enviarMensaje(&socketKernel, serializar_pcb(pcb));
 
-			free(buffer);
-		}
+				free(buffer);
+			}
 
 		//CUANDO CORTA POR ERROR DE HEAP, SE DESHABILITA EL PCB, EL WHILE QUE RECIBE INSTRUCCIONES SE CORTA
 		//Y NO CAE A NINGUNA DE LAS OPCIONES ANTERIORES, SIMPLEMENTE SE DEJA DE EJECUTAR EL PROGRAMA
@@ -696,7 +697,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 	string_append(&mensajeAMemoria, ";");
 	string_append(&mensajeAMemoria, string_itoa(pcb->pid));
 	string_append(&mensajeAMemoria, ";");
-	string_append(&mensajeAMemoria, string_itoa(pcb->cantidadPaginas));
+	string_append(&mensajeAMemoria, string_itoa(pcb->cantidadPaginas)); ////REVISAR QUE ACTUALICE
 	string_append(&mensajeAMemoria, ";");
 
 	enviarMensaje(&socketMemoria, mensajeAMemoria);
@@ -736,13 +737,14 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 			}
 
-			if (paginaNueva == true) {
+			if (paginaNueva == 1) {
 				pcb->cantidadPaginas++;
+
 				char * buffer = malloc(MAXBUF);
 
 				enviarMensaje(&sktKernel, serializarMensaje(2, 777, pcb->pid));
 
-				paginaNueva = false;
+				//paginaNueva = false;
 
 				recv(sktKernel, buffer, MAXBUF, 0);
 
@@ -756,7 +758,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 
 			return entrada_stack->offset;
 
-		} else {
+		} else if (codigo == ASIGNACION_MEMORIA_ERROR) {
 
 			//Se asigna el exit code -9 (No se pueden asignar mas paginas al proceso)
 			char* mensajeAKernel = string_new();
@@ -768,10 +770,15 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			enviarMensaje(&sktKernel, mensajeAKernel);
 			free(mensajeAKernel);
 
+		} else if (codigo == STACK_OVERFLOW){
+			enviarMensaje(&sktKernel, serializarMensaje(2, 809, pcb->pid));
+			pcbHabilitado= false;
 		}
+	} else {
+		printf("Error de comunicación con la Memoria durante la definicion de una variable\n");
+		exit(errno);
 	}
 
-	return -1;
 
 }
 
@@ -847,8 +854,8 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 	puts("");
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
-	if(pcb->indiceStack->elements_count < 64)
-	{
+	//if(pcb->indiceStack->elements_count < 64)
+	//{
 		t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
 		stackFuncion->stack_pointer = pcb->indiceStack->elements_count + 1;
@@ -863,6 +870,7 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 
 		t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
 		pcb->program_counter = instruccion-1;
+
 		if(instruccion == -1)
 		{
 			char* mensajeAKernel = string_new();
@@ -874,26 +882,25 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta) {
 			enviarMensaje(&sktKernel, mensajeAKernel);
 			free(mensajeAKernel);
 		}
-	}
-	else
-	{
-		pthread_mutex_unlock(&mutex_instrucciones);
-		char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "809");
-		string_append(&mensajeAKernel, ";");
-		string_append(&mensajeAKernel, string_itoa(pcb->pid));
-		string_append(&mensajeAKernel, ";");
+	//}
+	//else
+	//{
+	//	pthread_mutex_unlock(&mutex_instrucciones);
+	//	char* mensajeAKernel = string_new();
+	//	string_append(&mensajeAKernel, "809");
+	//	string_append(&mensajeAKernel, ";");
+	//	string_append(&mensajeAKernel, string_itoa(pcb->pid));
+	//	string_append(&mensajeAKernel, ";");
 
-		enviarMensaje(&sktKernel, mensajeAKernel);
+	//	enviarMensaje(&sktKernel, mensajeAKernel);
 
-		pcbHabilitado= false;
-	}
+	//	pcbHabilitado= false;
+	//}
 
 
 	//pcb->program_counter++;
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);
 	//printf("\n");
-	return;
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
@@ -902,8 +909,8 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 	printf("\n");
-	if(pcb->indiceStack->elements_count < 64)
-	{
+	//if(pcb->indiceStack->elements_count < 64)
+	//{
 		t_Stack* stackFuncion = malloc(sizeof(t_Stack));
 
 		stackFuncion->retPost = pcb->program_counter;
@@ -913,9 +920,8 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 		stackFuncion->variables = list_create();
 		list_add(pcb->indiceStack, stackFuncion);
 
-
 		t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(etiqueta), pcb->etiquetas, pcb->etiquetas_size);
-		pthread_mutex_unlock(&mutex_instrucciones);
+
 		pcb->program_counter = instruccion - 1;
 
 		//pcb->program_counter++;
@@ -935,21 +941,20 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar) {
 			enviarMensaje(&sktKernel, mensajeAKernel);
 			pcbHabilitado= false;
 		}
-	}
-	else
-	{
-		pthread_mutex_unlock(&mutex_instrucciones);
-		char* exitLlamada = string_new();
-		string_append(&exitLlamada, "809");
-		string_append(&exitLlamada, ";");
-		string_append(&exitLlamada, string_itoa(pcb->pid));
-		string_append(&exitLlamada, ";");
+	//}
+	//else
+	//{
+	//	pthread_mutex_unlock(&mutex_instrucciones);
+	//	char* exitLlamada = string_new();
+	//	string_append(&exitLlamada, "809");
+	//	string_append(&exitLlamada, ";");
+	//	string_append(&exitLlamada, string_itoa(pcb->pid));
+	//	string_append(&exitLlamada, ";");
 
-		enviarMensaje(&sktKernel, exitLlamada);
+	//	enviarMensaje(&sktKernel, exitLlamada);
 		//free(aux);
-		pcbHabilitado= false;
-	}
-	return;
+	//	pcbHabilitado= false;
+	//}
 }
 
 void finalizar(void) {
