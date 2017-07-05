@@ -1327,45 +1327,54 @@ void * handler_conexion_cpu(void * sock) {
 				;
 			     fd = atoi(mensajeDesdeCPU[1]);
 				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
-				 infofile = mensajeDesdeCPU[3];
-				 tamanio = atoi(mensajeDesdeCPU[4]);
-
-				 if(string_length(infofile) > tamanio)
+				 if(fd != -1)
 				 {
-					 puts("El la longitud a escribir supera el tamaño del buffer");
-					 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
-			    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+					 infofile = mensajeDesdeCPU[3];
+									 tamanio = atoi(mensajeDesdeCPU[4]);
+
+									 if(string_length(infofile) > tamanio)
+									 {
+										 puts("El la longitud a escribir supera el tamaño del buffer");
+										 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
+								    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+									 }
+									 else
+									 {
+										 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+
+										 if(string_contains(auxEscribir, "Error"))
+										 {
+											 if(string_contains(auxEscribir, "permisos"))
+											 {
+												 puts("No se puede escribir el archivo debido a sus permisos");
+												 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+										    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+											 }
+											 if(string_contains(auxEscribir, "secundario"))
+											 {
+												 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
+										    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+											 }
+											 else
+											 {
+										    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+										    		enviarMensaje(socketCliente, "Finalización por ExitCode");
+											 }
+
+									     }
+										 else
+										 {
+
+											 enviarMensaje(socketCliente, auxEscribir);
+										 }
+									 }
 				 }
 				 else
 				 {
-					 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
-
-					 if(string_contains(auxEscribir, "Error"))
-					 {
-						 if(string_contains(auxEscribir, "permisos"))
-						 {
-							 puts("No se puede escribir el archivo debido a sus permisos");
-							 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-					    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
-						 }
-						 if(string_contains(auxEscribir, "secundario"))
-						 {
-							 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
-					    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
-						 }
-						 else
-						 {
-					    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-					    		enviarMensaje(socketCliente, "Finalización por ExitCode");
-						 }
-
-				     }
-					 else
-					 {
-
-						 enviarMensaje(socketCliente, auxEscribir);
-					 }
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
 				 }
+
 
 
 				break;
@@ -1402,6 +1411,9 @@ void * handler_conexion_cpu(void * sock) {
 
 			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
 				 fd = atoi(mensajeDesdeCPU[2]);
+				 if(fd != -1)
+				 {
+
 				 char* resulBorrar = borrarArchivo(pid_mensaje, fd);
 					 if(string_contains(resulBorrar, "Error"))
 					{
@@ -1409,20 +1421,36 @@ void * handler_conexion_cpu(void * sock) {
 						enviarMensaje(socketCliente, "Finalización por ExitCode");
 					}
 				 enviarMensaje(socketCliente, resulBorrar);
+				 }
+				 else
+				 {
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+				 }
 
 				break;
 
 			case 801://de CPU a File system (cerrar)
 
 				 fd = atoi(mensajeDesdeCPU[2]);
-			     pid_mensaje = atoi(mensajeDesdeCPU[1]);
-			     char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
-				 if(string_contains(auxCerrar, "Error"))
-				{
-					finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-					enviarMensaje(socketCliente, "Finalización por ExitCode");
-				}
-				 enviarMensaje(socketCliente, auxCerrar);
+				 pid_mensaje = atoi(mensajeDesdeCPU[1]);
+				 if(fd != -1)
+				 {
+
+					 char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
+					 if(string_contains(auxCerrar, "Error"))
+					{
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+						enviarMensaje(socketCliente, "Finalización por ExitCode");
+					}
+					 enviarMensaje(socketCliente, auxCerrar);
+				 }
+				 else
+				 {
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+				 }
+
 
 				break;
 
@@ -1430,32 +1458,41 @@ void * handler_conexion_cpu(void * sock) {
 
 				 fd = atoi(mensajeDesdeCPU[1]);
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
-				 infofile = mensajeDesdeCPU[3];
-				 tamanio = atoi(mensajeDesdeCPU[4]);
-			     char * auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
-			    if(string_contains(auxLeer, "Error"))
-			    {
-			    	if(string_contains(auxLeer, "vacio"))
-			    	{
-			    		finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_VACIO);
-			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
-			    	}
-			    	else if(string_contains(auxLeer, "fileDescriptor"))
-			    	{
-			    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
-			    	}
-			    	else
-			    	{
-			    		finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
-			    		enviarMensaje(socketCliente, "Finalización por ExitCode");
-			    	}
+				 if(fd != -1)
+				 {
+					 infofile = mensajeDesdeCPU[3];
+					 tamanio = atoi(mensajeDesdeCPU[4]);
+					 char * auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
+					if(string_contains(auxLeer, "Error"))
+					{
+						if(string_contains(auxLeer, "vacio"))
+						{
+							finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_VACIO);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						}
+						else if(string_contains(auxLeer, "fileDescriptor"))
+						{
+							finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						}
+						else
+						{
+							finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						}
 
-			    }
-			    else
-			    {
-			   	 enviarMensaje(socketCliente, auxLeer);
-			    }
+					}
+					else
+					{
+					 enviarMensaje(socketCliente, auxLeer);
+					}
+				 }
+
+				 else
+				 {
+						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+				 }
 				break;
 
 			case 571:
@@ -3912,48 +3949,61 @@ char* borrarArchivo(int pid_mensaje, int fd)
 
 				t_fileProceso* archBorrarPro = malloc(sizeof(t_fileProceso));
 				archBorrarPro	= list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-
-				int encontrar_archGobal(t_fileGlobal* regFileGlobal){
-							if(archBorrarPro->global_fd == regFileGlobal->fdGlobal)
-								return 1;
-							else
-								return 0;
-						}
-				t_fileGlobal* archBorrarGlobal = malloc(sizeof(t_fileGlobal));
-				archBorrarGlobal = list_find(lista_File_global,(void*) encontrar_archGobal);
-				//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
-				if(archBorrarGlobal->cantidadDeAperturas >= 2)
+				if(archBorrarPro != NULL)
 				{
-					return "El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero";
+						int encontrar_archGobal(t_fileGlobal* regFileGlobal){
+									if(archBorrarPro->global_fd == regFileGlobal->fdGlobal)
+										return 1;
+									else
+										return 0;
+								}
+						t_fileGlobal* archBorrarGlobal = malloc(sizeof(t_fileGlobal));
+						archBorrarGlobal = list_find(lista_File_global,(void*) encontrar_archGobal);
+						if(archBorrarPro != NULL)
+						{
+						//printf("la cantidad de aperturas es %d", archFileGlobal->cantidadDeAperturas);
+							if(archBorrarGlobal->cantidadDeAperturas >= 2)
+							{
+								return "El archivo tiene otras referencias y no puede ser eliminado, debe cerrar todas las aperturas primero";
+							}
+							else
+							{
+
+								char* mensajeAFS = string_new();
+								string_append(&mensajeAFS, "802");
+								string_append(&mensajeAFS, ";");
+								string_append(&mensajeAFS, archBorrarGlobal->path);
+								string_append(&mensajeAFS, ";");
+
+								enviarMensaje(&skt_filesystem, mensajeAFS);
+
+
+								list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+								free(archBorrarPro);
+
+								list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
+								free(archBorrarGlobal);
+
+								/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
+
+								if (result > 0) {
+									puts("archivo borrado desde el fs");
+								}
+								else {
+									perror("Error no se pudo borrar\n");
+								}*/
+								free(mensajeAFS);
+
+							}
+						}
+						else
+						{
+							return "Error: el archivo no existe";
+						}
 				}
 				else
 				{
-
-					char* mensajeAFS = string_new();
-					string_append(&mensajeAFS, "802");
-					string_append(&mensajeAFS, ";");
-					string_append(&mensajeAFS, archBorrarGlobal->path);
-					string_append(&mensajeAFS, ";");
-
-					enviarMensaje(&skt_filesystem, mensajeAFS);
-
-
-					list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-					free(archBorrarPro);
-
-					list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
-					free(archBorrarGlobal);
-
-					/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
-
-					if (result > 0) {
-						puts("archivo borrado desde el fs");
-					}
-					else {
-						perror("Error no se pudo borrar\n");
-					}*/
-					free(mensajeAFS);
-
+					return "Error: el archivo no existe";
 				}
 
 		}

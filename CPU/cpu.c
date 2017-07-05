@@ -1215,7 +1215,10 @@ t_descriptor_archivo abrir(t_direccion_archivo direccion, t_banderas flags) {
 void borrar(t_descriptor_archivo descriptor) {
 	puts("Borrar");
 	puts("");
-
+	if(descriptor <= 0 || descriptor > 99)
+	{
+		descriptor = -1;
+	}
 	char* mensajeAKernel = string_new();
 	string_append(&mensajeAKernel, "802");
 	string_append(&mensajeAKernel, ";");
@@ -1257,7 +1260,10 @@ void borrar(t_descriptor_archivo descriptor) {
 void cerrar(t_descriptor_archivo descriptor) {
 	puts("Cerrar");
 		puts("");
-
+if(descriptor <= 0 || descriptor > 99)
+{
+	descriptor = -1;
+}
 		char* mensajeCerrar= string_new();
 		string_append(&mensajeCerrar, "801");
 		string_append(&mensajeCerrar, ";");
@@ -1316,7 +1322,10 @@ void moverCursor(t_descriptor_archivo descriptor_archivo,
 void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_valor_variable tamanio) {
 	puts("Escribir");
 	puts("");
-
+	if(descriptor_archivo < 0 || descriptor_archivo > 99)
+	{
+		descriptor_archivo = -1;
+	}
 	char* mensajeFs = string_new();
 	string_append(&mensajeFs, "804");
 	string_append(&mensajeFs, ";");
@@ -1361,7 +1370,10 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valor_variable tamanio) {
 	puts("Leer");
 	puts("");
-
+	if(descriptor_archivo < 0 || descriptor_archivo > 99)
+	{
+		descriptor_archivo = -1;
+	}
 	char* mensajeFs = string_new();
 	string_append(&mensajeFs, "800");
 	string_append(&mensajeFs, ";");
