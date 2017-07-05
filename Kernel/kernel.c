@@ -1379,8 +1379,16 @@ void * handler_conexion_cpu(void * sock) {
 
 				 if(string_contains(result->exitCode, "Error"))
 				 {
-					finalizarPrograma(pid_mensaje, FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS);
-			    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+					 if(string_contains(result->exitCode, "disco"))
+					 {
+						finalizarPrograma(pid_mensaje, FIN_ERROR_CREACION_ARCHIVO_SIN_ESPACIO);
+				    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+				     }
+					 else
+					 {
+							finalizarPrograma(pid_mensaje, FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS);
+						    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
+					 }
 			     }
 				 else
 				 {
@@ -1697,6 +1705,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		break;
 	case FIN_ESCRITURA_SUPERIOR_A_DISCO:
 		errorLog = "La cantidad de caracteres que quiere escribir supera al almacenamiento secundario";
+		break;
+	case FIN_ERROR_CREACION_ARCHIVO_SIN_ESPACIO:
+		errorLog = "No hay espacio en el disco para crear el archivo";
 		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";

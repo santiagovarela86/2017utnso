@@ -338,52 +338,61 @@ void crear_archivo(char* flag, char* directorio){
 
    	  if (result == 1)
    	  {
-   		    FILE * pFile;
-   		    pFile = fopen (pathAbsoluto,"w+"); //por defecto lo crea
-
-			char* tamanio = string_new();
-			char* bloques = string_new();
-			string_append(&tamanio, "TamanioDeArchivo=0");
-			//string_append(&tamanio, string_itoa(metadataSadica->tamanio_bloques));
-			string_append(&tamanio," \n");
-
 			int numeroBloque = buscarPrimerBloqueLibre(); //Por defecto tengo que asignarle un bloque
-			string_append(&bloques, "Bloques=[");
-			string_append(&bloques, string_itoa(numeroBloque));
-			string_append(&bloques, "]");
-			string_append(&tamanio, bloques);
-			int longitudAGrabar =string_length(tamanio);
-			ponerVaciosAllenarEnArchivos(pFile,longitudAGrabar);
+			if(numeroBloque != -1)
+			{
+				 FILE * pFile;
+				pFile = fopen (pathAbsoluto,"w+"); //por defecto lo crea
 
-   		   t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
-   		   archNuevo->referenciaArchivo = pFile;
-   		   archNuevo->path = string_new();
-
-   		  // fclose(pFile);
-   		    string_append(&archNuevo->path, pathAbsoluto);
+				char* tamanio = string_new();
+				char* bloques = string_new();
+				string_append(&tamanio, "TamanioDeArchivo=0");
+				//string_append(&tamanio, string_itoa(metadataSadica->tamanio_bloques));
+				string_append(&tamanio," \n");
 
 
-			int archNuevoMap = open(pathAbsoluto, O_RDWR);
-			struct stat scriptMap;
-			fstat(archNuevoMap, &scriptMap);
+				string_append(&bloques, "Bloques=[");
+				string_append(&bloques, string_itoa(numeroBloque));
+				string_append(&bloques, "]");
+				string_append(&tamanio, bloques);
+				int longitudAGrabar =string_length(tamanio);
+				ponerVaciosAllenarEnArchivos(pFile,longitudAGrabar);
+
+			   t_archivosFileSystem* archNuevo = malloc(sizeof(t_archivosFileSystem));
+			   archNuevo->referenciaArchivo = pFile;
+			   archNuevo->path = string_new();
+
+			  // fclose(pFile);
+				string_append(&archNuevo->path, pathAbsoluto);
 
 
-			void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
+				int archNuevoMap = open(pathAbsoluto, O_RDWR);
+				struct stat scriptMap;
+				fstat(archNuevoMap, &scriptMap);
 
 
-			memcpy(archMap,tamanio,longitudAGrabar);
-		    munmap(archMap,longitudAGrabar);
-		    close(archNuevoMap);
-
-		    actualizarBitmap(numeroBloque);
+				void* archMap = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
 
+				memcpy(archMap,tamanio,longitudAGrabar);
+				munmap(archMap,longitudAGrabar);
+				close(archNuevoMap);
 
-		  list_add(lista_archivos, archNuevo);
+				actualizarBitmap(numeroBloque);
 
-		 // free(tamanio);
-		  //free(bloques);
-			enviarMensaje(&socketKernel, "Archivo creado");
+
+
+			  list_add(lista_archivos, archNuevo);
+
+			 // free(tamanio);
+			  //free(bloques);
+				enviarMensaje(&socketKernel, "Archivo creado");
+			}
+			else
+			{
+				enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
+			}
+
    	  }
    	  else if(result == 3)
    	  {
