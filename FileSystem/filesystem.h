@@ -1,4 +1,5 @@
 /*
+ /*
  * filesystem.h
  *
  *  Created on: 6/4/2017
@@ -28,19 +29,25 @@ typedef struct {
 }t_metadataArch;
 
 typedef struct {
-	char* archivoMapeado;
+	void* archivoMapeado;
 	struct stat script;
 }t_mapeoArchivo;
+
+typedef struct {
+	char* archivoMapeado;
+	struct stat script;
+}t_mapeoArchivo_char;
 
 void * handler_conexion_kernel(void * sock);
 
 void inicializarEstructuras(char * pathConfig);
 void liberarEstructuras();
-void obtener_datos(char* directorio, int size, char* buffer, int offset);
+void* appendVoid(void* valor1, int sizeValor1, void* valorAagregar, int sizeAgregar);
+void obtener_datos(char* directorio, int size, void* buffer, int offset);
 int validar_archivo(char* directorio, char* flag);
 void crear_archivo(char* directorio, char* flag);
 void borrarArchivo(char* directorio);
-void guardar_datos(char* directorio, int size, char* buffer, int offset);
+void guardar_datos(char* directorio, int size, void* buffer, int offset);
 void crearMetadataSadica(char* montaje);
 void crearBloques(char* mnt, int cantidad, int tamanio);
 void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios);
@@ -49,11 +56,11 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch);
 void cerrarUnArchivoBloque(char* pmap, struct stat script);
 t_fileProceso* existeEnElementoTablaArchivoPorFD(t_list* tablaDelProceso, int fd);
 void actualizarArchivoCreado(t_metadataArch* regArchivo, char* path);
-char* concatenernaVacios(char* buffer, int size);
+char* concatenernaVacios(void* buffer, int size);
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque);
-void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size);
-void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
-void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
-void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size );
+void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, void* buffer, int size);
+void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
+void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
+void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
 #endif /* FILESYSTEM_H_ */
 

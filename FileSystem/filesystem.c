@@ -443,7 +443,7 @@ t_mapeoArchivo* abrirUnArchivoBloque(int idBloque)
 
 	return mapeo;
 }
-char* concatenernaVacios(char* buffer, int size)
+char* concatenernaVacios(void* buffer, int size)
 {
 
 	int len = string_length(buffer);
@@ -457,7 +457,7 @@ char* concatenernaVacios(char* buffer, int size)
 }
 
 
-void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, char* buffer, int size)
+void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, void* buffer, int size)
 {
 	char* pathArchivoBloque = string_new();
 	string_append(&pathArchivoBloque, montaje);
@@ -608,7 +608,18 @@ void borrarArchivo(char* directorio){
 
     } // End if file
 
-void obtener_datos(char* directorio, int size, char* buffer, int offset) {
+
+void* appendVoid(void* valor1, int sizeValor1, void* valorAagregar, int sizeAgregar)
+{
+	//reader = read(0, valorAagregar, 1);
+	valor1 = realloc(valor1, sizeValor1 + sizeAgregar);
+	void* aux = valor1;
+	memcpy(aux + sizeValor1, valorAagregar, sizeAgregar);
+
+	return valor1;
+}
+
+void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 
 	buffer= string_new();
 	char* directorioAux = string_new();
@@ -623,8 +634,8 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 	string_append(&pathAbsoluto, montaje);
 	string_append(&pathAbsoluto, directorioAux);
 
-		char* valorLeido = string_new();
-		char* textoResult = string_new();
+		void* valorLeido = malloc(metadataSadica->tamanio_bloques);
+		void* textoResult = malloc(size);
 		int tamanioDisco = metadataSadica->cantidad_bloques * metadataSadica->tamanio_bloques;
 		if (size <= tamanioDisco)
 		{
@@ -652,26 +663,28 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 								}
 								else
 								{
+									int auxSize = 0;
 									while(cantidadDeBloquesALeer != 0)
-											{
-												if(cantidadDeBloquesALeer != 1)
-												{
-													valorLeido = archBloqueAleer->archivoMapeado;
-													string_append(&buffer, valorLeido);
-													cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
-													idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
-													archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
-												}
-												else
-												{
-													valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
-													string_append(&buffer, valorLeido);
-												}
+									{
+										if(cantidadDeBloquesALeer != 1)
+										{
+											valorLeido = archBloqueAleer->archivoMapeado;
+											appendVoid(buffer, auxSize, valorLeido, metadataSadica->tamanio_bloques);
+											cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
+											idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
+											archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+											auxSize = auxSize + metadataSadica->tamanio_bloques;
+										}
+										else
+										{
+											valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
+											appendVoid(buffer, auxSize, valorLeido, metadataSadica->tamanio_bloques);
+										}
 
-												cantidadDeBloquesALeer--;
-											}
-											string_append(&textoResult, buffer);
-								}
+										cantidadDeBloquesALeer--;
+									}
+									appendVoid(textoResult,0, buffer, size);
+								  }
 
 							}
 							else
@@ -722,7 +735,8 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 	} // End if file
 
 
-void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
+
+void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
 		int cantidadDeBloquesDelOffset = (offset / metadataSadica->tamanio_bloques);
 		int cantBloquesEnBlancoASaltar = 0;
@@ -785,19 +799,20 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
 
 			if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
 			{
-				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer,(metadataSadica->tamanio_bloques));
+				void*  bufferaux;
+				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (metadataSadica->tamanio_bloques));
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
-				desdeDondeComenizoALeer =  desdeDondeComenizoALeer + (metadataSadica->tamanio_bloques);
-
+				desdeDondeComenizoALeer = desdeDondeComenizoALeer + (metadataSadica->tamanio_bloques);
 			}
 			else
 			{
-				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer, auxsize); //lo que me falta grabar
+				void* bufferaux;
+				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (auxsize)); //lo que me falta grabar
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + auxsize + auxoff;
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
-				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, auxsize + auxoff);
+				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, auxsize);
 			}
 
 			cantidadDeBloquesApedir--;
@@ -810,21 +825,23 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, c
       }
  }
 
-void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
+void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
 
 	  //int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
       int sizeRelativo = (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques);
-	  char* bufferaux = string_substring(buffer,0, sizeRelativo); //grabo lo que tengo que grabar en ese bloque
+	  void* bufferaux;
+	  memcpy(bufferaux, buffer, sizeRelativo); //grabo lo que tengo que grabar en ese bloque
 
-	  graboEnLosBloquesQueYaTiene(offset, regMetaArchBuscado, bufferaux,  string_length(bufferaux));
+	  graboEnLosBloquesQueYaTiene(offset, regMetaArchBuscado, bufferaux, sizeRelativo);
 
-	  char* bufferNuevo = string_substring_from(buffer,string_length(bufferaux));
-	  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- string_length(bufferaux));
+	  void* bufferNuevo;
+	  memcpy(bufferNuevo, buffer + sizeRelativo, size - sizeRelativo);
+	  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);
 }
 
 
-void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, char* buffer, int size )
+void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
 	int auxoffset = 0;
 	int auxsize = size;
@@ -860,7 +877,8 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 			if(cantidadDeBloquesALeer != 1)
 			{ //saco un cacho de buffer del tamaño de un bloque y lo grabo y pido el siguiente bloque
 
-				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer,(metadataSadica->tamanio_bloques));
+				void* bufferaux = malloc(desdeDondeComenizoALeer);
+				memcpy(bufferaux, (buffer + desdeDondeComenizoALeer), (metadataSadica->tamanio_bloques));
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
 				idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); // dame el siguiente bloque de la lista
@@ -869,7 +887,8 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 			}
 			else
 			{
-				char* bufferaux = string_substring(buffer,desdeDondeComenizoALeer,(auxsize)); //lo que me falta grabar
+				void* bufferaux = malloc(desdeDondeComenizoALeer);
+				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (auxsize)); //lo que me falta grabar
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + auxsize + auxoffset;
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, auxsize);
 			}
@@ -880,7 +899,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 
 
-void guardar_datos(char* directorio, int size, char* buffer, int offset)
+void guardar_datos(char* directorio, int size, void* buffer, int offset)
 {
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
@@ -932,4 +951,3 @@ void guardar_datos(char* directorio, int size, char* buffer, int offset)
 	 //free(pathAbsoluto);
    	 //free(directorioAux);
  }
-
