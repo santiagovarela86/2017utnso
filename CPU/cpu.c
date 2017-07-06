@@ -136,7 +136,7 @@ void* manejo_kernel(void *args) {
 
 		}
 
-		if (bloqueo == 1) {
+		if (bloqueo == 1 && pcbHabilitado == true) {
 			char* mensajeAKernel = string_new();
 
 			string_append(&mensajeAKernel, "532");
@@ -147,7 +147,7 @@ void* manejo_kernel(void *args) {
 			enviarMensaje(&socketKernel, mensajeAKernel);
 
 			free(mensajeAKernel);
-		} else if (pcb->program_counter >= pcb->indiceCodigo->elements_count) { //Se ejecutaron todas las instrucciones
+		} else if (pcb->program_counter >= pcb->indiceCodigo->elements_count && pcbHabilitado == true) { //Se ejecutaron todas las instrucciones
 
 			char* mensajeAKernel = string_new();
 
@@ -174,7 +174,7 @@ void* manejo_kernel(void *args) {
 
 			free(mensajeAKernel);
 
-		} else if (pcb->quantum <= 0){
+		} else if (pcb->quantum <= 0 && pcbHabilitado == true){
 				//FIN DE QUANTUM
 				char * buffer = malloc(MAXBUF);
 
@@ -191,9 +191,6 @@ void* manejo_kernel(void *args) {
 				free(buffer);
 			}
 
-		//CUANDO CORTA POR ERROR DE HEAP, SE DESHABILITA EL PCB, EL WHILE QUE RECIBE INSTRUCCIONES SE CORTA
-		//Y NO CAE A NINGUNA DE LAS OPCIONES ANTERIORES, SIMPLEMENTE SE DEJA DE EJECUTAR EL PROGRAMA
-		//Y SE QUEDA A LA ESPERA DEL PROXIMO PCB
 		pcbHabilitado = true;
 	}
 
@@ -857,11 +854,25 @@ void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	puts("Ir a Label");
 	puts("");
 
+	if(pcb->exit_code < 64){
+	pcb->exit_code++;
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 
 	t_puntero_instruccion instruccion = metadata_buscar_etiqueta(trim(identificador_variable), pcb->etiquetas, pcb->etiquetas_size);
 	pcb->program_counter = instruccion-1;
+	}else{
 
+		char* mensajeAKernel = string_new();
+		string_append(&mensajeAKernel, "809");
+		string_append(&mensajeAKernel, ";");
+		string_append(&mensajeAKernel, string_itoa(pcb->pid));
+		string_append(&mensajeAKernel, ";");
+
+		enviarMensaje(&sktKernel, mensajeAKernel);
+
+		pcbHabilitado= false;
+		puts("aqui");
+	}
 	//pcb->program_counter++;
 
 	//printf("ahora el program counter es: %d\n", pcb->program_counter);

@@ -1778,9 +1778,9 @@ void * planificar() {
 
 	while (1) {
 		sem_wait(&sem_cpus);
-		puts("entre cpu");
+
 		sem_wait(&sem_prog);
-		puts("entre prog");
+
 		if (plan == 0) {
 			usleep(configuracion->quantum_sleep);
 
@@ -2712,7 +2712,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		} else {
 
 			//puts("Me llego el 398 y el proceso no existe");
-			printf("Se intento cerrar un programa que no existe\n");
+
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, temporalN);
 			pthread_mutex_unlock(&mtx_listos);
@@ -3291,7 +3291,7 @@ void finDePrograma(int * socketCliente, int codigo) {
 
 void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 	int logrado = 0;
-
+	sleep(1);
 	while (logrado == 0) {
 
 		int encontrar_sem(t_globales* glo) {
@@ -3319,7 +3319,7 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 						bloq->pid = p->pid;
 						bloq->sem = string_new();
 						bloq->sem = sem->nombre;
-						puts("entre");
+
 						list_add(registro_bloqueados, bloq);
 
 						encontrado = 1;
