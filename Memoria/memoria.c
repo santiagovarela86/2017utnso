@@ -26,6 +26,7 @@
 #include <time.h>
 #include <semaphore.h>
 #include "cache.h"
+#include <sys/time.h>
 
 int conexionesKernel = 0;
 int conexionesCPU = 0;
@@ -1799,5 +1800,15 @@ void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * bu
 
 			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	}
+}
+
+int obtenerTiempoReferencia(){
+	time_t curtime;
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	curtime=tv.tv_usec;
+
+	return (int)curtime;
 }
 

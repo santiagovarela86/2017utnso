@@ -122,6 +122,7 @@ void reordenarMetadata(int pid, int paginaConDosBloques, int direccionMeta1, int
 char * decimalABinarioUnsigned(int valor);
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * buffer);
 int obtener_nuevo_indice_cache();
+int obtenerTiempoReferencia();
 
 //#define VARIABLE_EN_CACHE 99
 
