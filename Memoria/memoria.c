@@ -1055,6 +1055,7 @@ void * solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 			int indice_cache = obtener_nuevo_indice_cache();
 			int indice_antiguo = entrada_cache->indice;
 			entrada_cache->indice = indice_cache;
+			entrada_cache->referencia = obtenerTiempoReferencia();
 
 			list_replace(tabla_cache, indice_antiguo, entrada_cache);
 
@@ -1674,6 +1675,7 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 			entrada_cache_reemplazo->pid = pid;
 			entrada_cache_reemplazo->nro_pagina = pagina->nro_pagina;
 			entrada_cache_reemplazo->contenido_pagina = contenido_pagina;
+			entrada_cache_reemplazo->referencia = obtenerTiempoReferencia();
 
 			list_replace(tabla_cache, indice_antiguo, entrada_cache_reemplazo);
 
