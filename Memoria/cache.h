@@ -12,6 +12,7 @@
 
 typedef struct {
 	int indice;
+	int referencia;
 	int pid;
 	int nro_pagina;
 	char* contenido_pagina;
