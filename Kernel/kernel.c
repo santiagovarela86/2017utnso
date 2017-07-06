@@ -3272,7 +3272,7 @@ void finDePrograma(int * socketCliente, int codigo) {
 
 void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 	int logrado = 0;
-
+	sleep(1);
 	while (logrado == 0) {
 
 		int encontrar_sem(t_globales* glo) {
