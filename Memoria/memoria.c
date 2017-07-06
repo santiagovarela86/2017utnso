@@ -1530,16 +1530,17 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 		//Hasta final de la Memoria
 		int i = tamanio_maximo->maxima_cant_paginas_administracion;
 		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
-			pagina_encontrada = list_get(tabla_paginas, i);
-			//sleep(1);
-			if (pagina_encontrada->pid != 0) {
+			t_pagina_invertida* pagina_aux = list_get(tabla_paginas, i);
+			if (pagina_aux->pid != 0) {
 				printf("HUBO COLISION BUSCO OTRA\n");
 			}else{
-				printf("PAGINA ENCONTrAdA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
-				return pagina_encontrada;
+				pagina_encontrada = pagina_aux;
+				printf("MARCO %d ENCONTRADO PARA INSERTAR: PID %d PAGINA %d \n", pagina_encontrada->nro_marco, pagina_encontrada->pid, pagina_encontrada->nro_pagina);
+				break;
 			}
 			i++;
 		}
+		return pagina_encontrada;
 	}
 	return NULL;
 }
@@ -1769,13 +1770,14 @@ void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * bu
 			pthread_mutex_lock(&mutex_estructuras_administrativas);
 
 			if (entradaCache == NULL){
+				paginaAActualizar->pid = pid;
+				paginaAActualizar->nro_pagina = pagina;
+
 				almacenar_pagina_en_cache_para_pid(pid, paginaAActualizar);
 				entradaCache = obtener_entrada_cache(pid, pagina);
 			}
 
 			memcpy(&entradaCache->contenido_pagina[offset], buffer, size);
-
-			puts("PASA EL MEMCPY");
 
 			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	}
