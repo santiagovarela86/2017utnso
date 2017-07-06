@@ -1608,13 +1608,14 @@ bool pagina_llena(t_pagina_invertida* pagina){
 }
 
 t_entrada_cache * crear_entrada_cache(int indice, int pid, int nro_pagina, char * contenido_pagina){
-	t_entrada_cache* new = malloc(sizeof(t_entrada_cache));
-	new->indice = indice;
-	new->contenido_pagina = malloc(configuracion->marco_size);
-	memcpy(new->contenido_pagina, contenido_pagina, configuracion->marco_size);
-	new->nro_pagina = nro_pagina;
-	new->pid = pid;
-	return new;
+	t_entrada_cache* entrada_nueva_cache = malloc(sizeof(t_entrada_cache));
+	entrada_nueva_cache->indice = indice;
+	entrada_nueva_cache->contenido_pagina = malloc(configuracion->marco_size);
+	memcpy(entrada_nueva_cache->contenido_pagina, contenido_pagina, configuracion->marco_size);
+	entrada_nueva_cache->nro_pagina = nro_pagina;
+	entrada_nueva_cache->pid = pid;
+	entrada_nueva_cache->referencia = obtenerTiempoReferencia();
+	return entrada_nueva_cache;
 }
 
 bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
@@ -1634,8 +1635,6 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		//Agrego la entrada
 
 		int indice_cache = obtener_nuevo_indice_cache();
-
-		//printf("almacenar_pagina_en_cache_para_pid %d indice cache %d\n", pid, indice_cache);
 
 		t_entrada_cache * entrada_cache = crear_entrada_cache(indice_cache,
 				pagina->pid, pagina->nro_pagina,
