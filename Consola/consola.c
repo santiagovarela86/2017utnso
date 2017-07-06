@@ -281,6 +281,7 @@ void * manejoPrograma(void * args){
 					p->fin = morfeo->tm_hour * 10000 + morfeo->tm_min * 100 + morfeo->tm_sec;
 					p->duracion = p->fin - p->inicio;
 
+					printf("Finalizo el programa %d \n", p->pid);
 					printf("La hora de inicio fue H: %d, M: %d, S: %d \n", (p->inicio / 10000), ((p->inicio % 10000) / 100), (p->inicio % 100));
 					printf("La hora de finalizacion fue H: %d, M: %d, S: %d \n", (p->fin / 10000), ((p->fin % 10000) / 100), (p->fin % 100));
 					printf("La duracion fue H: %d, M: %d, S: %d \n", (p->duracion / 10000), ((p->duracion % 10000) / 100), (p->duracion % 100));

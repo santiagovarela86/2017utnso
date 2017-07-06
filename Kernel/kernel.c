@@ -2696,7 +2696,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		} else {
 
 			//puts("Me llego el 398 y el proceso no existe");
-			printf("Se intento cerrar un programa que no existe\n");
+
 			pthread_mutex_lock(&mtx_listos);
 			queue_push(cola_listos, temporalN);
 			pthread_mutex_unlock(&mtx_listos);
@@ -3300,7 +3300,7 @@ void waitSemaforo(int * socketCliente, char * semaforo_buscado){
 						bloq->pid = p->pid;
 						bloq->sem = string_new();
 						bloq->sem = sem->nombre;
-						puts("entre");
+
 						list_add(registro_bloqueados, bloq);
 
 						encontrado = 1;
