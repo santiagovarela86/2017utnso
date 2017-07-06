@@ -411,7 +411,6 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 
 		almacenarBytesEnPagina(pagina->pid, pagina->nro_pagina, 0, sizeof(heapMetadata), meta_used);
 
-
 		heapMetadata * meta_free = malloc(sizeof(heapMetadata));
 		meta_free->isFree = true;
 		meta_free->size = freeSpace - bytesPedidos;
@@ -1047,14 +1046,19 @@ void * solicitar_datos_de_pagina(int pid, int pagina, int offset, int tamanio){
 		//datos_pagina = string_substring(entrada_cache->contenido_pagina, offset, tamanio);
 		memcpy(datos_pagina, &entrada_cache->contenido_pagina[offset], tamanio);
 
-		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = obtener_nuevo_indice_cache();
-		int indice_antiguo = entrada_cache->indice;
-		entrada_cache->indice = indice_cache;
+		t_entrada_cache* ultimo = list_get(tabla_cache, list_size(tabla_cache) - 1);
 
-		list_replace(tabla_cache, indice_antiguo, entrada_cache);
+		if (ultimo->pid != entrada_cache->pid || ultimo->nro_pagina != entrada_cache->nro_pagina){
 
-		reorganizar_indice_cache_y_ordenar();
+			//Hago el reemplazo de paginas y ordeno
+			int indice_cache = obtener_nuevo_indice_cache();
+			int indice_antiguo = entrada_cache->indice;
+			entrada_cache->indice = indice_cache;
+
+			list_replace(tabla_cache, indice_antiguo, entrada_cache);
+
+			reorganizar_indice_cache_y_ordenar();
+		}
 
 	}
 	return datos_pagina;
@@ -1658,21 +1662,27 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 		printf("La victima del reemplazo en Cache es PID: %d Pagina %d Indice %d", entrada_cache_reemplazo->pid, entrada_cache_reemplazo->nro_pagina, entrada_cache_reemplazo->indice);
 		puts("");
 		char* contenido_pagina = leer_memoria(obtener_inicio_pagina(pagina), configuracion->marco_size);
-		//Hago el reemplazo de paginas y ordeno
-		int indice_cache = obtener_nuevo_indice_cache();
-		int indice_antiguo = entrada_cache_reemplazo->indice;
-		entrada_cache_reemplazo->indice = indice_cache;
-		entrada_cache_reemplazo->pid = pid;
-		entrada_cache_reemplazo->nro_pagina = pagina->nro_pagina;
-		entrada_cache_reemplazo->contenido_pagina = contenido_pagina;
 
-		list_replace(tabla_cache, indice_antiguo, entrada_cache_reemplazo);
+		t_entrada_cache* ultimo = list_get(tabla_cache, list_size(tabla_cache) - 1);
 
-		//Reorganizo las entradas de cache en base al reemplazo
-		reorganizar_indice_cache_y_ordenar();
+		if (ultimo->pid != entrada_cache_reemplazo->pid || ultimo->nro_pagina != entrada_cache_reemplazo->nro_pagina){
 
-		printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
-		puts("");
+			//Hago el reemplazo de paginas y ordeno
+			int indice_cache = obtener_nuevo_indice_cache();
+			int indice_antiguo = entrada_cache_reemplazo->indice;
+			entrada_cache_reemplazo->indice = indice_cache;
+			entrada_cache_reemplazo->pid = pid;
+			entrada_cache_reemplazo->nro_pagina = pagina->nro_pagina;
+			entrada_cache_reemplazo->contenido_pagina = contenido_pagina;
+
+			list_replace(tabla_cache, indice_antiguo, entrada_cache_reemplazo);
+
+			//Reorganizo las entradas de cache en base al reemplazo
+			reorganizar_indice_cache_y_ordenar();
+
+			printf("Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", indice_cache, pagina->nro_pagina, pagina->pid);
+			puts("");
+		}
 	}
 
 
@@ -1682,33 +1692,6 @@ bool almacenar_pagina_en_cache_para_pid(int pid, t_pagina_invertida* pagina){
 int obtener_nuevo_indice_cache(){
 	int cant_entradas_cache = list_size(tabla_cache);
 	return cant_entradas_cache;
-}
-
-bool actualizar_pagina_en_cache(int pid, int pagina, char * nuevoContenido){
-
-	bool updateOK = true;
-
-	int _encontrar_entrada_cache(t_entrada_cache* entrada){
-		return entrada->pid == pid && entrada->nro_pagina == pagina;
-	}
-
-	t_entrada_cache* entrada_a_actualizar = list_find(tabla_cache, (void*)_encontrar_entrada_cache);
-
-	int indice_cache = obtener_nuevo_indice_cache();
-
-	t_entrada_cache* nueva_entrada_cache = crear_entrada_cache(indice_cache, pid, pagina, nuevoContenido);
-
-	if (entrada_a_actualizar != NULL){
-		//entrada_a_actualizar->contenido_pagina = nuevoContenido;
-		list_replace(tabla_cache, entrada_a_actualizar->indice, nueva_entrada_cache);
-
-		printf("2. Se actualizo el indice %d de la Cache asignados a Pagina %d y PID %d \n", entrada_a_actualizar->indice, entrada_a_actualizar->nro_pagina, entrada_a_actualizar->pid);
-		puts("");
-	}
-
-	reorganizar_indice_cache_y_ordenar();
-
-	return updateOK;
 }
 
 t_entrada_cache* obtener_entrada_cache(int pid, int pagina){
@@ -1785,6 +1768,8 @@ void reorganizar_indice_cache_y_ordenar(){
 	list_iterate(tabla_cache, (void*)_decrementar_indice_cache);
 
 	list_sort(tabla_cache, (void*)_indice_menor);
+
+	log_cache_in_disk(tabla_cache);
 }
 
 void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * buffer){
@@ -1809,6 +1794,8 @@ void almacenarBytesEnPagina(int pid, int pagina, int offset, int size, void * bu
 			}
 
 			memcpy(&entradaCache->contenido_pagina[offset], buffer, size);
+
+			puts("PASA EL MEMCPY");
 
 			pthread_mutex_unlock(&mutex_estructuras_administrativas);
 	}
