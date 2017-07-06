@@ -1330,44 +1330,44 @@ void * handler_conexion_cpu(void * sock) {
 				 if(fd != -1)
 				 {
 					 infofile = mensajeDesdeCPU[3];
-									 tamanio = atoi(mensajeDesdeCPU[4]);
+					 tamanio = atoi(mensajeDesdeCPU[4]);
 
-									 if(string_length(infofile) > tamanio)
-									 {
-										 puts("El la longitud a escribir supera el tamaño del buffer");
-										 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
-								    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
-									 }
-									 else
-									 {
-										 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
+					 if(string_length(infofile) > tamanio)
+					 {
+						 puts("El la longitud a escribir supera el tamaño del buffer");
+						 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
+						 enviarMensaje(socketCliente, "Finalización por ExitCode");
+					 }
+					 else
+					 {
+						 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
-										 if(string_contains(auxEscribir, "Error"))
-										 {
-											 if(string_contains(auxEscribir, "permisos"))
-											 {
-												 puts("No se puede escribir el archivo debido a sus permisos");
-												 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-										    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
-											 }
-											 if(string_contains(auxEscribir, "secundario"))
-											 {
-												 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
-										    	 enviarMensaje(socketCliente, "Finalización por ExitCode");
-											 }
-											 else
-											 {
-										    		finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-										    		enviarMensaje(socketCliente, "Finalización por ExitCode");
-											 }
+						 if(string_contains(auxEscribir, "Error"))
+						 {
+							 if(string_contains(auxEscribir, "permisos"))
+							 {
+								 puts("No se puede escribir el archivo debido a sus permisos");
+								 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+								 enviarMensaje(socketCliente, "Finalización por ExitCode");
+							 }
+							 if(string_contains(auxEscribir, "secundario"))
+							 {
+								 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
+								 enviarMensaje(socketCliente, "Finalización por ExitCode");
+							 }
+							 else
+							 {
+									finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+									enviarMensaje(socketCliente, "Finalización por ExitCode");
+							 }
 
-									     }
-										 else
-										 {
+						 }
+						 else
+						 {
 
-											 enviarMensaje(socketCliente, auxEscribir);
-										 }
-									 }
+							 enviarMensaje(socketCliente, auxEscribir);
+						 }
+					 }
 				 }
 				 else
 				 {
@@ -1437,18 +1437,18 @@ void * handler_conexion_cpu(void * sock) {
 				 if(fd != -1)
 				 {
 
-					 char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
-					 if(string_contains(auxCerrar, "Error"))
-					{
-						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-						enviarMensaje(socketCliente, "Finalización por ExitCode");
-					}
-					 enviarMensaje(socketCliente, auxCerrar);
+				 char * auxCerrar = cerrarArchivo(pid_mensaje, fd);
+				 if(string_contains(auxCerrar, "Error"))
+				{
+					finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+					enviarMensaje(socketCliente, "1");
+				}
+				 enviarMensaje(socketCliente, auxCerrar);
 				 }
 				 else
 				 {
 						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "2");
 				 }
 
 
@@ -1473,6 +1473,16 @@ void * handler_conexion_cpu(void * sock) {
 						else if(string_contains(auxLeer, "fileDescriptor"))
 						{
 							finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						}
+						else if(string_contains(auxLeer, "secundario"))
+						{
+							finalizarPrograma(pid_mensaje, FIN_LECTURA_SUPERIOR_A_DISCO);
+							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						}
+						else if(string_contains(auxLeer, "size"))
+						{
+							finalizarPrograma(pid_mensaje, FIN_LECTURA_SUPERIOR_A_ARCHIVO);
 							enviarMensaje(socketCliente, "Finalización por ExitCode");
 						}
 						else
@@ -1745,6 +1755,12 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		break;
 	case FIN_ERROR_CREACION_ARCHIVO_SIN_ESPACIO:
 		errorLog = "No hay espacio en el disco para crear el archivo";
+		break;
+	case FIN_LECTURA_SUPERIOR_A_DISCO:
+		errorLog = "La cantidad de caracteres que quiere escribir supera al almacenamiento secundario";
+		break;
+	case FIN_LECTURA_SUPERIOR_A_ARCHIVO:
+		errorLog = "La cantidad de caracteres que quiere escribir supera al contenido del archivo";
 		break;
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
@@ -2790,7 +2806,10 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE
 			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
 			|| codigo == FIN_ESCRITURA_SUPERIOR_A_DISCO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA){
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
+			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo ==FIN_ERROR_LEER_ARCHIVO_VACIO
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS
+	){
 
 		int encontrado = 0;
 

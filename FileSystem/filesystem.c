@@ -646,25 +646,33 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 								{
 									cantidadDeBloquesALeer++;
 								}
-								while(cantidadDeBloquesALeer != 0)
+								if(cantidadDeBloquesALeer > regMetaArchBuscado->bloquesEscritos->elements_count)
 								{
-									if(cantidadDeBloquesALeer != 1)
-									{
-										valorLeido = archBloqueAleer->archivoMapeado;
-										string_append(&buffer, valorLeido);
-										cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
-										idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
-										archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
-									}
-									else
-									{
-										valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
-										string_append(&buffer, valorLeido);
-									}
-
-									cantidadDeBloquesALeer--;
+									textoResult = "Error: size";
 								}
-								string_append(&textoResult, buffer);
+								else
+								{
+									while(cantidadDeBloquesALeer != 0)
+											{
+												if(cantidadDeBloquesALeer != 1)
+												{
+													valorLeido = archBloqueAleer->archivoMapeado;
+													string_append(&buffer, valorLeido);
+													cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
+													idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); //bloque donde comienza lo que quiero leer
+													archBloqueAleer= abrirUnArchivoBloque(idbloqueALeer);
+												}
+												else
+												{
+													valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,(size % metadataSadica->tamanio_bloques));
+													string_append(&buffer, valorLeido);
+												}
+
+												cantidadDeBloquesALeer--;
+											}
+											string_append(&textoResult, buffer);
+								}
+
 							}
 							else
 							{
@@ -672,14 +680,15 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 								{
 									if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
 									{
-										textoResult = "El archivo no contiene datos para ser leídos";
+										string_append(&textoResult, "Error: vacio");
 									}
 									else
 									{
-										string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
+										string_append(&textoResult, "Error: size");
+										/*string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
 										valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,string_length(archBloqueAleer->archivoMapeado));
 										string_append(&buffer, valorLeido);
-										strcat(textoResult, valorLeido);
+										strcat(textoResult, valorLeido);*/
 									}
 								}
 								else
@@ -695,13 +704,13 @@ void obtener_datos(char* directorio, int size, char* buffer, int offset) {
 			}
 			else
 			{
-				string_append(&textoResult, "Error: El arhivo esta vacio");
+				string_append(&textoResult, "Error: vacio");
 			}
 
 		}
 		else
 		{
-			string_append(&textoResult, "El valor a leer supera el tamanio de la memoria secundaria");
+			string_append(&textoResult, "Error: tamaño a leer supera al almacenamiento secunadario");
 		}
 
 		//string_append(&mensaje, valorLeido);

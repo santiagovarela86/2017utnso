@@ -1281,6 +1281,7 @@ if(descriptor <= 0 || descriptor > 99)
 		if (result > 0) {
 			if(string_contains(resulMenCerrar,"Finalización"))
 			{
+				printf("%s \n",resulMenCerrar);
 				pcbHabilitado = false;
 
 			}
@@ -1410,7 +1411,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	}
 
 	free(resulMenLeer);
-	//free(mensajeFs);
+	free(mensajeFs);
 	return;
 
 }
