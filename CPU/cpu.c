@@ -1402,27 +1402,23 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 
 	char* resulMenLeer = malloc(MAXBUF);
 	int result =recv(sktKernel, resulMenLeer, MAXBUF, 0);
+	if(string_contains(resulMenLeer, "9000"))
+	{
+		enviarMensaje(&sktKernel, "todo ok");
+		pcbHabilitado = false;
+	}
+	else
+	{
+		enviarMensaje(&sktKernel, "todo ok");
 
-	if (result > 0) {
-		if(string_contains(resulMenLeer,"Finalización"))
-		{
-			pcbHabilitado = false;
-			informacion = atoi(resulMenLeer);
+		puts("El archivo se leyo correctamente\n");
+			//printf("%s \n", resulMenLeer);
+	    printf("su contenido es %s \n", resulMenLeer);
 
-		}
-		else
-		{
-			puts("El archivo se leyo correctamente\n");
-				//printf("%s \n", resulMenLeer);
-				printf("su contenido es %s \n", resulMenLeer);
-		}
-
-	} else {
-		printf("Error no se pudo leer \n");
+		free(resulMenLeer);
+		free(mensajeFs);
 	}
 
-	free(resulMenLeer);
-	free(mensajeFs);
 	return;
 
 }

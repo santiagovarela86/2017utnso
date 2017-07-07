@@ -1462,39 +1462,42 @@ void * handler_conexion_cpu(void * sock) {
 				 {
 					 infofile = mensajeDesdeCPU[3];
 					 tamanio = atoi(mensajeDesdeCPU[4]);
-					 char * auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
-					if(string_contains(auxLeer, "Error"))
+					 t_resultLeer* auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
+					if(string_contains(auxLeer->exitCode, "Error"))
 					{
-						if(string_contains(auxLeer, "vacio"))
+						if(string_contains(auxLeer->exitCode, "vacio"))
 						{
 							finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_VACIO);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "9000");
 						}
-						else if(string_contains(auxLeer, "fileDescriptor"))
+						else if(string_contains(auxLeer->exitCode, "fileDescriptor"))
 						{
 							finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "9000");
 						}
-						else if(string_contains(auxLeer, "secundario"))
+						else if(string_contains(auxLeer->exitCode, "secundario"))
 						{
 							finalizarPrograma(pid_mensaje, FIN_LECTURA_SUPERIOR_A_DISCO);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "9000");
 						}
-						else if(string_contains(auxLeer, "size"))
+						else if(string_contains(auxLeer->exitCode, "size"))
 						{
 							finalizarPrograma(pid_mensaje, FIN_LECTURA_SUPERIOR_A_ARCHIVO);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "9000");
 						}
 						else
 						{
 							finalizarPrograma(pid_mensaje, FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+							enviarMensaje(socketCliente, "9000");
 						}
 
 					}
 					else
 					{
-					 enviarMensaje(socketCliente, auxLeer);
+				     enviarMensaje(socketCliente, "8000");
+					 char mensajeLeerParcial[MAXBUF];
+				     recv(socketCliente, mensajeLeerParcial, MAXBUF, 0);
+					 send(socketCliente, auxLeer->buffer, tamanio, 0);
 					}
 				 }
 
@@ -1503,6 +1506,7 @@ void * handler_conexion_cpu(void * sock) {
 						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
 							enviarMensaje(socketCliente, "Finalización por ExitCode");
 				 }
+
 				break;
 
 			case 571:
@@ -4087,8 +4091,10 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 
 	return resultado;
 }
-char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
+t_resultLeer* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 {
+	t_resultLeer* resulLeerEnviar = malloc(sizeof(t_resultLeer));
+	resulLeerEnviar->exitCode = string_new();
 	if((int)lista_File_global->elements_count != 0 && (int)lista_File_proceso->elements_count != 0)
 	{
 	t_fileGlobal* regTablaGlobal = malloc(sizeof(t_fileGlobal));
@@ -4100,53 +4106,72 @@ char* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
 
 			if(regArchivo != NULL)
 			{
+
 				if(string_contains(regArchivo->flags, "r"))
+				{
+					char* mensajeFSleer = string_new();
+					string_append(&mensajeFSleer, "800");
+					string_append(&mensajeFSleer, ";");
+					string_append(&mensajeFSleer, regTablaGlobal->path);
+					string_append(&mensajeFSleer, ";");
+					string_append(&mensajeFSleer, string_itoa(tamanio));
+					string_append(&mensajeFSleer, ";");
+					string_append(&mensajeFSleer, ((char*)infofile));
+					string_append(&mensajeFSleer, ";");
+
+					int offset = hayOffsetArch(fd);
+
+					string_append(&mensajeFSleer, string_itoa(offset));
+					string_append(&mensajeFSleer, ";");
+
+					//free(archAbrir1);
+					//free(regTablaGlobal);
+
+					enviarMensaje(&skt_filesystem, mensajeFSleer);
+
+					char* resulMenLeer = malloc(MAXBUF);
+					int resultParcial = recv(skt_filesystem, resulMenLeer, MAXBUF, 0);
+					if(resultParcial > 0)
+					{
+						if(string_contains(resulMenLeer, "9000"))
 						{
-							char* mensajeFSleer = string_new();
-								string_append(&mensajeFSleer, "800");
-								string_append(&mensajeFSleer, ";");
-								string_append(&mensajeFSleer, regTablaGlobal->path);
-								string_append(&mensajeFSleer, ";");
-								string_append(&mensajeFSleer, string_itoa(tamanio));
-								string_append(&mensajeFSleer, ";");
-								string_append(&mensajeFSleer, ((char*)infofile));
-								string_append(&mensajeFSleer, ";");
+							enviarMensaje(&skt_filesystem, "parcial");
+							int resultParcialrev = recv(skt_filesystem, resulMenLeer, MAXBUF, 0);
+							if (resultParcialrev > 0) {
+								resulLeerEnviar->exitCode =resulMenLeer;
+							} else {
+								printf("Error el archivo no se pudo leer \n");
+							}
+						}
+						else
+						{
+							enviarMensaje(&skt_filesystem, "parcial");
+							void* buffer = malloc(MAXBUF);
+							int resultParcialrev = recv(skt_filesystem, buffer, MAXBUF, 0);
+							if (resultParcialrev > 0) {
+								resulLeerEnviar->buffer = buffer;
+							} else {
+								printf("Error el archivo no se pudo leer \n");
+							}
 
-								int offset = hayOffsetArch(fd);
-
-								string_append(&mensajeFSleer, string_itoa(offset));
-								string_append(&mensajeFSleer, ";");
-
-								//free(archAbrir1);
-								//free(regTablaGlobal);
-
-								enviarMensaje(&skt_filesystem, mensajeFSleer);
-
-								char* resulMenLeer = malloc(MAXBUF);
-								int result = recv(skt_filesystem, resulMenLeer, MAXBUF, 0);
-
-								if (result > 0) {
-									return resulMenLeer;
-								} else {
-									printf("Error el archivo no se pudo leer \n");
-								}
-
-								free(resulMenLeer);
-								//free(mensajeAFS);
-								//return mensajeFSleer;
+						}
+					}
 
 			}
 			else
 			{
-				return "Error de permisos";
+				resulLeerEnviar->exitCode = "Error de permisos";
 			}
 
 		}
 		else
 		{
-			return "Error: fileDescriptor inexistente";
+			resulLeerEnviar->exitCode = "Error: fileDescriptor inexistente";
+
+
 		}
      }
+	return resulLeerEnviar;
 }
 
 void incrementarContadorPaginasHeapSolicitadas(int pid) {

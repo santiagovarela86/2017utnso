@@ -615,7 +615,6 @@ void* appendVoid(void* valor1, int sizeValor1, void* valorAagregar, int sizeAgre
 	valor1 = realloc(valor1, sizeValor1 + sizeAgregar);
 	void* aux = valor1;
 	memcpy(aux + sizeValor1, valorAagregar, sizeAgregar);
-
 	return valor1;
 }
 
@@ -636,6 +635,7 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 
 		void* valorLeido = malloc(metadataSadica->tamanio_bloques);
 		void* textoResult = malloc(size);
+		char* textoResultChar = string_new();
 		int tamanioDisco = metadataSadica->cantidad_bloques * metadataSadica->tamanio_bloques;
 		if (size <= tamanioDisco)
 		{
@@ -684,6 +684,14 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 										cantidadDeBloquesALeer--;
 									}
 									appendVoid(textoResult,0, buffer, size);
+									enviarMensaje(&socketKernel, "8000");
+									char messageLeerOK[MAXBUF];
+
+									int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+									if(resultLeerOk > 0)
+									{
+										send(socketKernel, textoResult, size, 0);
+									}
 								  }
 
 							}
@@ -693,22 +701,42 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 								{
 									if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
 									{
-										string_append(&textoResult, "Error: vacio");
+										string_append(&textoResultChar, "Error: vacio");
+										enviarMensaje(&socketKernel, "9000");
+										char messageLeerOK[MAXBUF];
+
+										int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+										if(resultLeerOk > 0)
+										{
+											enviarMensaje(&socketKernel, textoResultChar);
+										}
 									}
 									else
 									{
-										string_append(&textoResult, "Error: size");
-										/*string_append(&textoResult,"El size es mayor al contenido del archivo, solo se pudo leer: ");
-										valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,string_length(archBloqueAleer->archivoMapeado));
-										string_append(&buffer, valorLeido);
-										strcat(textoResult, valorLeido);*/
+										string_append(&textoResultChar, "Error: size");
+										enviarMensaje(&socketKernel, "9000");
+										char messageLeerOK[MAXBUF];
+
+										int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+										if(resultLeerOk > 0)
+										{
+											enviarMensaje(&socketKernel, textoResultChar);
+										}
 									}
 								}
 								else
 								{
-									valorLeido = string_substring(archBloqueAleer->archivoMapeado,0,size);
-									string_append(&buffer, valorLeido);
-									string_append(&textoResult, buffer);
+									memcpy(valorLeido,archBloqueAleer->archivoMapeado,size);
+									appendVoid(buffer,0, valorLeido, size);
+									appendVoid(textoResult,0, buffer, size);
+									enviarMensaje(&socketKernel, "8000");
+									char messageLeerOK[MAXBUF];
+
+									int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+									if(resultLeerOk > 0)
+									{
+										send(socketKernel, textoResult, size, 0);
+									}
 								}
 
 								cerrarUnArchivoBloque(archBloqueAleer->archivoMapeado,archBloqueAleer->script);
@@ -717,17 +745,33 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 			}
 			else
 			{
-				string_append(&textoResult, "Error: vacio");
+				string_append(&textoResultChar, "Error: vacio");
+				enviarMensaje(&socketKernel, "9000");
+				char messageLeerOK[MAXBUF];
+
+				int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+				if(resultLeerOk > 0)
+				{
+					enviarMensaje(&socketKernel, textoResultChar);
+				}
 			}
 
 		}
 		else
 		{
-			string_append(&textoResult, "Error: tamaño a leer supera al almacenamiento secunadario");
+			string_append(&textoResultChar, "Error: tamaño a leer supera al almacenamiento secunadario");
+			enviarMensaje(&socketKernel, "9000");
+			char messageLeerOK[MAXBUF];
+
+			int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
+			if(resultLeerOk > 0)
+			{
+				enviarMensaje(&socketKernel, textoResultChar);
+			}
 		}
 
 		//string_append(&mensaje, valorLeido);
-		enviarMensaje(&socketKernel, textoResult);
+
 		//free(pathAbsoluto);
 		//free(directorioAux);
 		return ;
@@ -799,7 +843,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, v
 
 			if(cantidadDeBloquesApedir != 1) //porque el utlimo no lo va a grabar entero
 			{
-				void*  bufferaux;
+				void*  bufferaux =  malloc((metadataSadica->tamanio_bloques));
 				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (metadataSadica->tamanio_bloques));
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				grabarUnArchivoBloque(archBloque, unBloque, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
@@ -808,7 +852,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, v
 			}
 			else
 			{
-				void* bufferaux;
+				void* bufferaux =  malloc(auxsize);
 				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (auxsize)); //lo que me falta grabar
 				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + auxsize + auxoff;
 				list_add(regMetaArchBuscado->bloquesEscritos, unBloque);
@@ -830,12 +874,12 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 
 	  //int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
       int sizeRelativo = (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques);
-	  void* bufferaux;
+	  void* bufferaux = malloc(sizeRelativo);
 	  memcpy(bufferaux, buffer, sizeRelativo); //grabo lo que tengo que grabar en ese bloque
 
 	  graboEnLosBloquesQueYaTiene(offset, regMetaArchBuscado, bufferaux, sizeRelativo);
 
-	  void* bufferNuevo;
+	  void* bufferNuevo =  malloc( size - sizeRelativo);
 	  memcpy(bufferNuevo, buffer + sizeRelativo, size - sizeRelativo);
 	  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);
 }
