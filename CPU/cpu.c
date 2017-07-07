@@ -1367,6 +1367,25 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 
 		 recv(sktKernel, mensajeFs, 12, 0);
 		 send(sktKernel, informacion, tamanio, 0);
+			char* resulMenEscribir = malloc(MAXBUF);
+			int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
+
+			if (result > 0) {
+				if(string_contains(resulMenEscribir,"Finalización"))
+				{
+					pcbHabilitado = false;
+
+				}
+				else
+				{
+					printf("%s \n",resulMenEscribir);
+				}
+
+			} else {
+				printf("Error el archivo no se pudo escribir \n");
+			}
+
+			free(resulMenEscribir);
 	}
 
 
@@ -1374,25 +1393,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 
 	//free(mensajeAKernel);
 
-	char* resulMenEscribir = malloc(MAXBUF);
-	int result = recv(sktKernel, resulMenEscribir, MAXBUF, 0);
 
-	if (result > 0) {
-		if(string_contains(resulMenEscribir,"Finalización"))
-		{
-			pcbHabilitado = false;
-
-		}
-		else
-		{
-			printf("%s \n",resulMenEscribir);
-		}
-
-	} else {
-		printf("Error el archivo no se pudo escribir \n");
-	}
-	
-	free(resulMenEscribir);
 	//free(mensajeFs);
 	return;
 }

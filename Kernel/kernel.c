@@ -1335,8 +1335,10 @@ void * handler_conexion_cpu(void * sock) {
 					 if(fd == 0 || fd == 1)
 					 {
 						 int tamanio = 0;
+						 void* aux = malloc(1);
 						 char* informacion = mensajeDesdeCPU[3];
-						 char * auxEscribir = escribirArchivo(pid_mensaje, fd, informacion,informacion, tamanio);
+						 char * auxEscribir = escribirArchivo(pid_mensaje, fd, informacion,aux, tamanio);
+						 free(aux);
 					 }
 					 else
 					 {
