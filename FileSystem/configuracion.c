@@ -168,13 +168,16 @@ void crearBloques(char* mnt, int cantidad, int tamanio)
 		string_append(&bloque,string_itoa(i));
 		string_append(&bloque,".bin");
 		int fd_script = open(bloque, O_RDWR);
-		if(fd_script == -1)
+	    if(fd_script == -1)
 		{
-			FILE * bitmapArchivo = fopen(bloque, "w");
-			ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
+		FILE * bitmapArchivo = fopen(bloque, "w");
+		 fclose(bitmapArchivo);
+		ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
 		}
-		//free(bloque);
+	    close(fd_script);
 		i++;
+		printf("%d \n", i);
+		free(bloque);
 	}
 }
 

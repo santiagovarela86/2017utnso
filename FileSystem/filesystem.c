@@ -294,7 +294,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 }
 void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios)
 {
-	char * espacios =string_new();
+	char * espacios = string_new();
 
 	int i = 0;
 
