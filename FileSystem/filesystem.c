@@ -904,6 +904,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 	{
 		int sizeFinal = (offset + size);
 		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, sizeFinal); //si entra, meto todo el bloque
+		regMetaArchBuscado->tamanio = sizeFinal + regMetaArchBuscado->tamanio;
 	}
 	else
 	{//sino entra todo en un bloque, pregunto en cuantos bloques entra el buffer.
