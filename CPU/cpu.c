@@ -1289,7 +1289,6 @@ if(descriptor <= 0 || descriptor > 99)
 		if (result > 0) {
 			if(string_contains(resulMenCerrar,"Finalización"))
 			{
-				printf("%s \n",resulMenCerrar);
 				pcbHabilitado = false;
 
 			}

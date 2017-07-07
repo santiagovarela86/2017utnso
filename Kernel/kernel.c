@@ -1354,7 +1354,7 @@ void * handler_conexion_cpu(void * sock) {
 						 {*/
 							 enviarMensaje(socketCliente, "todo piola");
 							 void* buffer = malloc(MAXBUF);
-							 recv(*socketCliente, buffer, MAXBUF, 0);
+							 int e =recv((* socketCliente), buffer, MAXBUF, 0);
 							 char * auxEscribir = escribirArchivo(pid_mensaje, fd,"", buffer, tamanio);
 
 							 if(string_contains(auxEscribir, "Error"))
@@ -4030,11 +4030,11 @@ char* borrarArchivo(int pid_mensaje, int fd)
 								enviarMensaje(&skt_filesystem, mensajeAFS);
 
 
-								list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+								/*list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 								free(archBorrarPro);
 
 								list_remove_by_condition(lista_File_global,(void*) encontrar_archGobal);
-								free(archBorrarGlobal);
+								free(archBorrarGlobal);*/
 
 								/*int result = recv(skt_filesystem, mensajeAFS, sizeof(mensajeAFS), 0);
 
@@ -4081,37 +4081,45 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 				return 0;
 		}
 		t_fileProceso* archAbrir1 = malloc(sizeof(t_fileProceso));
+		archAbrir1->global_fd = -1;
 		archAbrir1 = list_find(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
-
-
-		t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
-		archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
-		//printf("el valor a borrar es %d en global \n", archAbrir1->global_fd);
-		//printf("el valor a borrar es %d en FD \n", archAbrir1->fileDescriptor);
-		if(archAbrir2->cantidadDeAperturas <= 1)
+		if(archAbrir1->global_fd !=  -1)
 		{
-			/*char* mensajeCerrarRetorno = string_new();
-			string_append(&mensajeCerrarRetorno, "802");
-			string_append(&mensajeCerrarRetorno, ";");
-			string_append(&mensajeCerrarRetorno, archAbrir2->path);
-			string_append(&mensajeCerrarRetorno, ";");
+			t_fileGlobal* archAbrir2 = malloc(sizeof(t_fileGlobal));
+			archAbrir2 = list_get(lista_File_global, archAbrir1->global_fd);
+			//printf("el valor a borrar es %d en global \n", archAbrir1->global_fd);
+			//printf("el valor a borrar es %d en FD \n", archAbrir1->fileDescriptor);
+			if(archAbrir2->cantidadDeAperturas <= 1)
+			{
+				/*char* mensajeCerrarRetorno = string_new();
+				string_append(&mensajeCerrarRetorno, "802");
+				string_append(&mensajeCerrarRetorno, ";");
+				string_append(&mensajeCerrarRetorno, archAbrir2->path);
+				string_append(&mensajeCerrarRetorno, ";");
 
-			enviarMensaje(&skt_filesystem, mensajeCerrarRetorno);*/
+				enviarMensaje(&skt_filesystem, mensajeCerrarRetorno);*/
 
-			list_remove(lista_File_global, archAbrir1->global_fd);
-			free(archAbrir2);
-			string_append(&resultado, "El archivo fue cerrado y eliminado de la tabla global ya que no tiene referencias en otros procesos");
+				list_remove(lista_File_global, archAbrir1->global_fd);
+				free(archAbrir2);
+				string_append(&resultado, "El archivo fue cerrado y eliminado de la tabla global ya que no tiene referencias en otros procesos");
+			}
+			else
+			{
+				archAbrir2->cantidadDeAperturas--;
+				//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
+				string_append(&resultado, "El archivo fue cerrado del proceso");
+			}
+
+			list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
+
+			free(archAbrir1);
 		}
 		else
 		{
-			archAbrir2->cantidadDeAperturas--;
-			//list_add_in_index(lista_File_global, archAbrir1->global_fd, archAbrir2);
-			string_append(&resultado, "El archivo fue cerrado del proceso");
+			string_append(&resultado, "Error: el archivo no se encuentra");
 		}
 
-		list_remove_by_condition(listaDeArchivosDelProceso->tablaProceso,(void*) encontrar_archProceso);
 
-		free(archAbrir1);
 	}
 	else
 	{
