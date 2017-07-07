@@ -171,8 +171,8 @@ void crearBloques(char* mnt, int cantidad, int tamanio)
 	    if(fd_script == -1)
 		{
 		FILE * bitmapArchivo = fopen(bloque, "w");
-		 fclose(bitmapArchivo);
 		ponerVaciosAllenarEnArchivos(bitmapArchivo,tamanio);
+		 fclose(bitmapArchivo);
 		}
 	    close(fd_script);
 		i++;
