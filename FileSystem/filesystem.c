@@ -752,7 +752,7 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 		}
 		else
 		{
-			string_append(&textoResultChar, "Error: tamaño a leer supera al almacenamiento secunadario");
+			string_append(&textoResultChar, "Error: disco lleno, no se puede escribir");
 			enviarMensaje(&socketKernel, "9000");
 			char messageLeerOK[MAXBUF];
 
@@ -806,7 +806,7 @@ char* pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, 
 			}
 			else
 			{
-				string_append(&exitCode, "Error: almacenamiento secundario lleno");
+				string_append(&exitCode, "Error: disco lleno, no se puede crear");
 				break;
 			}
 			cantBloquesEnBlancoASaltar--;
@@ -857,7 +857,7 @@ char* pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, 
 		 }
 		else
 		{
-			string_append(&exitCode, "Error: almacenamiento secundario lleno");
+			string_append(&exitCode, "Error: disco lleno, no se puede crear");
 			break;
 		}
       }
@@ -966,7 +966,7 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
 		if(size > tamanioDisco)
 		{
-		    enviarMensaje(&socketKernel, "Error: tamaño a escribir supera al almacenamiento secunadario");
+		    enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
 		}
 		else
 		{
@@ -990,7 +990,7 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		   	 actualizarArchivoCreado(regMetaArchBuscado, pathAbsoluto);
 		   	if(string_contains(exitCode, "Error"))
 		   	{
-		   		enviarMensaje(&socketKernel, "Error: tamaño a escribir supera al almacenamiento secunadario");
+		   		enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
 		   	}
 		    enviarMensaje(&socketKernel, "Archivo Escrito Correctamente");
 		}

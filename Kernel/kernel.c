@@ -1363,9 +1363,9 @@ void * handler_conexion_cpu(void * sock) {
 									 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
 									 enviarMensaje(socketCliente, "Finalización por ExitCode");
 								 }
-								 if(string_contains(auxEscribir, "secundario"))
+								 if(string_contains(auxEscribir, "disco"))
 								 {
-									 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
+									 finalizarPrograma(pid_mensaje, FIN_ERROR_DISCO_LLENO);
 									 enviarMensaje(socketCliente, "Finalización por ExitCode");
 								 }
 								 else
@@ -1775,8 +1775,8 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 	case FIN_ERROR_STACK_OVERFLOW:
 		errorLog = "Se alcanzó el límite de páginas de stack utilizadas por el proceso";
 		break;
-	case FIN_ESCRITURA_SUPERIOR_A_DISCO:
-		errorLog = "La cantidad de caracteres que quiere escribir supera al almacenamiento secundario";
+	case FIN_ERROR_DISCO_LLENO:
+		errorLog = "No se pueden agregar mas bytes al almacenamiento secundario, supera el limite del FS";
 		break;
 	case FIN_ERROR_CREACION_ARCHIVO_SIN_ESPACIO:
 		errorLog = "No hay espacio en el disco para crear el archivo";
@@ -2834,7 +2834,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 	if(codigo == FIN_ERROR_STACK_OVERFLOW || codigo == FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE
 			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE
 			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
-			|| codigo == FIN_ESCRITURA_SUPERIOR_A_DISCO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
+			|| codigo == FIN_ERROR_DISCO_LLENO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
 			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo ==FIN_ERROR_LEER_ARCHIVO_VACIO
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS
