@@ -1460,9 +1460,11 @@ void * handler_conexion_cpu(void * sock) {
 			     pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 if(fd != -1)
 				 {
-					 infofile = mensajeDesdeCPU[3];
-					 tamanio = atoi(mensajeDesdeCPU[4]);
-					 t_resultLeer* auxLeer = leerArchivo(pid_mensaje, fd, infofile, tamanio);
+					 tamanio = atoi(mensajeDesdeCPU[3]);
+					 enviarMensaje(socketCliente, "todo piola");
+					 void* buffer = malloc(MAXBUF);
+					 recv(socketCliente, buffer, MAXBUF, 0);
+					 t_resultLeer* auxLeer = leerArchivo(pid_mensaje, fd, buffer, tamanio);
 					if(string_contains(auxLeer->exitCode, "Error"))
 					{
 						if(string_contains(auxLeer->exitCode, "vacio"))
@@ -1504,7 +1506,7 @@ void * handler_conexion_cpu(void * sock) {
 				 else
 				 {
 						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-							enviarMensaje(socketCliente, "Finalización por ExitCode");
+						enviarMensaje(socketCliente, "Finalización por ExitCode");
 				 }
 
 				break;
@@ -4091,7 +4093,7 @@ char* cerrarArchivo(int pid_mensaje, int fd)
 
 	return resultado;
 }
-t_resultLeer* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio)
+t_resultLeer* leerArchivo( int pid_mensaje, int fd, void* infofile, int tamanio)
 {
 	t_resultLeer* resulLeerEnviar = malloc(sizeof(t_resultLeer));
 	resulLeerEnviar->exitCode = string_new();

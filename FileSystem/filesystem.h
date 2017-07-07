@@ -59,8 +59,8 @@ void actualizarArchivoCreado(t_metadataArch* regArchivo, char* path);
 char* concatenernaVacios(void* buffer, int size);
 t_mapeoArchivo* abrirUnArchivoBloque(int idBloque);
 void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, void* buffer, int size);
-void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
-void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
+char* pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
+char* grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
 void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size );
 #endif /* FILESYSTEM_H_ */
 
