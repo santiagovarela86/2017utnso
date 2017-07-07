@@ -2803,7 +2803,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 		temporalN = (t_pcb*) queue_pop(cola_ejecucion);
 		largoColaEjec--;
 
-		if (temporalN->pid == pidACerrar) {
+ 		if (temporalN->pid == pidACerrar) {
 
 			pthread_mutex_lock(&mtx_terminados);
 			temporalN->exit_code = codigo;
@@ -2840,7 +2840,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_ERROR_DISCO_LLENO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
 			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo ==FIN_ERROR_LEER_ARCHIVO_VACIO
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS
 	){
 
 		int encontrado = 0;
