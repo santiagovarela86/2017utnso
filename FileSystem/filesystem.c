@@ -705,7 +705,7 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 							}
 							else
 							{
-								if(string_length(archBloqueAleer->archivoMapeado) < size)
+								if(archBloqueAleer->script.st_size < size)
 								{
 									if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
 									{
