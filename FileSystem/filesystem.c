@@ -707,20 +707,6 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 							{
 								if(archBloqueAleer->script.st_size < size)
 								{
-									if(string_equals_ignore_case(archBloqueAleer->archivoMapeado," "))
-									{
-										string_append(&textoResultChar, "Error: vacio");
-										enviarMensaje(&socketKernel, "9000");
-										char messageLeerOK[MAXBUF];
-
-										int resultLeerOk = recv(socketKernel, messageLeerOK, sizeof(messageLeerOK), 0);
-										if(resultLeerOk > 0)
-										{
-											enviarMensaje(&socketKernel, textoResultChar);
-										}
-									}
-									else
-									{
 										string_append(&textoResultChar, "Error: size");
 										enviarMensaje(&socketKernel, "9000");
 										char messageLeerOK[MAXBUF];
@@ -730,7 +716,6 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 										{
 											enviarMensaje(&socketKernel, textoResultChar);
 										}
-									}
 								}
 								else
 								{
