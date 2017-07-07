@@ -294,7 +294,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 }
 void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios)
 {
-	char * espacios = string_new();
+	/*char * espacios = string_new();
 
 	int i = 0;
 
@@ -304,7 +304,8 @@ void ponerVaciosAllenarEnArchivos(FILE * pFile, int cantidadEspacios)
 	}
 
     fputs(espacios, pFile);
-    fseek(pFile, string_length(espacios), 0);
+    fseek(pFile, string_length(espacios), 0);*/
+	  ftruncate(fileno(pFile), cantidadEspacios);
 }
 
 void cerrarUnArchivoBloque(char* pmap, struct stat script)
