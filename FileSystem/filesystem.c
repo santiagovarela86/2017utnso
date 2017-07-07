@@ -780,8 +780,9 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 
 
 
-void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
+char* pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
+	char exitCode = string_new();
 		int cantidadDeBloquesDelOffset = (offset / metadataSadica->tamanio_bloques);
 		int cantBloquesEnBlancoASaltar = 0;
 		int auxoff = 0;
@@ -812,7 +813,7 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, v
 			}
 			else
 			{
-				//disco lleno
+				string_append(&exitCode, "Error: almacenamiento secundario lleno");
 				break;
 			}
 			cantBloquesEnBlancoASaltar--;
@@ -863,13 +864,14 @@ void pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, v
 		 }
 		else
 		{
-			//disco lleno
+			string_append(&exitCode, "Error: almacenamiento secundario lleno");
 			break;
 		}
       }
+		return exitCode;
  }
 
-void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
+char* grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
 
 	  //int offsetRelativo = offset - (regMetaArchBuscado->bloquesEscritos->elements_count * metadataSadica->tamanio_bloques); //busco la posición a grabar en ese bloque
@@ -881,7 +883,8 @@ void grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArchB
 
 	  void* bufferNuevo =  malloc( size - sizeRelativo);
 	  memcpy(bufferNuevo, buffer + sizeRelativo, size - sizeRelativo);
-	  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);
+	 char* exitCode = pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);
+	 return exitCode;
 }
 
 
@@ -945,6 +948,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 void guardar_datos(char* directorio, int size, void* buffer, int offset)
 {
+	char* exitCode = string_new();
 		char* directorioAux = string_new();
 		directorioAux = strtok(directorio, "\n");
 		  char* auxConBarra = string_substring(directorioAux,0,1);
@@ -981,14 +985,20 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 			{
 			  if((offset <= posicionesParaGuardar) && (offset+size) > (posicionesParaGuardar)) //entra parte en los bloque que tiene, y parte tiene que pedir ?
 			  {
-				  grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size );
+
+				   exitCode = grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size );
 			  }
 			  else //no entra nada, pido bloques y grabo todo en ellos
 			  {
-				  pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size);
+				   exitCode = pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size);
+
 			  }
 			}
 		   	 actualizarArchivoCreado(regMetaArchBuscado, pathAbsoluto);
+		   	if(string_contains(exitCode, "Error"))
+		   	{
+		   		enviarMensaje(&socketKernel, "Error: tamaño a escribir supera al almacenamiento secunadario");
+		   	}
 		    enviarMensaje(&socketKernel, "Archivo Escrito Correctamente");
 		}
 

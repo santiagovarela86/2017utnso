@@ -221,7 +221,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
 t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 char* borrarArchivo(int pid_mensaje, int fd);
 char* cerrarArchivo(int pid_mensaje, int fd);
-t_resultLeer* leerArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
+t_resultLeer* leerArchivo( int pid_mensaje, int fd, void* infofile, int tamanio);
 t_fileGlobal* traducirFDaPath(int pid_mensaje, int fd);
 t_fileProceso* existeEnElementoTablaArchivo(t_list* tablaDelProceso, int fdGlobal);
 t_fileProceso* existeEnElementoTablaArchivoPorFD(t_list* tablaDelProceso, int fd);

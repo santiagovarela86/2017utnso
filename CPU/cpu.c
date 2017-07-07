@@ -721,6 +721,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 				list_add(stackDeContexto->args, entrada_stack);
 				list_remove(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
 				list_add(pcb->indiceStack, stackDeContexto);
+
+				int posicionDeArgumento = obtenerPosicionVariable(identificador_variable);
+				return posicionDeArgumento;
 			}
 
 			else {
@@ -1387,12 +1390,12 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(pcb->pid));
 	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, string_itoa(informacion));
-	string_append(&mensajeFs, ";");
 	string_append(&mensajeFs, string_itoa(tamanio));
 	string_append(&mensajeFs, ";");
 
 	enviarMensaje(&sktKernel, mensajeFs);
+	 recv(sktKernel, mensajeFs, 12, 0);
+	 send(sktKernel, informacion, tamanio, 0);
 
 	char* resulMenLeer = malloc(MAXBUF);
 	int result =recv(sktKernel, resulMenLeer, MAXBUF, 0);
