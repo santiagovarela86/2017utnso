@@ -941,7 +941,24 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 }
 
 
-
+int discoDisplonible()
+{
+	int tamanioDisco = ((int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques);
+	int valor;
+	int i = 0;
+	int bloquesdisponible =0;
+	while(i <= tamanioDisco)
+	{
+	    valor = bitarray_test_bit(bitmap, (off_t) i);
+	    if(valor)
+	    {
+	    	bloquesdisponible++;
+	    }
+	    i++;
+	}
+	int discoDisponible = bloquesdisponible* (int)metadataSadica->tamanio_bloques;
+	return discoDisponible;
+}
 void guardar_datos(char* directorio, int size, void* buffer, int offset)
 {
 	char* exitCode = string_new();
@@ -967,7 +984,8 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado(pathAbsoluto);
 		int posicionesParaGuardar = (int)regMetaArchBuscado->bloquesEscritos->elements_count * (int)metadataSadica->tamanio_bloques;
 		int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
-		if(size > tamanioDisco)
+		int tamanioDisponible = discoDisplonible();
+		if(size > tamanioDisponible)
 		{
 		    enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
 		}

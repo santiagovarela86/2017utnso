@@ -41,6 +41,7 @@ typedef struct {
 void * handler_conexion_kernel(void * sock);
 
 void inicializarEstructuras(char * pathConfig);
+int discoDisplonible();
 void liberarEstructuras();
 void* appendVoid(void* valor1, int sizeValor1, void* valorAagregar, int sizeAgregar);
 void obtener_datos(char* directorio, int size, void* buffer, int offset);
