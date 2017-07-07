@@ -2842,7 +2842,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo ==FIN_ERROR_LEER_ARCHIVO_VACIO
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS
 	){
-
+                printf("ENTRO AL IF POR %d\n", codigo);
 		int encontrado = 0;
 
 		estruct_cpu* temporalCpu;
