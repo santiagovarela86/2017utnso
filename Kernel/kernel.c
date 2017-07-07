@@ -2512,8 +2512,8 @@ void pedirPaginaHeapNueva(t_pcb * pcb, int bytes, int * socketCPU) {
 			enviarMensaje(socketCPU, serializarMensaje(2, 606, puntero));
 
 		}else if(strcmp(respuestaDeMemoria[0], "655") == 0){
-			printf("Se ha ocupado todo el lugar de memoria \n");
-			finalizarPrograma(pcb->pid, FIN_ERROR_EXCEPCION_MEMORIA);
+			printf("No hay más páginas para asignar, fin del programa PID: %d\n", pcb->pid);
+			finalizarPrograma(pcb->pid, FIN_ERROR_SUPERO_MAXIMO_PAGINAS);
 
 		} else {
 			printf("Error en el protocolo de mensajes entre Kernel y Memoria al reserver memoria heap\n");

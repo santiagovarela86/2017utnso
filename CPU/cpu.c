@@ -758,14 +758,8 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 		} else if (codigo == ASIGNACION_MEMORIA_ERROR) {
 
 			//Se asigna el exit code -9 (No se pueden asignar mas paginas al proceso)
-			char* mensajeAKernel = string_new();
-			string_append(&mensajeAKernel, "615");
-			string_append(&mensajeAKernel, ";");
-			string_append(&mensajeAKernel, string_itoa(pcb->pid));
-			string_append(&mensajeAKernel, ";");
-
-			enviarMensaje(&sktKernel, mensajeAKernel);
-			free(mensajeAKernel);
+			enviarMensaje(&sktKernel, serializarMensaje(2, 655, pcb->pid));
+			pcbHabilitado= false;
 
 		} else if (codigo == STACK_OVERFLOW){
 			enviarMensaje(&sktKernel, serializarMensaje(2, 809, pcb->pid));
