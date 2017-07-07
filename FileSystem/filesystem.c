@@ -121,7 +121,6 @@ void * hilo_conexiones_kernel(void * args){
 
 	struct sockaddr_in direccionKernel;
 	socklen_t length = sizeof direccionKernel;
-	void* buffer;
 	socketKernel = accept(socketFileSystem, (struct sockaddr *) &direccionKernel, &length);
 
 	if (socketKernel > 0) {
@@ -143,7 +142,7 @@ void * hilo_conexiones_kernel(void * args){
 			switch (codigo){
 				case 804:
 					enviarMensaje(&socketKernel, "todo piola");
-					buffer = malloc(MAXBUF);
+					void* buffer = malloc(MAXBUF);
 					recv(socketKernel, buffer, MAXBUF, 0);
 					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
 					free(buffer);
@@ -160,10 +159,10 @@ void * hilo_conexiones_kernel(void * args){
 
 				case 800:
 					enviarMensaje(&socketKernel, "todo piola");
-					buffer = malloc(MAXBUF);
+					void* buffer1 = malloc(MAXBUF);
 					recv(socketKernel, buffer, MAXBUF, 0);
 					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
-					free(buffer);
+					//free(buffer1);
 				break;
 			  }
 
@@ -630,7 +629,6 @@ void* appendVoid(void* valor1, int sizeValor1, void* valorAagregar, int sizeAgre
 
 void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 
-	buffer= string_new();
 	char* directorioAux = string_new();
 	directorioAux = strtok(directorio, "\n");
     char* auxConBarra = string_substring(directorioAux,0,1);
@@ -952,11 +950,15 @@ int discoDisplonible()
 	    valor = bitarray_test_bit(bitmap, (off_t) i);
 	    if(valor)
 	    {
+
+	    }
+	    else
+	    {
 	    	bloquesdisponible++;
 	    }
 	    i++;
 	}
-	int discoDisponible = bloquesdisponible* (int)metadataSadica->tamanio_bloques;
+	int discoDisponible = bloquesdisponible;
 	return discoDisponible;
 }
 void guardar_datos(char* directorio, int size, void* buffer, int offset)
@@ -984,8 +986,8 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		t_metadataArch* regMetaArchBuscado = leerMetadataDeArchivoCreado(pathAbsoluto);
 		int posicionesParaGuardar = (int)regMetaArchBuscado->bloquesEscritos->elements_count * (int)metadataSadica->tamanio_bloques;
 		int tamanioDisco = (int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques;
-		int tamanioDisponible = discoDisplonible();
-		if(size > tamanioDisponible)
+
+		if(size > tamanioDisco)
 		{
 		    enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
 		}
