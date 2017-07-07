@@ -854,7 +854,7 @@ void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	puts("Ir a Label");
 	puts("");
 
-	if(pcb->exit_code < 64){
+	if(pcb->exit_code < 1000){
 	pcb->exit_code++;
 	printf("ahora el program counter es: %d\n", pcb->program_counter);
 
@@ -863,7 +863,7 @@ void irAlLabel(t_nombre_etiqueta identificador_variable) {
 	}else{
 
 		char* mensajeAKernel = string_new();
-		string_append(&mensajeAKernel, "809");
+		string_append(&mensajeAKernel, "812");
 		string_append(&mensajeAKernel, ";");
 		string_append(&mensajeAKernel, string_itoa(pcb->pid));
 		string_append(&mensajeAKernel, ";");
