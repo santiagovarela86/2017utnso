@@ -1592,6 +1592,12 @@ void * handler_conexion_cpu(void * sock) {
 				finalizarPrograma(pid_msg, FIN_ERROR_SEMAFORO_INEXISTENTE);
 				break;
 
+			case 812:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				finalizarPrograma(pid_msg, FIN_ERROR_LOOP_INFINITO);
+
+				break;
+
 		}
 
 
@@ -1755,7 +1761,7 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 		errorLog = "La etiqueta o funcion a la que esta llamando no fue definida";
 		break;
 	case FIN_ERROR_STACK_OVERFLOW:
-		errorLog = "La funcion entró en un ciclo infinito y fue detenida";
+		errorLog = "Se alcanzó el límite de páginas de stack utilizadas por el proceso";
 		break;
 	case FIN_ESCRITURA_SUPERIOR_A_DISCO:
 		errorLog = "La cantidad de caracteres que quiere escribir supera al almacenamiento secundario";
@@ -1772,6 +1778,10 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 	case FIN_ERROR_SIN_DEFINICION:
 		errorLog = "Error sin definición";
 		break;
+	case FIN_ERROR_LOOP_INFINITO:
+		errorLog = "El proceso entro en un loop infinito y fue detenido";
+		break;
+
 
 	}
 	t_log* logCode = log_create("kernelExist.log", "kernel", true, LOG_LEVEL_ERROR );
