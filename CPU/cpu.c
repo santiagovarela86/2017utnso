@@ -721,6 +721,9 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 				list_add(stackDeContexto->args, entrada_stack);
 				list_remove(pcb->indiceStack,(pcb->indiceStack->elements_count - 1));
 				list_add(pcb->indiceStack, stackDeContexto);
+
+				int posicionDeArgumento = obtenerPosicionVariable(identificador_variable);
+				return posicionDeArgumento;
 			}
 
 			else {
