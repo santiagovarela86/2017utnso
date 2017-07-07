@@ -54,9 +54,6 @@ int socketMemoria;
 struct sockaddr_in direccionMemoria;
 sem_t semaforoKernel;
 
-//CONTADOR CABEZA
-int contadorPaginasHeap = 0;
-
 t_log* logger_memoria;
 
 int main(int argc, char **argv) {
@@ -423,9 +420,8 @@ void crearPaginaHeap(int pid, int paginaActual, int bytesPedidos){
 		//free(meta_used);
 		//free(meta_free);
 
-		contadorPaginasHeap++;
-		printf("Se creo la pagina de Heap N° %d, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
-		contadorPaginasHeap, pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
+		printf("Se creo una nueva pagina de Heap, PID: %d, Pagina: %d, Marco: %d, Free Space: %d, Direccion Puntero: %d\n",
+		pagina->pid, pagina->nro_pagina, pagina->nro_marco, meta_free->size, direccionFree);
 		printf("\n");
 
 	}else{
