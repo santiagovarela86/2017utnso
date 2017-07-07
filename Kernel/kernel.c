@@ -720,6 +720,7 @@ void matarProceso(int pidAMatar){
 				sem_wait(&sem_prog);
 
 				pthread_mutex_lock(&mtx_terminados);
+				temporalP->exit_code = FIN_POR_CONSOLA;
 				queue_push(cola_terminados, temporalP);
 
 				int * sock = &temporalP->socket_consola;
@@ -761,6 +762,7 @@ void matarProceso(int pidAMatar){
 			}else{
 
 				pthread_mutex_lock(&mtx_terminados);
+				temporalP->exit_code = FIN_POR_CONSOLA;
 				queue_push(cola_terminados, temporalP);
 
 				int * sock =  &temporalP->socket_consola;
@@ -802,6 +804,7 @@ void matarProceso(int pidAMatar){
 			}else{
 
 				pthread_mutex_lock(&mtx_terminados);
+				temporalP->exit_code = FIN_POR_CONSOLA;
 				queue_push(cola_terminados, temporalP);
 
 				int * sock =  &temporalP->socket_consola;
