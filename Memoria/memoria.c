@@ -1553,8 +1553,16 @@ t_pagina_invertida * obtenerPrimerPaginaLibre(int marco){
 		}else{
 			i++;
 		}
+
+		//SI LLEGUE AL FINAL
+		if (i == configuracion->marcos){
+			//ARRANCO DEL PRINCIPIO
+			i = tamanio_maximo->maxima_cant_paginas_administracion;
+		}
+		//CUIDADO RIESGO DE LOOP INFINITO JAJA
 	}
 
+	/*
 	//SI LLEGO ACA ES PORQUE LLEGUE AL FINAL DE LA TABLA DE PAGINAS, TENGO QUE EMPEZAR DESDE EL PRINCIPIO
 	i = tamanio_maximo->maxima_cant_paginas_administracion;
 	while (i < marco){
@@ -1567,9 +1575,7 @@ t_pagina_invertida * obtenerPrimerPaginaLibre(int marco){
 			i++;
 		}
 	}
-
-	printf("ACA NO DEBERIA LLEGAR NUNCA, ERROR DE PAGINAS LIBRES\n");
-	return NULL;
+	*/
 }
 
 t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
