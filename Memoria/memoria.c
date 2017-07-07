@@ -530,6 +530,7 @@ void * handler_conexiones_cpu(void * socketCliente) {
 	return EXIT_SUCCESS;
 }
 
+/* NO SE USA
 t_list * asignarPaginasAProceso(int pid, int paginasRequeridas, int nroPaginaBase){
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 
@@ -549,6 +550,7 @@ t_list * asignarPaginasAProceso(int pid, int paginasRequeridas, int nroPaginaBas
 
 	return paginas;
 }
+*/
 
 void definirVariable(char nombreVariable, int pid, int pagina, int sock){
 
@@ -1744,6 +1746,8 @@ t_entrada_cache* obtener_entrada_reemplazo_cache(int pid){
 			entrada_cache = list_find(tabla_cache, (void*) obtener_entrada_proceso);
 		}
 	}
+
+	//log_cache_in_disk(tabla_cache);
 
 	return entrada_cache;
 }
