@@ -584,7 +584,7 @@ void definirVariable(char nombreVariable, int pid, int pagina, int sock){
 			else {
 				//Entonces llego al limite de paginas de stack
 				//Se envia mensaje a CPU informando que no puede continuar la ejecucion
-				//finalizar_programa(pid);
+				finalizar_programa(pid);
 
 				char* mensajeACpu = string_new();
 				string_append(&mensajeACpu, string_itoa(STACK_OVERFLOW));
@@ -601,17 +601,19 @@ void definirPrimeraVariable(char nombreVariable, int pid, int pagina, int sock){
 
 	t_pagina_invertida* pag_a_cargar = buscar_pagina_para_insertar(pid, pagina);
 
-	int paginaNueva = 1;
-
 	if (pag_a_cargar == NULL){
 		//No hay pagina para asignar
 		//Se avisa a la CPU que no se pudo asignar Memoria
+
 		char* mensajeACpu = string_new();
 		string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
 		string_append(&mensajeACpu, ";");
 		enviarMensaje(&sock, mensajeACpu);
+
 		return;
 	}
+
+	int paginaNueva = 1;
 
 	pag_a_cargar->nro_pagina = pagina;
 	pag_a_cargar->pid = pid;
@@ -685,6 +687,18 @@ void definirVariableEnNuevaPagina(char nombreVariable, int pid, int pagina, int 
 	pthread_mutex_lock(&mutex_estructuras_administrativas);
 
 	t_pagina_invertida* pag_encontrada = buscar_pagina_para_insertar(pid, pagina);
+
+	if (pag_encontrada == NULL){
+		//No hay pagina para asignar
+		//Se avisa a la CPU que no se pudo asignar Memoria
+
+		char* mensajeACpu = string_new();
+		string_append(&mensajeACpu, string_itoa(ASIGNACION_MEMORIA_ERROR));
+		string_append(&mensajeACpu, ";");
+		enviarMensaje(&sock, mensajeACpu);
+
+		return;
+	}
 
 	pag_encontrada->nro_pagina = pagina;
 	pag_encontrada->pid = pid;
@@ -771,7 +785,6 @@ void obtenerPosicionVariable(int pid, int pagina, int offset, int sock){
 	if (pagina_buscada == NULL){
 		////MANEJAR ERROR, REVISAR
 		printf("Error al obtener posicion variable, se finaliza el proceso\n");
-		finalizar_programa(pid);
 	}else{
 		int inicio = obtener_inicio_pagina(pagina_buscada);
 		int direccion_memoria = inicio + offset;
@@ -1383,6 +1396,10 @@ t_list * grabar_en_bloque(int pid, char* codigo){
 
 	while (i < cantidad_paginas - 1){
 		pagina_invertida = buscar_pagina_para_insertar(pid, i);
+
+
+
+
 		pagina_invertida->nro_pagina = i;
 		pagina_invertida->pid = pid;
 
@@ -1512,39 +1529,82 @@ void pruebas_f_hash(){
 	printf("PID 1010 PAG 5 %d\n", f_hash_nene_malloc(1010, 5));
 }
 
+_Bool quedanPaginasLibres(){
+
+	_Bool libre(t_pagina_invertida * elem){
+		return elem->pid == 0;
+	}
+
+	int resultado = list_count_satisfying(tabla_paginas, (void *) libre);
+
+	//return list_any_satisfy(tabla_paginas, (void *) libre);
+	return resultado >= 1;
+}
+
+t_pagina_invertida * obtenerPrimerPaginaLibre(int marco){
+	_Bool estaLibre(t_pagina_invertida * elem){
+		return elem->pid == 0;
+	}
+
+	//RECORRO BUSCANDO PAGINAS LIBRES A PARTIR DEL MARCO QUE ENCONTRE CON LA FUNCION DE HASH
+	int i = marco;
+	while (i < configuracion->marcos){
+		t_pagina_invertida * pagina = list_get(tabla_paginas, i);
+
+		if (estaLibre(pagina)){
+			pagina->offset = 0;
+			return pagina;
+		}else{
+			i++;
+		}
+	}
+
+	//SI LLEGO ACA ES PORQUE LLEGUE AL FINAL DE LA TABLA DE PAGINAS, TENGO QUE EMPEZAR DESDE EL PRINCIPIO
+	i = tamanio_maximo->maxima_cant_paginas_administracion;
+	while (i < marco){
+		t_pagina_invertida * pagina = list_get(tabla_paginas, i);
+
+		if (estaLibre(pagina)){
+			pagina->offset = 0;
+			return pagina;
+		}else{
+			i++;
+		}
+	}
+
+	printf("ACA NO DEBERIA LLEGAR NUNCA, ERROR DE PAGINAS LIBRES\n");
+	return NULL;
+}
+
 t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 	int nro_marco = f_hash_nene_malloc(pid, pagina);
-	//printf("BUSCO PARA INSERTAR PID: %d, PAGINA: %d\n", pid, pagina);
 	t_pagina_invertida* pagina_encontrada = list_get(tabla_paginas, nro_marco);
-	pagina_encontrada->offset = 0;
-	//printf("PAGINA ENCONTRADA PARA INSERTAR: %d, MARCO: %d\n", pagina_encontrada->nro_pagina, pagina_encontrada->nro_marco);
 
 	//Si la pagina encontrada no es una estructura administrativa
 	//Ni esta ocupada por otro proceso
 
 	if (pagina_encontrada->pid == 0) {
+		pagina_encontrada->offset = 0;
 		return pagina_encontrada;
 	}
-	else {
+	else if (quedanPaginasLibres(tabla_paginas)) {
 		//Si la pagina que devuelve esta ocupada, o sea hubo una colision
+		//Y ademas quedan paginas libres para asignar
 		//Busco un marco libre a partir del ultimo marco de estructuras administrativas
 		//Hasta final de la Memoria
-		int i = tamanio_maximo->maxima_cant_paginas_administracion;
-		while (i < tamanio_maximo->maxima_cant_paginas_procesos){
-			t_pagina_invertida* pagina_aux = list_get(tabla_paginas, i);
-			if (pagina_aux->pid != 0) {
-				printf("HUBO COLISION BUSCO OTRA\n");
-			}else{
-				pagina_encontrada = pagina_aux;
-				printf("MARCO %d ENCONTRADO PARA INSERTAR: PID %d PAGINA %d \n", pagina_encontrada->nro_marco, pagina_encontrada->pid, pagina_encontrada->nro_pagina);
-				break;
-			}
-			i++;
-		}
-		return pagina_encontrada;
+		printf("HUBO COLISION, INFO MARCO: %d, PID: %d, PAGINA: %d\n", pagina_encontrada->nro_marco, pagina_encontrada->pid, pagina_encontrada->nro_pagina);
+
+		t_pagina_invertida* pagina_aux = obtenerPrimerPaginaLibre(nro_marco);
+
+		printf("MARCO %d ENCONTRADO PARA INSERTAR\n", pagina_aux->nro_marco);
+
+		return pagina_aux;
+	} else {
+		//MANEJO QUE NO HAYAN PAGINAS LIBRES
+		finalizar_programa(pid);
+		return NULL;
 	}
-	return NULL;
 }
 
 t_pagina_invertida* buscar_pagina_para_consulta(int pid, int pagina){
