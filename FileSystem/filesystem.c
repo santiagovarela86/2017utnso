@@ -271,7 +271,7 @@ t_metadataArch* leerMetadataDeArchivoCreado(char* arch)
 
 
 	strtok(tamanio, "\n");
-	regMetadataArch->tamanio = atoi((string_substring(tamanio,0,17)));
+	regMetadataArch->tamanio = atoi((string_substring(tamanio,17,string_length(tamanio))));
 
 
 	int cantBloques = substr_count(bloques, ",") + 1; //para saber cuantos bloques debo leer
