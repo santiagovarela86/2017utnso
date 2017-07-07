@@ -113,7 +113,7 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 	string_append(&directorio,"Metadata/Bitmap.bin");
 	//FILE * bitmapArchivo = fopen(directorio, "w+");
 
-	char* buffer = string_new();
+	char* buffer = malloc(2048);
 	int fd_script = open(directorio, O_RDWR);
 	t_bitarray* bitmap;
 	if(fd_script != -1)
