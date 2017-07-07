@@ -1433,7 +1433,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 		informacion = bufferFin;
 		puts("El archivo se leyo correctamente\n");
 			//printf("%s \n", resulMenLeer);
-	    printf("su contenido es %s \n", bufferFin);
+	   // printf("su contenido es %s \n", bufferFin);
 
 		free(resulMenLeer);
 		free(mensajeFs);
