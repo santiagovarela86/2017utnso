@@ -484,7 +484,7 @@ void grabarUnArchivoBloque(t_mapeoArchivo* archBloque, int idBloque, void* buffe
 
 	void* archMapBloque = mmap(0,scriptMap.st_size, PROT_WRITE, MAP_SHARED, archNuevoMap, 0);
 
-	if(string_length(buffer) < size)
+	if(scriptMap.st_size < size)
 	{
 		char * newBuffer = concatenernaVacios(buffer,size);
 		memcpy(archMapBloque, newBuffer, size);
