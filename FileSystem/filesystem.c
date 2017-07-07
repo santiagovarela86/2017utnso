@@ -66,7 +66,7 @@ void inicializarEstructuras(char * pathConfig){
 	char* montajeInicial = string_new();
 	montajeInicial = configuracion->punto_montaje;
 	char* aux = string_substring(montajeInicial,string_length(montajeInicial)-1,string_length(montajeInicial));
-	printf("%s\n",aux);
+	//printf("%s\n",aux);
 	if(string_equals_ignore_case(aux,"/"))
 	{
 		montaje = montajeInicial;
