@@ -176,7 +176,7 @@ void crearBloques(char* mnt, int cantidad, int tamanio)
 		}
 	    close(fd_script);
 		i++;
-		printf("%d \n", i);
+		//printf("%d \n", i);
 		free(bloque);
 	}
 }
