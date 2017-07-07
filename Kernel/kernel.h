@@ -217,7 +217,7 @@ void asignarValorCompartida(char * variable, int valor, int* socketCliente);
 void obtenerValorCompartida(char * otra_variable, int * socketCliente);
 
 
-char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio);
+char* escribirArchivo( int pid_mensaje, int fd, char* infofile, void*buffer, int tamanio);
 t_abrirArchivo* abrirArchivo(int pid_mensaje, char* direccion, char* flag);
 char* borrarArchivo(int pid_mensaje, int fd);
 char* cerrarArchivo(int pid_mensaje, int fd);

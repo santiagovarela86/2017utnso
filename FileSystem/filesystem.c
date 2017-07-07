@@ -120,7 +120,7 @@ void * hilo_conexiones_kernel(void * args){
 
 	struct sockaddr_in direccionKernel;
 	socklen_t length = sizeof direccionKernel;
-
+	void* buffer;
 	socketKernel = accept(socketFileSystem, (struct sockaddr *) &direccionKernel, &length);
 
 	if (socketKernel > 0) {
@@ -141,7 +141,11 @@ void * hilo_conexiones_kernel(void * args){
 
 			switch (codigo){
 				case 804:
-					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
+					enviarMensaje(&socketKernel, "todo piola");
+					buffer = malloc(MAXBUF);
+					recv(socketKernel, buffer, MAXBUF, 0);
+					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
+					free(buffer);
 				break;
 
 				case 803:
@@ -154,7 +158,11 @@ void * hilo_conexiones_kernel(void * args){
 				break;
 
 				case 800:
-					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), mensajeAFileSystem[3], atoi(mensajeAFileSystem[4]));
+					enviarMensaje(&socketKernel, "todo piola");
+					buffer = malloc(MAXBUF);
+					recv(socketKernel, buffer, MAXBUF, 0);
+					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
+					free(buffer);
 				break;
 			  }
 

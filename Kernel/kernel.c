@@ -1332,44 +1332,56 @@ void * handler_conexion_cpu(void * sock) {
 				 pid_mensaje = atoi(mensajeDesdeCPU[2]);
 				 if(fd != -1)
 				 {
-					 infofile = mensajeDesdeCPU[3];
-					 tamanio = atoi(mensajeDesdeCPU[4]);
-
-					 if(string_length(infofile) > tamanio)
+					 if(fd == 0 || fd == 1)
 					 {
-						 puts("El la longitud a escribir supera el tamaño del buffer");
-						 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
-						 enviarMensaje(socketCliente, "Finalización por ExitCode");
+						 int tamanio = 0;
+						 char* informacion = mensajeDesdeCPU[3];
+						 char * auxEscribir = escribirArchivo(pid_mensaje, fd, informacion,informacion, tamanio);
 					 }
 					 else
 					 {
-						 char * auxEscribir = escribirArchivo(pid_mensaje, fd, infofile, tamanio);
 
-						 if(string_contains(auxEscribir, "Error"))
+						 tamanio = atoi(mensajeDesdeCPU[3]);
+						 /*if(string_length(infofile) > tamanio)
 						 {
-							 if(string_contains(auxEscribir, "permisos"))
+							 puts("El la longitud a escribir supera el tamaño del buffer");
+							 finalizarPrograma(pid_mensaje, FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO);
+							 enviarMensaje(socketCliente, "Finalización por ExitCode");
+						 }
+						 else
+						 {*/
+							 enviarMensaje(socketCliente, "todo piola");
+							 void* buffer = malloc(MAXBUF);
+							 recv(socketCliente, buffer, MAXBUF, 0);
+							 char * auxEscribir = escribirArchivo(pid_mensaje, fd,"", buffer, tamanio);
+
+							 if(string_contains(auxEscribir, "Error"))
 							 {
-								 puts("No se puede escribir el archivo debido a sus permisos");
-								 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
-								 enviarMensaje(socketCliente, "Finalización por ExitCode");
-							 }
-							 if(string_contains(auxEscribir, "secundario"))
-							 {
-								 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
-								 enviarMensaje(socketCliente, "Finalización por ExitCode");
+								 if(string_contains(auxEscribir, "permisos"))
+								 {
+									 puts("No se puede escribir el archivo debido a sus permisos");
+									 finalizarPrograma(pid_mensaje, FIN_ERROR_ESCRIBIR_ARCHIVO_SIN_PERMISOS);
+									 enviarMensaje(socketCliente, "Finalización por ExitCode");
+								 }
+								 if(string_contains(auxEscribir, "secundario"))
+								 {
+									 finalizarPrograma(pid_mensaje, FIN_ESCRITURA_SUPERIOR_A_DISCO);
+									 enviarMensaje(socketCliente, "Finalización por ExitCode");
+								 }
+								 else
+								 {
+										finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
+										enviarMensaje(socketCliente, "Finalización por ExitCode");
+								 }
+
 							 }
 							 else
 							 {
-									finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
-									enviarMensaje(socketCliente, "Finalización por ExitCode");
+
+								 enviarMensaje(socketCliente, auxEscribir);
 							 }
-
-						 }
-						 else
-						 {
-
-							 enviarMensaje(socketCliente, auxEscribir);
-						 }
+							 free(buffer);
+						// }
 					 }
 				 }
 				 else
@@ -1377,8 +1389,6 @@ void * handler_conexion_cpu(void * sock) {
 						finalizarPrograma(pid_mensaje, FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE);
 							enviarMensaje(socketCliente, "Finalización por ExitCode");
 				 }
-
-
 
 				break;
 
@@ -3591,7 +3601,7 @@ int hayOffsetArch(int fd){
 
 }
 
-char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
+char* escribirArchivo( int pid_mensaje, int fd, char* infofile, void*buffer, int tamanio){
 
 	if(fd == 1 || fd == 0){
 
@@ -3650,8 +3660,6 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 						string_append(&mensajeFS, ";");
 						string_append(&mensajeFS, string_itoa(tamanio));
 						string_append(&mensajeFS, ";");
-						string_append(&mensajeFS, infofile);
-						string_append(&mensajeFS, ";");
 
 						int encontrar_archProceso(t_fileProceso* glo) {
 							if (fd == glo->fileDescriptor)
@@ -3665,10 +3673,13 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, int tamanio){
 						string_append(&mensajeFS, string_itoa(offset));
 						string_append(&mensajeFS, ";");
 
+						enviarMensaje(&skt_filesystem, mensajeFS);
+						recv(skt_filesystem, mensajeFS, MAXBUF, 0);
+					    send(skt_filesystem, infofile, tamanio, 0);
 
 						//free(regTablaGlobal);
 
-						enviarMensaje(&skt_filesystem, mensajeFS);
+
 
 						char* resulMenEscribir = malloc(MAXBUF);
 						int result = recv(skt_filesystem, resulMenEscribir, MAXBUF, 0);
@@ -4131,18 +4142,19 @@ t_resultLeer* leerArchivo( int pid_mensaje, int fd, void* infofile, int tamanio)
 					string_append(&mensajeFSleer, ";");
 					string_append(&mensajeFSleer, string_itoa(tamanio));
 					string_append(&mensajeFSleer, ";");
-					string_append(&mensajeFSleer, ((char*)infofile));
-					string_append(&mensajeFSleer, ";");
 
 					int offset = hayOffsetArch(fd);
 
 					string_append(&mensajeFSleer, string_itoa(offset));
 					string_append(&mensajeFSleer, ";");
 
+					enviarMensaje(&skt_filesystem, mensajeFSleer);
+					recv(skt_filesystem, mensajeFSleer, MAXBUF, 0);
+				    send(skt_filesystem, infofile, tamanio, 0);
 					//free(archAbrir1);
 					//free(regTablaGlobal);
 
-					enviarMensaje(&skt_filesystem, mensajeFSleer);
+
 
 					char* resulMenLeer = malloc(MAXBUF);
 					int resultParcial = recv(skt_filesystem, resulMenLeer, MAXBUF, 0);

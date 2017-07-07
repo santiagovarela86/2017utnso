@@ -1335,19 +1335,40 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	{
 		descriptor_archivo = -1;
 	}
-	char* mensajeFs = string_new();
-	string_append(&mensajeFs, "804");
-	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, string_itoa(descriptor_archivo));
-	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, string_itoa(pcb->pid));
-	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, (char *) informacion);
-	string_append(&mensajeFs, ";");
-	string_append(&mensajeFs, string_itoa(tamanio));
-	string_append(&mensajeFs, ";");
+	if(descriptor_archivo == 0 || descriptor_archivo == 1) //esto es porque si me mandan un string para la consola lo tengo que trabajar distinto.
+	{
+		char* mensajeFs = string_new();
+		string_append(&mensajeFs, "804");
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(descriptor_archivo));
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(pcb->pid));
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, (char *) informacion);
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(tamanio));
+		string_append(&mensajeFs, ";");
 
-	enviarMensaje(&sktKernel, mensajeFs);
+		enviarMensaje(&sktKernel, mensajeFs);
+	}
+	else
+	{
+		char* mensajeFs = string_new();
+		string_append(&mensajeFs, "804");
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(descriptor_archivo));
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(pcb->pid));
+		string_append(&mensajeFs, ";");
+		string_append(&mensajeFs, string_itoa(tamanio));
+		string_append(&mensajeFs, ";");
+
+		enviarMensaje(&sktKernel, mensajeFs);
+
+		 recv(sktKernel, mensajeFs, 12, 0);
+		 send(sktKernel, informacion, tamanio, 0);
+	}
+
 
 	//int result = recv(sktKernel, mensajeAKernel, sizeof(mensajeAKernel), 0);
 
