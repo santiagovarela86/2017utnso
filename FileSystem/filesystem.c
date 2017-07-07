@@ -89,12 +89,13 @@ int buscarPrimerBloqueLibre()
 {
 	int tamanioDisco = ((int)metadataSadica->cantidad_bloques * (int)metadataSadica->tamanio_bloques);
 	int valor = 1;
-	int i = 0;
+	int i = -1;
 	while(valor && i <= tamanioDisco) //busco el primer bloque vacio
 	{
-		i++;
+		 i++;
 		valor = 0;
 	    valor = bitarray_test_bit(bitmap, (off_t) i);
+
 
 	}
 	if(i > tamanioDisco)
