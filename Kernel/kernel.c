@@ -1354,7 +1354,7 @@ void * handler_conexion_cpu(void * sock) {
 						 {*/
 							 enviarMensaje(socketCliente, "todo piola");
 							 void* buffer = malloc(MAXBUF);
-							 recv(socketCliente, buffer, MAXBUF, 0);
+							 recv(*socketCliente, buffer, MAXBUF, 0);
 							 char * auxEscribir = escribirArchivo(pid_mensaje, fd,"", buffer, tamanio);
 
 							 if(string_contains(auxEscribir, "Error"))
@@ -1478,7 +1478,7 @@ void * handler_conexion_cpu(void * sock) {
 					 tamanio = atoi(mensajeDesdeCPU[3]);
 					 enviarMensaje(socketCliente, "todo piola");
 					 void* buffer = malloc(MAXBUF);
-					 recv(socketCliente, buffer, MAXBUF, 0);
+					 int e =recv((socketCliente), buffer, MAXBUF, 0);
 					 t_resultLeer* auxLeer = leerArchivo(pid_mensaje, fd, buffer, tamanio);
 					if(string_contains(auxLeer->exitCode, "Error"))
 					{
@@ -1512,9 +1512,10 @@ void * handler_conexion_cpu(void * sock) {
 					else
 					{
 				     enviarMensaje(socketCliente, "8000");
-					 char mensajeLeerParcial[MAXBUF];
-				     recv(socketCliente, mensajeLeerParcial, MAXBUF, 0);
-					 send(socketCliente, auxLeer->buffer, tamanio, 0);
+					 char* mensajeLeerParcialRev= string_new();
+				    recv((* socketCliente), mensajeLeerParcialRev, MAXBUF, 0);
+					 send((* socketCliente), auxLeer->buffer, tamanio, 0);
+					 free(mensajeLeerParcialRev);
 					}
 				 }
 

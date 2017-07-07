@@ -1420,7 +1420,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	 send(sktKernel, informacion, tamanio, 0);
 
 	char* resulMenLeer = malloc(MAXBUF);
-	int result =recv(sktKernel, resulMenLeer, MAXBUF, 0);
+	recv(sktKernel, resulMenLeer, MAXBUF, 0);
 	if(string_contains(resulMenLeer, "9000"))
 	{
 		enviarMensaje(&sktKernel, "todo ok");
@@ -1429,10 +1429,12 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 	else
 	{
 		enviarMensaje(&sktKernel, "todo ok");
-
+		void* bufferFin = malloc(tamanio);
+		recv(sktKernel, bufferFin, tamanio, 0);
+		informacion = bufferFin;
 		puts("El archivo se leyo correctamente\n");
 			//printf("%s \n", resulMenLeer);
-	    printf("su contenido es %s \n", resulMenLeer);
+	    printf("su contenido es %s \n", bufferFin);
 
 		free(resulMenLeer);
 		free(mensajeFs);
