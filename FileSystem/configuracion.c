@@ -159,8 +159,8 @@ t_bitarray* crearBitmap(char* mnt, size_t tamanio_bitmap){
 
 void crearBloques(char* mnt, int cantidad, int tamanio)
 {
-	int i = 1;
-	while(i != cantidad+1)
+	int i = 0;
+	while(i != cantidad)
 	{
 		char* bloque = string_new();
 		bloque = string_substring(mnt,0,string_length(mnt));

@@ -775,7 +775,7 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 
 char* pidoBloquesEnBlancoYgrabo(int offset, t_metadataArch* regMetaArchBuscado, void* buffer, int size )
 {
-	char exitCode = string_new();
+	char* exitCode = string_new();
 		int cantidadDeBloquesDelOffset = (offset / metadataSadica->tamanio_bloques);
 		int cantBloquesEnBlancoASaltar = 0;
 		int auxoff = 0;
@@ -876,8 +876,8 @@ char* grabarParteEnbloquesYparteEnNuevos(int offset, t_metadataArch* regMetaArch
 
 	  void* bufferNuevo =  malloc( size - sizeRelativo);
 	  memcpy(bufferNuevo, buffer + sizeRelativo, size - sizeRelativo);
-	 char* exitCode = pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);
-	 return exitCode;
+
+	 return pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,bufferNuevo,size- sizeRelativo);;
 }
 
 
@@ -979,11 +979,11 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 			  if((offset <= posicionesParaGuardar) && (offset+size) > (posicionesParaGuardar)) //entra parte en los bloque que tiene, y parte tiene que pedir ?
 			  {
 
-				   exitCode = grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size );
+				  string_append(&exitCode,grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size));
 			  }
 			  else //no entra nada, pido bloques y grabo todo en ellos
 			  {
-				   exitCode = pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size);
+				   string_append(&exitCode,pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size));
 
 			  }
 			}
@@ -994,7 +994,7 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		   	}
 		    enviarMensaje(&socketKernel, "Archivo Escrito Correctamente");
 		}
-
+		free(exitCode);
 	 //free(pathAbsoluto);
    	 //free(directorioAux);
  }
