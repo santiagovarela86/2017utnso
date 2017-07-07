@@ -1593,7 +1593,6 @@ t_pagina_invertida* buscar_pagina_para_insertar(int pid, int pagina){
 
 		t_pagina_invertida* pagina_aux = obtenerPrimerPaginaLibre(nro_marco);
 
-		printf("MARCO %d ENCONTRADO PARA INSERTAR\n", pagina_aux->nro_marco);
 
 		return pagina_aux;
 	} else {
