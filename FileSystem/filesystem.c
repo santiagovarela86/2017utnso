@@ -649,7 +649,7 @@ void obtener_datos(char* directorio, int size, void* buffer, int offset) {
 		{
 			t_metadataArch* regMetaArchBuscado =leerMetadataDeArchivoCreado(pathAbsoluto);
 
-			if(regMetaArchBuscado->bloquesEscritos->elements_count != 0)
+			if(regMetaArchBuscado->tamanio != 0)
 			{
 				int bloquePosicion = offset / ((int)metadataSadica->tamanio_bloques); //numero de bloque donde comienzo a leer
 
