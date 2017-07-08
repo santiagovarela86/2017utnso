@@ -1852,6 +1852,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 	case FIN_ERROR_RESERVAR_SIN_ESAPCIO:
 		errorLog = "El proceso intento reserar espacio de memoria y no habia suficiente";
 		break;
+	case FIN_ERROR_LIBERAR_ESPACIO:
+		errorLog = "El proceso intento liberar espacio de memoria que no habia";
+		break;
 
 	}
 	t_log* logCode = log_create("kernelExist.log", "kernel", true, LOG_LEVEL_ERROR );
