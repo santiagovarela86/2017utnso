@@ -1596,8 +1596,31 @@ void * handler_conexion_cpu(void * sock) {
 
 				}
 
-				printf("El pid del error 617 es %d \n", pid_msge);
 				finalizarPrograma(pid_msge, FIN_ERROR_RESERVAR_SIN_ESAPCIO);
+				break;
+
+			case 618:
+				;
+				encontrado = 0;
+
+				while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+					pthread_mutex_lock(&mtx_cpu);
+					temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+					pthread_mutex_unlock(&mtx_cpu);
+
+					if (temporalCpu->socket == *socketCliente) {
+						encontrado = 1;
+						pid_msge = temporalCpu->pid_asignado;
+					}
+
+					pthread_mutex_lock(&mtx_cpu);
+					queue_push(cola_cpu, temporalCpu);
+					pthread_mutex_unlock(&mtx_cpu);
+
+				}
+
+				finalizarPrograma(pid_msge, FIN_ERROR_LIBERAR_ESPACIO);
 				break;
 
 			case 777:
@@ -2867,10 +2890,13 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 	if(codigo == FIN_ERROR_STACK_OVERFLOW || codigo == FIN_ERROR_VARIABLE_COMPARTIDA_INEXISTENTE
 			|| codigo == FIN_ERROR_ETIQUETA_INEXISTENTE || codigo == FIN_ERROR_SEMAFORO_INEXISTENTE
 			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
-			|| codigo == FIN_ERROR_DISCO_LLENO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
-			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo == FIN_ERROR_LEER_ARCHIVO_VACIO
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS || codigo == FIN_ERROR_RESERVAR_SIN_ESAPCIO
+			|| codigo == FIN_ERROR_DISCO_LLENO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO
+			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA
+			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS
+			|| codigo == FIN_ERROR_RESERVAR_SIN_ESAPCIO || codigo == FIN_ERROR_LIBERAR_ESPACIO
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO
 	){
 
 		int encontrado = 0;

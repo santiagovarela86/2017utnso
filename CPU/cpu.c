@@ -1119,7 +1119,7 @@ t_puntero reservar(t_valor_variable espacio) {
 			printf("\n");
 			return atoi(respuesta[1]);
 		}else{
-			enviarMensaje(&sktKernel, serializarMensaje(2, 617, pcb->pid + 1));
+			enviarMensaje(&sktKernel, serializarMensaje(2, 617, pcb->pid));
 			printf("Error reservando Memoria de Heap, espacio insuficiente\n");
 			//FORMA CABEZA DE TERMINARLO
 			pcbHabilitado = false;
@@ -1149,6 +1149,7 @@ void liberar(t_puntero puntero) {
 			printf("Error liberando Memoria de Heap, memoria inexistente\n");
 			printf("El programa fue finalizado en Kernel\n");
 			printf("\n");
+			enviarMensaje(&sktKernel, serializarMensaje(2, 618, pcb->pid));
 			//FORMA CABEZA DE TERMINARLO
 			pcbHabilitado = false;
 		}
