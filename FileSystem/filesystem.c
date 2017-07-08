@@ -904,7 +904,17 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 	{
 		int sizeFinal = (offset + size);
 		grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, buffer, sizeFinal); //si entra, meto todo el bloque
-		regMetaArchBuscado->tamanio = sizeFinal + regMetaArchBuscado->tamanio;
+		if(regMetaArchBuscado->tamanio == 0) //esto porque al crear tiene un bloque asignado pero vacio.
+		{
+			regMetaArchBuscado->tamanio = sizeFinal ;
+		}
+		else
+		{
+			if(sizeFinal > regMetaArchBuscado->tamanio)
+			{
+				regMetaArchBuscado->tamanio = sizeFinal ;
+			}
+		}
 	}
 	else
 	{//sino entra todo en un bloque, pregunto en cuantos bloques entra el buffer.
@@ -912,7 +922,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 		if((size % metadataSadica->tamanio_bloques) > 0)
 		{
 			cantidadDeBloquesALeer++; //si lo tienen significa que graba en un bloque mas.
-			auxsize = size % metadataSadica->tamanio_bloques;
+		    auxsize = size % metadataSadica->tamanio_bloques;
 		}
 		int desdeDondeComenizoALeer = 0; // para recorrer el string del buffer y cortarlo de a cachitos
 		while(cantidadDeBloquesALeer != 0)
@@ -932,9 +942,11 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 			{
 				void* bufferaux = malloc(desdeDondeComenizoALeer);
 				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (auxsize)); //lo que me falta grabar
-				int resto =   regMetaArchBuscado->tamanio % metadataSadica->tamanio_bloques;
 
-				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio +( auxsize  - resto )+ auxoffset;
+				if(size > regMetaArchBuscado->tamanio)
+				{
+					regMetaArchBuscado->tamanio = size;
+				}
 
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, auxsize);
 			}
@@ -998,7 +1010,7 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 		}
 		else
 		{
-			if(offset+size < posicionesParaGuardar) //entra todo en los arch/bloques que ya tiene?
+			if(offset+size <= posicionesParaGuardar) //entra todo en los arch/bloques que ya tiene?
 			{
 				graboEnLosBloquesQueYaTiene(offset, regMetaArchBuscado, buffer, size);
 			}
