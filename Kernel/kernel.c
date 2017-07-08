@@ -1551,6 +1551,7 @@ void * handler_conexion_cpu(void * sock) {
 				;
 				int un_pid = atoi(mensajeDesdeCPU[1]);
 				int bytes = atoi(mensajeDesdeCPU[2]);
+
 				t_pcb * pcb = pcbFromPid(un_pid);
 				reservarMemoriaHeap(pcb, bytes, socketCliente);
 				break;
@@ -1568,6 +1569,35 @@ void * handler_conexion_cpu(void * sock) {
 				int pid_msg = atoi(mensajeDesdeCPU[1]);
 				t_pcb * un_pcb = pcbFromPid(pid_msg);
 				finalizarPrograma(pid_msg, FIN_ERROR_SUPERO_MAXIMO_PAGINAS);
+				break;
+
+			case 617:
+				;
+				int pid_msge;
+
+				int encontrado = 0;
+
+				estruct_cpu* temporalCpu;
+
+				while (encontrado == 0) { //Libero la CPU que estaba ejecutando al programa
+
+					pthread_mutex_lock(&mtx_cpu);
+					temporalCpu = (estruct_cpu*) queue_pop(cola_cpu);
+					pthread_mutex_unlock(&mtx_cpu);
+
+					if (temporalCpu->socket == *socketCliente) {
+						encontrado = 1;
+						pid_msge = temporalCpu->pid_asignado;
+					}
+
+					pthread_mutex_lock(&mtx_cpu);
+					queue_push(cola_cpu, temporalCpu);
+					pthread_mutex_unlock(&mtx_cpu);
+
+				}
+
+				printf("El pid del error 617 es %d \n", pid_msge);
+				finalizarPrograma(pid_msge, FIN_ERROR_RESERVAR_SIN_ESAPCIO);
 				break;
 
 			case 777:
@@ -2839,10 +2869,10 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_ACCESO_ARCHIVO_INEXISTENTE
 			|| codigo == FIN_ERROR_DISCO_LLENO || codigo == FIN_ERROR_BUFFER_SUPERIOR_A_TAMANIO || codigo == FIN_ERROR_CREACION_ARCHIVO_SIN_PERMISOS
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_EXCEPCION_MEMORIA || codigo == FIN_ERROR_RESERVA_MEMORIA_MAYOR_A_PAGINA
-			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo ==FIN_ERROR_LEER_ARCHIVO_VACIO
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS
+			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO  || codigo == FIN_ERROR_LEER_ARCHIVO_VACIO
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS || codigo == FIN_ERROR_RESERVAR_SIN_ESAPCIO
 	){
-                printf("ENTRO AL IF POR %d\n", codigo);
+
 		int encontrado = 0;
 
 		estruct_cpu* temporalCpu;
