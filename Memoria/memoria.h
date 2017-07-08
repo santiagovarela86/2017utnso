@@ -27,6 +27,8 @@
 #define ASIGNACION_MEMORIA_OK 0
 #define ASIGNACION_MEMORIA_ERROR 1
 #define STACK_OVERFLOW 2108
+#define DEREFERENCIAR_OK 2109
+#define DEREFERENCIAR_ERROR 2110
 
 typedef struct {
 	int socket_consola;

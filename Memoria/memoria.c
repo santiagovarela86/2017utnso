@@ -754,24 +754,42 @@ void obtenerValorDeVariable(char** mensajeDesdeCPU, int sock){
 	int pid = atoi(mensajeDesdeCPU[1]);
 	int direccion = atoi(mensajeDesdeCPU[2]);
 	int marco = direccion / configuracion->marco_size;
-	t_pagina_invertida* pagina_buscada = list_get(tabla_paginas, marco);
-	int offset = direccion % configuracion->marco_size;
-
-	char * bloquePagina = solicitar_datos_de_pagina(pid, pagina_buscada->nro_pagina, offset, OFFSET_VAR);
-
-	valor_variable = ((unsigned char)bloquePagina[0] << 24) +
-						((unsigned char)bloquePagina[1] << 16) +
-							((unsigned char)bloquePagina[2] << 8) +
-								((unsigned char)bloquePagina[3] << 0);
-
-	printf("Se leyo el valor %d en memoria\n", valor_variable);
-	puts("");
 
 	char* mensajeACpu = string_new();
-	string_append(&mensajeACpu, string_itoa(valor_variable));
-	string_append(&mensajeACpu, ";");
 
-	enviarMensaje(&sock, mensajeACpu);
+	if (marco < configuracion->marcos) {
+
+
+		t_pagina_invertida* pagina_buscada = list_get(tabla_paginas, marco);
+		int offset = direccion % configuracion->marco_size;
+
+		char * bloquePagina = solicitar_datos_de_pagina(pid, pagina_buscada->nro_pagina, offset, OFFSET_VAR);
+
+		valor_variable = ((unsigned char)bloquePagina[0] << 24) +
+							((unsigned char)bloquePagina[1] << 16) +
+								((unsigned char)bloquePagina[2] << 8) +
+									((unsigned char)bloquePagina[3] << 0);
+
+		printf("Se leyo el valor %d en memoria\n", valor_variable);
+		puts("");
+
+		string_append(&mensajeACpu, string_itoa(DEREFERENCIAR_OK));
+		string_append(&mensajeACpu, ";");
+		string_append(&mensajeACpu, string_itoa(valor_variable));
+		string_append(&mensajeACpu, ";");
+
+		enviarMensaje(&sock, mensajeACpu);
+	}
+
+	else {
+
+		finalizar_programa(pid);
+
+		string_append(&mensajeACpu, string_itoa(DEREFERENCIAR_ERROR));
+		string_append(&mensajeACpu, ";");
+
+		enviarMensaje(&sock, mensajeACpu);
+	}
 	free(mensajeACpu);
 }
 

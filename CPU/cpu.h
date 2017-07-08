@@ -84,4 +84,7 @@ void manejador_signal();
 #define ASIGNACION_MEMORIA_ERROR 1
 #define VARIABLE_EN_CACHE 99
 
+#define DEREFERENCIAR_OK 2109
+#define DEREFERENCIAR_ERROR 2110
+
 #endif /* CPU_H_ */

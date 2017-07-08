@@ -616,6 +616,7 @@ t_puntero obtenerPosicionVariable(t_nombre_variable identificador_variable) {
 }
 
 t_valor_variable dereferenciar(t_puntero direccion_variable) {
+
 	printf("Dereferenciar Direccion %d\n", direccion_variable);
 	printf("\n");
 
@@ -637,19 +638,6 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 
 		enviarMensaje(&socketMemoria, serializarMensaje(3, 513, pcb->pid, direccion_variable)); //// REVISAR MEMORIA
 
-		/*
-		 *
-		if (direccion_variable == VARIABLE_EN_CACHE) {
-			enviarMensaje(&socketMemoria,
-					serializarMensaje(6, 513, direccion_variable, pcb->pid,
-							pagina_a_leer_cache, offset_a_leer_cache,
-							tamanio_a_leer_cache));
-		} else {
-			enviarMensaje(&socketMemoria,
-					serializarMensaje(2, 513, direccion_variable));
-		}
-		*/
-
 		char * buffer = malloc(MAXBUF);
 
 		int result = recv(socketMemoria, buffer, MAXBUF, 0);
@@ -657,26 +645,27 @@ t_valor_variable dereferenciar(t_puntero direccion_variable) {
 		if (result > 0) {
 			char ** respuestaDeMemoria = string_split(buffer, ";");
 
-			printf("Lei el valor %s en la posicion %d\n", respuestaDeMemoria[0], direccion_variable);
-			printf("\n");
+			int codigo = atoi(respuestaDeMemoria[0]);
 
-			/*
-			if (direccion_variable != VARIABLE_EN_CACHE) {
+			if (codigo == DEREFERENCIAR_OK){
 
-			} else {
-				printf(
-						"Lei el valor %s almacenado en la pagina %d offset %d de la Cache\n",
-						respuestaDeMemoria[0], pagina_a_leer_cache,
-						offset_a_leer_cache);
+				printf("Lei el valor %s en la posicion %d\n", respuestaDeMemoria[1], direccion_variable);
 				printf("\n");
+
+				int valor = atoi(respuestaDeMemoria[1]);
+
+				free(buffer);
+
+				return valor;
 			}
-			*/
+			else if (codigo == DEREFERENCIAR_ERROR) {
 
-			int valor = atoi(respuestaDeMemoria[0]);
+				pcbHabilitado= false;
+				enviarMensaje(&sktKernel, serializarMensaje(2, 813, pcb->pid));
 
-			free(buffer);
+				return 0;
+			}
 
-			return valor;
 		} else {
 			printf("Error de comunicación con Memoria al Dereferenciar\n");
 			exit(errno);
@@ -766,6 +755,7 @@ t_puntero definirVariable(t_nombre_variable identificador_variable) {
 			pcbHabilitado= false;
 
 		} else if (codigo == STACK_OVERFLOW){
+			puts("STACK OVERFLOW");
 			enviarMensaje(&sktKernel, serializarMensaje(2, 809, pcb->pid));
 			pcbHabilitado= false;
 		}

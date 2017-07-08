@@ -1664,7 +1664,11 @@ void * handler_conexion_cpu(void * sock) {
 			case 812:
 				pid_msg = atoi(mensajeDesdeCPU[1]);
 				finalizarPrograma(pid_msg, FIN_ERROR_LOOP_INFINITO);
+				break;
 
+			case 813:
+				pid_msg = atoi(mensajeDesdeCPU[1]);
+				finalizarPrograma(pid_msg, FIN_ERROR_CREAR_ARCHIVO_GIGANTE);
 				break;
 
 		}
@@ -2902,7 +2906,7 @@ void finalizarPrograma(int pidACerrar, int codigo) {
 			|| codigo == FIN_LECTURA_SUPERIOR_A_ARCHIVO || codigo == FIN_LECTURA_SUPERIOR_A_DISCO
 			|| codigo == FIN_ERROR_LEER_ARCHIVO_SIN_PERMISOS || codigo == FIN_ERROR_SUPERO_MAXIMO_PAGINAS
 			|| codigo == FIN_ERROR_RESERVAR_SIN_ESAPCIO || codigo == FIN_ERROR_LIBERAR_ESPACIO
-			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO
+			|| codigo == FIN_ERROR_LEER_ARCHIVO_VACIO || codigo == FIN_ERROR_CREAR_ARCHIVO_GIGANTE
 	){
 
 		int encontrado = 0;
