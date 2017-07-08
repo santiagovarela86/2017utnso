@@ -129,9 +129,9 @@ void * hilo_conexiones_kernel(void * args){
 		char message[MAXBUF];
 
 		int result = recv(socketKernel, message, sizeof(message), 0);
-		puts("****************************** \n");
-		puts("Este proceso no tiene consola \n");
-		puts("****************************** \n");
+		//puts("****************************** \n");
+		//puts("Este proceso no tiene consola \n");
+		//puts("****************************** \n");
 		while (result > 0) {
 
 			//printf("%s", message);
@@ -604,7 +604,7 @@ void borrarArchivo(char* directorio){
 		}
 		else
 		{
-			puts("El archivo no pudo eliminarse, revise el path");
+			puts("El archivo no pudo eliminarse, revise el path\n");
 
 		}
 
