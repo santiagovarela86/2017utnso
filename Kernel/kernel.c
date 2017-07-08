@@ -3678,7 +3678,8 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, void*buffer, int
 
 						enviarMensaje(&skt_filesystem, mensajeFS);
 						recv(skt_filesystem, mensajeFS, MAXBUF, 0);
-					    send(skt_filesystem, infofile, tamanio, 0);
+						printf("su contenido es %s \n", buffer);
+					    send(skt_filesystem, buffer, tamanio, 0);
 
 						//free(regTablaGlobal);
 

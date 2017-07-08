@@ -1347,7 +1347,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 		string_append(&mensajeFs, ";");
 		string_append(&mensajeFs, string_itoa(tamanio));
 		string_append(&mensajeFs, ";");
-
+		  printf("su contenido es %s \n", informacion);
 		enviarMensaje(&sktKernel, mensajeFs);
 	}
 	else
@@ -1361,7 +1361,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 		string_append(&mensajeFs, ";");
 		string_append(&mensajeFs, string_itoa(tamanio));
 		string_append(&mensajeFs, ";");
-
+		  printf("su contenido es %s \n", informacion);
 		enviarMensaje(&sktKernel, mensajeFs);
 
 		 recv(sktKernel, mensajeFs, 12, 0);
@@ -1433,7 +1433,7 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 		informacion = bufferFin;
 		puts("El archivo se leyo correctamente\n");
 			//printf("%s \n", resulMenLeer);
-	   // printf("su contenido es %s \n", bufferFin);
+	 //   printf("su contenido es %s \n", bufferFin);
 
 		free(resulMenLeer);
 		free(mensajeFs);

@@ -144,6 +144,7 @@ void * hilo_conexiones_kernel(void * args){
 					enviarMensaje(&socketKernel, "todo piola");
 					void* buffer = malloc(MAXBUF);
 					recv(socketKernel, buffer, MAXBUF, 0);
+					//printf("su contenido es %s \n", buffer);
 					guardar_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
 					free(buffer);
 				break;
@@ -160,8 +161,8 @@ void * hilo_conexiones_kernel(void * args){
 				case 800:
 					enviarMensaje(&socketKernel, "todo piola");
 					void* buffer1 = malloc(MAXBUF);
-					recv(socketKernel, buffer, MAXBUF, 0);
-					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer, atoi(mensajeAFileSystem[3]));
+					recv(socketKernel, buffer1, MAXBUF, 0);
+					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer1, atoi(mensajeAFileSystem[3]));
 					//free(buffer1);
 				break;
 			  }
