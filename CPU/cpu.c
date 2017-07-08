@@ -102,6 +102,7 @@ void* manejo_kernel(void *args) {
 	while (1) {
 		//RECIBO EL PCB
 		pcb = reciboPCB(&socketKernel);
+		printf("el pid recibido es %d \n", pcb->pid);
 		bloqueo = 0;
 		printf("Recibi un PCB para Ejecutar\n");
 		//MUESTRO LA INFO DEL PCB
@@ -1118,8 +1119,8 @@ t_puntero reservar(t_valor_variable espacio) {
 			printf("\n");
 			return atoi(respuesta[1]);
 		}else{
+			enviarMensaje(&sktKernel, serializarMensaje(2, 617, pcb->pid + 1));
 			printf("Error reservando Memoria de Heap, espacio insuficiente\n");
-			printf("El programa fue finalizado en Kernel\n");
 			//FORMA CABEZA DE TERMINARLO
 			pcbHabilitado = false;
 			return 0;
