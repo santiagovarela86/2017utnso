@@ -163,6 +163,7 @@ void * hilo_conexiones_kernel(void * args){
 					void* buffer1 = malloc(MAXBUF);
 					recv(socketKernel, buffer1, MAXBUF, 0);
 					obtener_datos(mensajeAFileSystem[1], atoi(mensajeAFileSystem[2]), buffer1, atoi(mensajeAFileSystem[3]));
+					//printf("su contenido es %s \n", buffer1);
 					//free(buffer1);
 				break;
 			  }
@@ -908,10 +909,10 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 	else
 	{//sino entra todo en un bloque, pregunto en cuantos bloques entra el buffer.
 	    int cantidadDeBloquesALeer = size / metadataSadica->tamanio_bloques; //me da la cantidad de bloques en la que entra el buffer (sin resto)
-		if((size % metadataSadica->tamanio_bloques) != 0)
+		if((size % metadataSadica->tamanio_bloques) > 0)
 		{
 			cantidadDeBloquesALeer++; //si lo tienen significa que graba en un bloque mas.
-			auxsize = size < metadataSadica->tamanio_bloques;
+			auxsize = size % metadataSadica->tamanio_bloques;
 		}
 		int desdeDondeComenizoALeer = 0; // para recorrer el string del buffer y cortarlo de a cachitos
 		while(cantidadDeBloquesALeer != 0)
@@ -921,7 +922,7 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 
 				void* bufferaux = malloc(desdeDondeComenizoALeer);
 				memcpy(bufferaux, (buffer + desdeDondeComenizoALeer), (metadataSadica->tamanio_bloques));
-				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
+				//regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + metadataSadica->tamanio_bloques;
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, metadataSadica->tamanio_bloques); //meto el cacho de buffer en todo el bloque
 				idbloqueALeer = (int)list_get(regMetaArchBuscado->bloquesEscritos, bloquePosicion+1); // dame el siguiente bloque de la lista
 				archBloqueAGrabar= abrirUnArchivoBloque(idbloqueALeer);
@@ -931,7 +932,10 @@ void graboEnLosBloquesQueYaTiene(int offset, t_metadataArch* regMetaArchBuscado,
 			{
 				void* bufferaux = malloc(desdeDondeComenizoALeer);
 				memcpy(bufferaux, buffer + desdeDondeComenizoALeer, (auxsize)); //lo que me falta grabar
-				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio + auxsize + auxoffset;
+				int resto =   regMetaArchBuscado->tamanio % metadataSadica->tamanio_bloques;
+
+				regMetaArchBuscado->tamanio = regMetaArchBuscado->tamanio +( auxsize  - resto )+ auxoffset;
+
 				grabarUnArchivoBloque(archBloqueAGrabar, idbloqueALeer, bufferaux, auxsize);
 			}
 			cantidadDeBloquesALeer--;

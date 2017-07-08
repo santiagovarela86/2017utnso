@@ -1480,6 +1480,7 @@ void * handler_conexion_cpu(void * sock) {
 					 void* buffer = malloc(MAXBUF);
 					 int e =recv((socketCliente), buffer, MAXBUF, 0);
 					 t_resultLeer* auxLeer = leerArchivo(pid_mensaje, fd, buffer, tamanio);
+						//printf("su contenido es %s \n", auxLeer->buffer);
 					if(string_contains(auxLeer->exitCode, "Error"))
 					{
 						if(string_contains(auxLeer->exitCode, "vacio"))
@@ -3739,7 +3740,7 @@ char* escribirArchivo( int pid_mensaje, int fd, char* infofile, void*buffer, int
 
 						enviarMensaje(&skt_filesystem, mensajeFS);
 						recv(skt_filesystem, mensajeFS, MAXBUF, 0);
-						printf("su contenido es %s \n", buffer);
+						//printf("su contenido es %s \n", buffer);
 					    send(skt_filesystem, buffer, tamanio, 0);
 
 						//free(regTablaGlobal);

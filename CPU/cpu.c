@@ -1338,6 +1338,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 	}
 	if(descriptor_archivo == 0 || descriptor_archivo == 1) //esto es porque si me mandan un string para la consola lo tengo que trabajar distinto.
 	{
+		//printf("su contenido es %s \n", informacion);
 		char* mensajeFs = string_new();
 		string_append(&mensajeFs, "804");
 		string_append(&mensajeFs, ";");
@@ -1349,7 +1350,7 @@ void escribir(t_descriptor_archivo descriptor_archivo, void * informacion, t_val
 		string_append(&mensajeFs, ";");
 		string_append(&mensajeFs, string_itoa(tamanio));
 		string_append(&mensajeFs, ";");
-		  printf("su contenido es %s \n", informacion);
+
 		enviarMensaje(&sktKernel, mensajeFs);
 	}
 	else
@@ -1432,10 +1433,10 @@ void leer(t_descriptor_archivo descriptor_archivo, t_puntero informacion, t_valo
 		enviarMensaje(&sktKernel, "todo ok");
 		void* bufferFin = malloc(tamanio);
 		recv(sktKernel, bufferFin, tamanio, 0);
-		informacion = bufferFin;
+		asignar(informacion, bufferFin);
 		puts("El archivo se leyo correctamente\n");
 			//printf("%s \n", resulMenLeer);
-	 //   printf("su contenido es %s \n", bufferFin);
+	   printf("su contenido es %s \n", bufferFin);
 
 		free(resulMenLeer);
 		free(mensajeFs);
