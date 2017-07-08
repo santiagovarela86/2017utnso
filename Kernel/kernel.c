@@ -3485,7 +3485,7 @@ void signalSemaforo(int * socketCliente, char * semaforo_buscado){
 		t_bloqueo* bloq = list_find(registro_bloqueados, (void *) encontrar_bloqueado);
 
 		if(bloq != NULL){
-
+			printf("El pid bloqueado encontrado es %d \n", bloq->pid);
 			int fin = queue_size(cola_bloqueados);
 			int encontrado = 0;
 			t_pcb* p;

@@ -1147,7 +1147,7 @@ void liberar(t_puntero puntero) {
 			printf("\n");
 		}else{
 			printf("Error liberando Memoria de Heap, memoria inexistente\n");
-			printf("El programa fue finalizado en Kernel\n");
+
 			printf("\n");
 			enviarMensaje(&sktKernel, serializarMensaje(2, 618, pcb->pid));
 			//FORMA CABEZA DE TERMINARLO
