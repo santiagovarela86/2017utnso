@@ -962,14 +962,10 @@ int discoDisplonible()
 	int valor;
 	int i = 0;
 	int bloquesdisponible =0;
-	while(i <= tamanioDisco)
+	while(i < tamanioDisco)
 	{
 	    valor = bitarray_test_bit(bitmap, (off_t) i);
-	    if(valor)
-	    {
-
-	    }
-	    else
+	    if(valor == 0)
 	    {
 	    	bloquesdisponible++;
 	    }
@@ -1018,12 +1014,26 @@ void guardar_datos(char* directorio, int size, void* buffer, int offset)
 			{
 			  if((offset <= posicionesParaGuardar) && (offset+size) > (posicionesParaGuardar)) //entra parte en los bloque que tiene, y parte tiene que pedir ?
 			  {
+				 int disco = discoDisplonible();
+				 int total = posicionesParaGuardar + disco;
+				 if (size <= total)
+				 {
+					  string_append(&exitCode,grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size));
+				 }
+				 else
+				 {
+				   		enviarMensaje(&socketKernel, "Error: disco lleno, no se puede crear");
+				 }
 
-				  string_append(&exitCode,grabarParteEnbloquesYparteEnNuevos(offset, regMetaArchBuscado, buffer, size));
 			  }
 			  else //no entra nada, pido bloques y grabo todo en ellos
 			  {
+			 int disco = discoDisplonible();
+					 int total = posicionesParaGuardar + disco;
+					 if (size <= total)
+					 {
 				   string_append(&exitCode,pidoBloquesEnBlancoYgrabo(offset,regMetaArchBuscado,buffer,size));
+				}
 
 			  }
 			}
