@@ -352,8 +352,8 @@ void * inicializar_consola(void* args){
 					log_console_in_disk(mensaje);
 				}else{
 					plan = 0;
-					string_append(&mensaje, "Se reinicio la planificacion de los procesos");
-					log_console_in_disk(mensaje);
+					//string_append(&mensaje, "Se reinicio la planificacion de los procesos");
+					//log_console_in_disk(mensaje);
 				}
 
 				break;
