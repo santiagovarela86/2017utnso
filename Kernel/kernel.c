@@ -1849,7 +1849,9 @@ void logExitCode(int code) //ESTO NO SE ESTA USANDO
 	case FIN_ERROR_LOOP_INFINITO:
 		errorLog = "El proceso entro en un loop infinito y fue detenido";
 		break;
-
+	case FIN_ERROR_RESERVAR_SIN_ESAPCIO:
+		errorLog = "El proceso intento reserar espacio de memoria y no habia suficiente";
+		break;
 
 	}
 	t_log* logCode = log_create("kernelExist.log", "kernel", true, LOG_LEVEL_ERROR );
